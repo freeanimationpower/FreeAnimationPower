@@ -1,0 +1,21 @@
+{
+  "name": "Default",
+  "colors": [
+    {"name": "Black", "hex": "#000000"},
+    {"name": "White", "hex": "#FFFFFF"},
+    {"name": "Red", "hex": "#E53935"},
+    {"name": "Orange", "hex": "#FB8C00"},
+    {"name": "Yellow", "hex": "#FDD835"},
+    {"name": "Green", "hex": "#43A047"},
+    {"name": "Cyan", "hex": "#00ACC1"},
+    {"name": "Blue", "hex": "#1E88E5"},
+    {"name": "Purple", "hex": "#8E24AA"},
+    {"name": "Pink", "hex": "#D81B60"},
+    {"name": "Brown", "hex": "#6D4C41"},
+    {"name": "Gray", "hex": "#757575"},
+    {"name": "Skin", "hex": "#FFCC80"},
+    {"name": "Sky", "hex": "#81D4FA"},
+    {"name": "Grass", "hex": "#66BB6A"},
+    {"name": "Wood", "hex": "#8D6E63"}
+  ]
+}

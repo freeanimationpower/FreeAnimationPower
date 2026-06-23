@@ -1,0 +1,200 @@
+#include "core/tool_state.hpp"
+#include <algorithm>
+
+namespace fap {
+
+ToolState::ToolState(QObject* parent)
+    : QObject(parent) {
+}
+
+ToolType ToolState::activeTool() const { return active_tool_; }
+QColor ToolState::primaryColor() const { return primary_color_; }
+int ToolState::brushSize() const { return brush_size_; }
+int ToolState::brushOpacity() const { return brush_opacity_; }
+int ToolState::brushHardness() const { return brush_hardness_; }
+QString ToolState::brushShape() const { return brush_shape_; }
+bool ToolState::pressureSize() const { return pressure_size_; }
+bool ToolState::pressureOpacity() const { return pressure_opacity_; }
+int ToolState::stabilizerLevel() const { return stabilizer_level_; }
+int ToolState::canvasWidth() const { return canvas_width_; }
+int ToolState::canvasHeight() const { return canvas_height_; }
+bool ToolState::onionEnabled() const { return onion_enabled_; }
+int ToolState::onionPrevFrames() const { return onion_prev_frames_; }
+int ToolState::onionNextFrames() const { return onion_next_frames_; }
+int ToolState::onionOpacity() const { return onion_opacity_; }
+
+void ToolState::setActiveTool(ToolType tool) {
+    if (active_tool_ != tool) {
+        active_tool_ = tool;
+        emit activeToolChanged(tool);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setActiveToolByIndex(int index) {
+    switch (index) {
+    case 0:  setActiveTool(ToolType::Brush); break;
+    case 1:  setActiveTool(ToolType::Eraser); break;
+    case 2:  setActiveTool(ToolType::ColorPicker); break;
+    case 3:  setActiveTool(ToolType::Fill); break;
+    case 4:  setActiveTool(ToolType::Text); break;
+    case 5:  setActiveTool(ToolType::Line); break;
+    case 6:  setActiveTool(ToolType::Rectangle); break;
+    case 7:  setActiveTool(ToolType::Ellipse); break;
+    case 8:  setActiveTool(ToolType::Move); break;
+    case 9:  setActiveTool(ToolType::Select); break;
+    case 10: setActiveTool(ToolType::Hand); break;
+    default: break;
+    }
+}
+
+void ToolState::setPrimaryColor(const QColor& color) {
+    if (primary_color_ != color) {
+        primary_color_ = color;
+        emit primaryColorChanged(color);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setBrushSize(int size) {
+    int clamped = std::clamp(size, 1, 200);
+    if (brush_size_ != clamped) {
+        brush_size_ = clamped;
+        emit brushSizeChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setBrushOpacity(int opacity) {
+    int clamped = std::clamp(opacity, 1, 100);
+    if (brush_opacity_ != clamped) {
+        brush_opacity_ = clamped;
+        emit brushOpacityChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setBrushHardness(int hardness) {
+    int clamped = std::clamp(hardness, 1, 100);
+    if (brush_hardness_ != clamped) {
+        brush_hardness_ = clamped;
+        emit brushHardnessChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setBrushShape(const QString& shape) {
+    if (brush_shape_ != shape) {
+        brush_shape_ = shape;
+        emit brushShapeChanged(shape);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setPressureSize(bool enabled) {
+    if (pressure_size_ != enabled) {
+        pressure_size_ = enabled;
+        emit pressureSizeChanged(enabled);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setPressureOpacity(bool enabled) {
+    if (pressure_opacity_ != enabled) {
+        pressure_opacity_ = enabled;
+        emit pressureOpacityChanged(enabled);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setStabilizerLevel(int level) {
+    int clamped = std::clamp(level, 0, 50);
+    if (stabilizer_level_ != clamped) {
+        stabilizer_level_ = clamped;
+        emit stabilizerLevelChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setCanvasWidth(int w) {
+    int clamped = std::max(1, w);
+    if (canvas_width_ != clamped) {
+        canvas_width_ = clamped;
+        emit canvasWidthChanged(clamped);
+        emit canvasSizeChanged(canvas_width_, canvas_height_);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setCanvasHeight(int h) {
+    int clamped = std::max(1, h);
+    if (canvas_height_ != clamped) {
+        canvas_height_ = clamped;
+        emit canvasHeightChanged(clamped);
+        emit canvasSizeChanged(canvas_width_, canvas_height_);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setCanvasSize(int w, int h) {
+    bool wChanged = false, hChanged = false;
+    int cw = std::max(1, w);
+    int ch = std::max(1, h);
+    if (canvas_width_ != cw) { canvas_width_ = cw; wChanged = true; }
+    if (canvas_height_ != ch) { canvas_height_ = ch; hChanged = true; }
+    if (wChanged) emit canvasWidthChanged(cw);
+    if (hChanged) emit canvasHeightChanged(ch);
+    if (wChanged || hChanged) {
+        emit canvasSizeChanged(canvas_width_, canvas_height_);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::resetToDefaults() {
+    setActiveTool(ToolType::Eraser);
+    setPrimaryColor(QColor(0, 0, 0));
+    setBrushSize(20);
+    setBrushOpacity(100);
+    setBrushHardness(80);
+    setBrushShape("Round");
+    setPressureSize(false);
+    setPressureOpacity(false);
+    setStabilizerLevel(0);
+    setOnionEnabled(true);
+    setOnionPrevFrames(3);
+    setOnionNextFrames(1);
+    setOnionOpacity(35);
+}
+
+void ToolState::setOnionEnabled(bool enabled) {
+    if (onion_enabled_ != enabled) {
+        onion_enabled_ = enabled;
+        emit onionEnabledChanged(enabled);
+    }
+}
+
+void ToolState::setOnionPrevFrames(int count) {
+    int clamped = std::clamp(count, 0, 10);
+    if (onion_prev_frames_ != clamped) {
+        onion_prev_frames_ = clamped;
+        emit onionPrevFramesChanged(clamped);
+    }
+}
+
+void ToolState::setOnionNextFrames(int count) {
+    int clamped = std::clamp(count, 0, 10);
+    if (onion_next_frames_ != clamped) {
+        onion_next_frames_ = clamped;
+        emit onionNextFramesChanged(clamped);
+    }
+}
+
+void ToolState::setOnionOpacity(int opacity) {
+    int clamped = std::clamp(opacity, 5, 100);
+    if (onion_opacity_ != clamped) {
+        onion_opacity_ = clamped;
+        emit onionOpacityChanged(clamped);
+    }
+}
+
+} // namespace fap

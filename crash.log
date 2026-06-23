@@ -1,0 +1,33 @@
+CRASH: Exception 0xc0000005
+Address: 0x7ffc42d8202b
+Stack frames: 30
+  [0] 0x7ff6a4f01455
+  [1] UnhandledExceptionFilter + 0x1f3
+  [2] strncpy + 0x25fb
+  [3] _C_specific_handler + 0x93
+  [4] _chkstk + 0x9f
+  [5] RtlLocateExtendedFeature + 0x597
+  [6] KiUserExceptionDispatcher + 0x2e
+  [7] memcmp + 0xfb
+  [8] 0x7ff6a4f1cdba
+  [9] 0x7ff6a4f1cc18
+  [10] QUndoStack::undo + 0x93
+  [11] 0x7ff6a4f1633d
+  [12] QWidget::event + 0x24d
+  [13] QApplicationPrivate::notify_helper + 0x152
+  [14] QApplication::notify + 0x2fb
+  [15] QCoreApplication::notifyInternal2 + 0x10f
+  [16] QWidgetRepaintManager::updateStaticContentsSize + 0xccb
+  [17] QApplicationPrivate::notify_helper + 0x152
+  [18] QApplication::notify + 0x16b6
+  [19] QCoreApplication::notifyInternal2 + 0x10f
+  [20] QGuiApplicationPrivate::processKeyEvent + 0x180
+  [21] QWindowSystemInterface::sendWindowSystemEvents + 0xfb
+  [22] QEventDispatcherWin32::processEvents + 0x90
+  [23] QWindowsGuiEventDispatcher::processEvents + 0x19
+  [24] QEventLoop::exec + 0x1c4
+  [25] QCoreApplication::exec + 0x162
+  [26] 0x7ff6a4f01a84
+  [27] 0x7ff6a4f2f1ec
+  [28] BaseThreadInitThunk + 0x17
+  [29] RtlUserThreadStart + 0x2c

@@ -1,0 +1,683 @@
+#include "main_window_v2.hpp"
+
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QToolBar>
+#include <QtWidgets/QToolButton>
+#include <QtWidgets/QStatusBar>
+#include <QtWidgets/QDockWidget>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
+#include <QtWidgets/QStyle>
+#include <QtCore/QProcess>
+#include <QtCore/QDir>
+#include <QtCore/QTemporaryDir>
+#include <QtGui/QAction>
+#include <QtGui/QKeySequence>
+#include <QtGui/QPainter>
+#include <QtGui/QImage>
+
+#include "toolbox_panel_v2.hpp"
+#include "color_panel_v2.hpp"
+#include "layer_panel_v2.hpp"
+#include "canvas_widget_v2.hpp"
+#include "timeline_panel_v2.hpp"
+#include "property_editor_v2.hpp"
+#include "core/document.hpp"
+#include "core/undo_manager.hpp"
+
+namespace fap {
+
+extern bool loadDocument(Document& doc, const QString& path);
+extern bool saveDocument(const Document& doc, const QString& path);
+
+static const char* kTheme = R"(
+QMainWindow { background:#0F1115; }
+QToolBar { background:#14161C; border:none; border-bottom:1px solid #2D3139; spacing:2px; padding:4px 8px; }
+QToolBar::separator { width:1px; background:#2D3139; margin:4px 6px; }
+QToolButton { color:#8B8FA3; border:1px solid transparent; border-radius:6px; padding:4px 6px; font-size:11px; }
+QToolButton:hover { background:#1E2130; color:#E0E2EA; }
+QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF6B4A,stop:1 #FF8A6A); color:#fff; border-color:transparent; }
+QToolButton:disabled { color:#3D4150; background:transparent; }
+QDockWidget { background:#1A1D24; color:#8B8FA3; border:1px solid #2D3139; titlebar-close-icon:none; }
+QDockWidget::title { background:#1A1D24; padding:6px 10px; border-bottom:1px solid #2D3139; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#6B7088; }
+QStatusBar { background:#14161C; color:#6B7088; border-top:1px solid #2D3139; font-size:11px; padding:2px 8px; }
+QScrollArea { background:transparent; border:none; }
+QScrollBar:vertical { background:transparent; width:6px; margin:0; }
+QScrollBar::handle:vertical { background:#2D3139; border-radius:3px; min-height:20px; }
+QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical { height:0; }
+QScrollBar:horizontal { background:transparent; height:6px; }
+QScrollBar::handle:horizontal { background:#2D3139; border-radius:3px; min-width:20px; }
+QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width:0; }
+QSlider::groove:horizontal { background:#22252F; height:3px; border-radius:2px; }
+QSlider::handle:horizontal { background:#FF6B4A; width:12px; height:12px; margin:-5px 0; border-radius:6px; }
+QSlider::sub-page:horizontal { background:#FF6B4A; border-radius:2px; }
+QSpinBox,QDoubleSpinBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:2px 6px; border-radius:5px; font-size:10px; font-family:'JetBrains Mono',monospace; }
+QSpinBox:focus { border-color:#FF6B4A; }
+QComboBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:3px 8px; border-radius:5px; font-size:10px; }
+QComboBox:hover { border-color:#3D4150; }
+QComboBox::drop-down { border:none; width:16px; }
+QComboBox QAbstractItemView { background:#1A1D24; color:#C8CCD8; selection-background-color:#FF6B4A; border:1px solid #2D3139; }
+QCheckBox { color:#8B8FA3; font-size:10px; spacing:6px; }
+QCheckBox::indicator { width:14px; height:14px; border:1px solid #3D4150; border-radius:3px; background:#1E2130; }
+QCheckBox::indicator:checked { background:#FF6B4A; border-color:#FF6B4A; }
+QPushButton { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; border-radius:6px; padding:5px 10px; font-size:10px; font-weight:500; }
+QPushButton:hover { background:#252838; border-color:#3D4150; }
+QPushButton:pressed { background:#FF6B4A; color:#fff; border-color:#FF6B4A; }
+QGroupBox { color:#6B7088; font-weight:600; font-size:9px; text-transform:uppercase; letter-spacing:1px; border:1px solid #2D3139; border-radius:6px; margin-top:12px; padding-top:14px; }
+QGroupBox::title { subcontrol-origin:margin; left:10px; padding:0 6px; }
+QLabel { color:#8B8FA3; font-size:10px; }
+QListWidget { background:#14161C; color:#C8CCD8; border:1px solid #2D3139; border-radius:5px; outline:none; }
+QListWidget::item { padding:4px 8px; border-radius:3px; }
+QListWidget::item:selected { background:#FF6B4A; color:#fff; }
+QListWidget::item:hover { background:#1E2130; }
+)";
+
+static QIcon makeRotateIcon()
+{
+    QPixmap pm(16, 16);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor("#8B8FA3"));
+    p.drawEllipse(QRectF(2, 2, 12, 12));
+    p.setCompositionMode(QPainter::CompositionMode_Clear);
+    p.drawEllipse(QRectF(5, 5, 6, 6));
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    p.setBrush(QColor("#8B8FA3"));
+    QPolygonF arrow;
+    arrow << QPointF(8, 1) << QPointF(10.5, 5) << QPointF(5.5, 5);
+    p.drawPolygon(arrow);
+    p.end();
+    return QIcon(pm);
+}
+
+static QIcon makeFlipIcon()
+{
+    QPixmap pm(16, 16);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(QPen(QColor("#8B8FA3"), 1.5));
+    p.drawLine(QPointF(4, 4), QPointF(4, 12));
+    p.drawLine(QPointF(12, 4), QPointF(12, 12));
+    p.drawLine(QPointF(3, 4), QPointF(13, 4));
+    QPolygonF left, right;
+    left << QPointF(3, 4) << QPointF(6, 2) << QPointF(6, 6);
+    right << QPointF(13, 4) << QPointF(10, 2) << QPointF(10, 6);
+    p.setBrush(QColor("#8B8FA3"));
+    p.drawPolygon(left);
+    p.drawPolygon(right);
+    p.end();
+    return QIcon(pm);
+}
+
+static QIcon makeGridIcon()
+{
+    QPixmap pm(16, 16);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setPen(QPen(QColor("#8B8FA3"), 1));
+    for (int i = 0; i <= 16; i += 5) {
+        p.drawLine(QPointF(i, 0), QPointF(i, 16));
+        p.drawLine(QPointF(0, i), QPointF(16, i));
+    }
+    p.end();
+    return QIcon(pm);
+}
+
+static QIcon makeGifIcon()
+{
+    QPixmap pm(16, 16);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    QFont f = p.font();
+    f.setPixelSize(10);
+    f.setBold(true);
+    p.setFont(f);
+    p.setPen(QColor("#8B8FA3"));
+    p.drawText(pm.rect(), Qt::AlignCenter, "G");
+    p.end();
+    return QIcon(pm);
+}
+
+MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
+    : QMainWindow(parent)
+    , appState_(std::move(state))
+{
+    setWindowTitle("Free Animation Power - Untitled.fap");
+    resize(1600, 900);
+    setMinimumSize(1024, 600);
+
+    qApp->setStyleSheet(QLatin1String(kTheme));
+    qApp->setFont(QFont("Inter", 10));
+
+    setupUI();
+    updateUIState();
+}
+
+MainWindowV2::~MainWindowV2() = default;
+
+void MainWindowV2::setupUI()
+{
+    setupTopBar();
+    setupDocks();
+    setupStatusBar();
+    setupConnections();
+}
+
+void MainWindowV2::setupTopBar()
+{
+    auto* toolbar = addToolBar("MainBar");
+    toolbar->setMovable(false);
+    toolbar->setObjectName("mainToolBarV2");
+    toolbar->setIconSize(QSize(18, 18));
+    toolbar->setFixedHeight(32);
+
+    auto* style = this->style();
+
+    auto* newAct = toolbar->addAction(style->standardIcon(QStyle::SP_FileIcon), "");
+    newAct->setToolTip("New Project (Ctrl+N)");
+    connect(newAct, &QAction::triggered, this, [this]() { newProject(); });
+
+    auto* openAct = toolbar->addAction(style->standardIcon(QStyle::SP_DialogOpenButton), "");
+    openAct->setToolTip("Open Project (Ctrl+O)");
+    connect(openAct, &QAction::triggered, this, [this]() { openProjectDialog(); });
+
+    auto* saveAct = toolbar->addAction(style->standardIcon(QStyle::SP_DialogSaveButton), "");
+    saveAct->setToolTip("Save Project (Ctrl+S)");
+    connect(saveAct, &QAction::triggered, this, [this]() { saveProject(); });
+
+    toolbar->addSeparator();
+
+    auto* exportVidAct = toolbar->addAction(style->standardIcon(QStyle::SP_MediaPlay), "");
+    exportVidAct->setToolTip("Export Video (MP4)");
+    connect(exportVidAct, &QAction::triggered, this, &MainWindowV2::exportVideo);
+
+    auto* exportGifAct = toolbar->addAction(makeGifIcon(), "");
+    exportGifAct->setToolTip("Export GIF");
+    connect(exportGifAct, &QAction::triggered, this, [this]() {
+        if (!canvas_) return;
+        QString path = QFileDialog::getSaveFileName(
+            this, "Export GIF", "animation.gif",
+            "GIF Animation (*.gif);;All Files (*)");
+        if (path.isEmpty()) return;
+
+        QTemporaryDir tempDir;
+        if (!tempDir.isValid()) {
+            QMessageBox::warning(this, "Error", "Failed to create temporary directory.");
+            return;
+        }
+
+        statusBar()->showMessage("Rendering GIF frames...");
+        auto& doc = appState_->document();
+        int total = doc.totalFrames();
+        for (int frame = 0; frame < total; ++frame) {
+            if (canvas_) canvas_->setCurrentFrame(frame);
+            if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
+            qApp->processEvents();
+
+            QImage image(doc.width(), doc.height(), QImage::Format_ARGB32_Premultiplied);
+            image.fill(Qt::white);
+            QPainter painter(&image);
+            if (canvas_) canvas_->render(&painter);
+            painter.end();
+
+            QString framePath = tempDir.path() + QString("/frame_%1.png")
+                .arg(frame + 1, 4, 10, QLatin1Char('0'));
+            image.save(framePath, "PNG");
+            qApp->processEvents();
+        }
+
+        statusBar()->showMessage("Encoding GIF with FFmpeg...");
+        QProcess ffmpeg;
+        QString filter = QString("fps=%1,scale=%2:%3:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse")
+            .arg(doc.fps())
+            .arg(doc.width())
+            .arg(doc.height());
+        QStringList args;
+        args << "-y"
+             << "-framerate" << QString::number(doc.fps())
+             << "-i" << (tempDir.path() + "/frame_%04d.png")
+             << "-lavfi" << filter
+             << path;
+
+        ffmpeg.start("ffmpeg", args);
+        if (!ffmpeg.waitForFinished(120000)) {
+            QMessageBox::warning(this, "Error", "FFmpeg timed out. Is FFmpeg installed?");
+            statusBar()->showMessage("GIF export failed", 5000);
+            return;
+        }
+        if (ffmpeg.exitCode() == 0) {
+            statusBar()->showMessage("GIF exported: " + path, 5000);
+        } else {
+            QMessageBox::warning(this, "Error",
+                "FFmpeg failed:\n" + QString::fromUtf8(ffmpeg.readAllStandardError()));
+            statusBar()->showMessage("GIF export failed", 5000);
+        }
+    });
+
+    toolbar->addSeparator();
+
+    auto* fitAct = toolbar->addAction(style->standardIcon(QStyle::SP_ArrowDown), "");
+    fitAct->setToolTip("Fit Canvas (F)");
+    connect(fitAct, &QAction::triggered, [this]() { if (canvas_) canvas_->fit(); });
+
+    auto* flipAct = toolbar->addAction(makeFlipIcon(), "");
+    flipAct->setToolTip("Flip Horizontal (Ctrl+H)");
+    connect(flipAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->flipH(); canvas_->update(); } });
+
+    auto* rotAct = toolbar->addAction(makeRotateIcon(), "");
+    rotAct->setToolTip("Rotate +15deg (R)");
+    connect(rotAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvas(); canvas_->update(); } });
+
+    auto* gridAct = toolbar->addAction(makeGridIcon(), "");
+    gridAct->setToolTip("Toggle Grid (')");
+    connect(gridAct, &QAction::triggered, [this]() { if (canvas_) canvas_->toggleGrid(); });
+
+    toolbar->addSeparator();
+
+    undoAct_ = toolbar->addAction(style->standardIcon(QStyle::SP_ArrowBack), "");
+    undoAct_->setToolTip("Undo (Ctrl+Z)");
+    undoAct_->setShortcut(QKeySequence::Undo);
+    connect(undoAct_, &QAction::triggered, this, [this]() {
+        auto& um = appState_->document().undoManager();
+        if (um.canUndo()) {
+            um.undo();
+            updateUIState();
+        }
+    });
+
+    redoAct_ = toolbar->addAction(style->standardIcon(QStyle::SP_ArrowForward), "");
+    redoAct_->setToolTip("Redo (Ctrl+Y)");
+    redoAct_->setShortcut(QKeySequence::Redo);
+    connect(redoAct_, &QAction::triggered, this, [this]() {
+        auto& um = appState_->document().undoManager();
+        if (um.canRedo()) {
+            um.redo();
+            updateUIState();
+        }
+    });
+
+    auto* spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    toolbar->addWidget(spacer);
+
+    auto* helpAct = toolbar->addAction(style->standardIcon(QStyle::SP_MessageBoxQuestion), "");
+    helpAct->setToolTip("Keyboard Shortcuts (F1)");
+    connect(helpAct, &QAction::triggered, [this]() {
+        QMessageBox::about(this, "Keyboard Shortcuts",
+            "<style>body{background:#0F1115;color:#C8CCD8;font-family:Inter,sans-serif}"
+            "table{border-collapse:collapse;width:100%}"
+            "td{padding:4px 12px}"
+            "b{color:#FF6B4A}"
+            "h3{color:#FF6B4A;margin-top:16px;font-size:13px}</style>"
+            "<h3>Tools</h3>"
+            "<table>"
+            "<tr><td><b>B</b></td><td>Brush</td><td><b>E</b></td><td>Eraser</td></tr>"
+            "<tr><td><b>I</b></td><td>Pick Color</td><td><b>G</b></td><td>Fill</td></tr>"
+            "<tr><td><b>T</b></td><td>Text</td><td><b>L</b></td><td>Line</td></tr>"
+            "<tr><td><b>U</b></td><td>Rectangle</td><td><b>Y</b></td><td>Ellipse</td></tr>"
+            "<tr><td><b>M</b></td><td>Move</td><td><b>S</b></td><td>Select</td></tr>"
+            "<tr><td><b>H</b></td><td>Hand/Pan</td><td></td><td></td></tr>"
+            "</table>"
+            "<h3>Edit</h3>"
+            "<table>"
+            "<tr><td><b>Ctrl+Z</b></td><td>Undo</td><td><b>Ctrl+Y</b></td><td>Redo</td></tr>"
+            "<tr><td><b>Ctrl+C</b></td><td>Copy</td><td><b>Ctrl+X</b></td><td>Cut</td></tr>"
+            "<tr><td><b>Ctrl+V</b></td><td>Paste</td><td><b>Ctrl+N</b></td><td>New</td></tr>"
+            "<tr><td><b>Ctrl+O</b></td><td>Open</td><td><b>Ctrl+S</b></td><td>Save</td></tr>"
+            "<tr><td><b>Ctrl+E</b></td><td>Export Video</td><td><b>Delete</b></td><td>Clear Frame</td></tr>"
+            "</table>"
+            "<h3>View</h3>"
+            "<table>"
+            "<tr><td><b>F</b></td><td>Fit Canvas</td><td><b>Ctrl+H</b></td><td>Flip Horizontal</td></tr>"
+            "<tr><td><b>R</b></td><td>Rotate +15deg</td><td><b>'</b></td><td>Toggle Grid</td></tr>"
+            "<tr><td><b>Ctrl+0</b></td><td>Reset View</td><td><b>Space</b></td><td>Play/Pause</td></tr>"
+            "<tr><td><b>Arrow L/R</b></td><td>Prev/Next Frame</td><td><b>Mouse Wheel</b></td><td>Zoom</td></tr>"
+            "<tr><td><b>Middle Drag</b></td><td>Pan</td><td></td><td></td></tr>"
+            "</table>");
+    });
+}
+
+void MainWindowV2::setupDocks()
+{
+    auto* toolboxDock = new QDockWidget("TOOLS", this);
+    toolboxDock->setObjectName("toolboxDockV2");
+    toolboxDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    toolbox_panel_ = new ToolboxPanelV2(appState_, toolboxDock);
+    toolboxDock->setWidget(toolbox_panel_);
+    toolboxDock->setMinimumWidth(60);
+    addDockWidget(Qt::LeftDockWidgetArea, toolboxDock);
+
+    auto* layerDock = new QDockWidget("LAYERS", this);
+    layerDock->setObjectName("layerDockV2");
+    layerDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    layer_panel_ = new LayerPanelV2(appState_, layerDock);
+    layerDock->setWidget(layer_panel_);
+    layerDock->setMinimumWidth(200);
+    addDockWidget(Qt::RightDockWidgetArea, layerDock);
+
+    auto* colorDock = new QDockWidget("COLOR", this);
+    colorDock->setObjectName("colorDockV2");
+    colorDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    color_panel_ = new ColorPanelV2(colorDock);
+    colorDock->setWidget(color_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, colorDock);
+
+    auto* propertyDock = new QDockWidget("PROPERTIES", this);
+    propertyDock->setObjectName("propertyDockV2");
+    propertyDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    property_editor_ = new PropertyEditorV2(appState_, propertyDock);
+    propertyDock->setWidget(property_editor_);
+    addDockWidget(Qt::RightDockWidgetArea, propertyDock);
+
+    canvas_ = new CanvasWidgetV2(appState_, this);
+    canvas_->setMinimumSize(400, 300);
+    setCentralWidget(canvas_);
+
+    auto* timelineDock = new QDockWidget("TIMELINE", this);
+    timelineDock->setObjectName("timelineDockV2");
+    timelineDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    timeline_panel_ = new TimelinePanelV2(appState_, timelineDock);
+    timelineDock->setWidget(timeline_panel_);
+    timelineDock->setMaximumHeight(150);
+    addDockWidget(Qt::BottomDockWidgetArea, timelineDock);
+}
+
+void MainWindowV2::setupStatusBar()
+{
+    statusBar()->showMessage("Ready");
+
+    auto* hintLabel = new QLabel(
+        "  Ctrl+N New  |  Ctrl+O Open  |  Ctrl+S Save  |  Ctrl+E Export  |  Ctrl+Z Undo  ");
+    hintLabel->setStyleSheet("color: #6B7088; font-size: 10px;");
+    statusBar()->addPermanentWidget(hintLabel);
+}
+
+void MainWindowV2::setupConnections()
+{
+    connect(toolbox_panel_, &ToolboxPanelV2::toolChanged, [this](int tool) {
+        if (canvas_) { canvas_->setTool(tool); canvas_->setFocus(); }
+        if (property_editor_) property_editor_->refreshFields();
+        statusBar()->showMessage(QString("Tool: %1").arg(tool), 2000);
+    });
+
+    connect(toolbox_panel_, &ToolboxPanelV2::colorChanged, [this](const QColor& color) {
+        if (canvas_) canvas_->setColor(color);
+    });
+
+    connect(color_panel_, &ColorPanelV2::colorChanged, [this](const QColor& color) {
+        toolbox_panel_->setColor(color);
+    });
+
+    connect(layer_panel_, &LayerPanelV2::layerChanged, [this](int index) {
+        if (canvas_) { canvas_->setCurrentLayer(index); canvas_->update(); }
+        statusBar()->showMessage(QString("Layer: %1").arg(index + 1), 2000);
+    });
+
+    connect(toolbox_panel_, &ToolboxPanelV2::settingsChanged, [this]() {
+        appState_->document().setModified(true);
+    });
+
+    connect(toolbox_panel_, &ToolboxPanelV2::onionSettingsChanged, [this]() {
+        if (canvas_) {
+            canvas_->setOnionEnabled(toolbox_panel_->onionEnabled());
+            canvas_->setOnionSettings(
+                toolbox_panel_->onionPrevFrames(),
+                toolbox_panel_->onionNextFrames(),
+                toolbox_panel_->onionOpacity());
+            canvas_->update();
+        }
+    });
+
+    connect(toolbox_panel_, &ToolboxPanelV2::canvasResized, [this](int w, int h) {
+        if (canvas_) {
+            canvas_->resizeCanvas(w, h);
+            canvas_->fit();
+            canvas_->update();
+        }
+        appState_->document().setCanvasSize(w, h);
+        appState_->document().setModified(true);
+        statusBar()->showMessage(QString("Canvas resized to %1 x %2").arg(w).arg(h), 3000);
+    });
+
+    connect(timeline_panel_, &TimelinePanelV2::frameChanged, [this](int frame) {
+        if (canvas_) { canvas_->setCurrentFrame(frame); canvas_->update(); }
+        if (layer_panel_) layer_panel_->setCurrentFrame(frame);
+        statusBar()->showMessage(QString("Frame: %1 / %2")
+            .arg(frame + 1).arg(appState_->document().totalFrames()), 3000);
+    });
+
+    connect(timeline_panel_, &TimelinePanelV2::frameCountChanged, [this](int count) {
+        if (canvas_) canvas_->setTotalFrames(count);
+        appState_->document().setTotalFrames(count);
+    });
+
+    connect(timeline_panel_, &TimelinePanelV2::fpsChanged, [this](int fps) {
+        appState_->document().setFPS(fps);
+    });
+
+    connect(canvas_, &CanvasWidgetV2::frameChanged, [this](int frame) {
+        if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
+        if (layer_panel_) layer_panel_->setCurrentFrame(frame);
+        statusBar()->showMessage(QString("Frame: %1 / %2")
+            .arg(frame + 1).arg(appState_->document().totalFrames()), 3000);
+    });
+
+    connect(canvas_, &CanvasWidgetV2::canvasUpdated, [this]() {
+        if (timeline_panel_) timeline_panel_->update();
+        if (layer_panel_) layer_panel_->refreshLayerList();
+    });
+
+    connect(canvas_, &CanvasWidgetV2::colorPicked, [this](const QColor& color) {
+        toolbox_panel_->setColor(color);
+        color_panel_->setColor(color);
+    });
+
+    connect(canvas_, &CanvasWidgetV2::statusMessage, [this](const QString& msg) {
+        statusBar()->showMessage(msg, 3000);
+    });
+
+    connect(canvas_, &CanvasWidgetV2::toolChangedByKey, [this](int tool) {
+        toolbox_panel_->setActiveTool(tool);
+    });
+
+    connect(canvas_, &CanvasWidgetV2::togglePlayPause, [this]() {
+        if (timeline_panel_) timeline_panel_->togglePlayback();
+    });
+
+    connect(property_editor_, &PropertyEditorV2::brushSizeChanged, [this](int size) {
+        if (canvas_) { canvas_->setBrushSize(size); }
+    });
+
+    connect(property_editor_, &PropertyEditorV2::brushOpacityChanged, [this](int) {
+        if (canvas_) { canvas_->update(); }
+    });
+}
+
+void MainWindowV2::updateUIState()
+{
+    auto& um = appState_->document().undoManager();
+    if (undoAct_) undoAct_->setEnabled(um.canUndo());
+    if (redoAct_) redoAct_->setEnabled(um.canRedo());
+}
+
+void MainWindowV2::newProject()
+{
+    if (appState_->isModified()) {
+        auto result = QMessageBox::question(this, "Unsaved Changes",
+            "The current project has unsaved changes. Create a new project anyway?",
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (result != QMessageBox::Yes)
+            return;
+    }
+
+    appState_->resetDocument(1920, 1080, 24, 24);
+    setWindowTitle("Free Animation Power - Untitled.fap");
+    layer_panel_->refreshLayerList();
+    if (canvas_) {
+        canvas_->setCurrentFrame(0);
+        canvas_->setTotalFrames(appState_->document().totalFrames());
+        canvas_->setCurrentLayer(0);
+        canvas_->fit();
+        canvas_->update();
+    }
+    if (timeline_panel_) {
+        timeline_panel_->setTotalFrames(appState_->document().totalFrames());
+        timeline_panel_->setCurrentFrame(0);
+        timeline_panel_->setFPS(appState_->document().fps());
+    }
+    updateUIState();
+    statusBar()->showMessage("New project created", 3000);
+}
+
+void MainWindowV2::openProjectDialog()
+{
+    QString path = QFileDialog::getOpenFileName(
+        this, "Open Project", QString(),
+        "FAP Projects (*.fap *.fa2d);;All Files (*)");
+    if (!path.isEmpty())
+        openProject(path);
+}
+
+void MainWindowV2::openProject(const QString& path)
+{
+    if (path.isEmpty())
+        return;
+
+    if (appState_->isModified()) {
+        auto result = QMessageBox::question(this, "Unsaved Changes",
+            "The current project has unsaved changes. Open another project?",
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (result != QMessageBox::Yes)
+            return;
+    }
+
+    appState_->resetDocument(1920, 1080, 24, 1);
+    if (loadDocument(appState_->document(), path)) {
+        setWindowTitle(QString("Free Animation Power - %1").arg(path));
+        layer_panel_->refreshLayerList();
+        if (canvas_) {
+            canvas_->setCurrentFrame(0);
+            canvas_->setTotalFrames(appState_->document().totalFrames());
+            canvas_->setCurrentLayer(0);
+            canvas_->fit();
+            canvas_->update();
+        }
+        if (timeline_panel_) {
+            timeline_panel_->setTotalFrames(appState_->document().totalFrames());
+            timeline_panel_->setCurrentFrame(0);
+            timeline_panel_->setFPS(appState_->document().fps());
+        }
+        updateUIState();
+        statusBar()->showMessage("Project opened: " + path, 3000);
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to open project:\n" + path);
+    }
+}
+
+void MainWindowV2::saveProject()
+{
+    if (appState_->document().filepath().empty()) {
+        saveProjectAs();
+        return;
+    }
+
+    if (saveDocument(appState_->document(),
+                     QString::fromStdString(appState_->document().filepath()))) {
+        appState_->document().setModified(false);
+        statusBar()->showMessage("Project saved", 3000);
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to save project.");
+    }
+}
+
+void MainWindowV2::saveProjectAs()
+{
+    QString path = QFileDialog::getSaveFileName(
+        this, "Save Project As", "untitled.fap",
+        "FAP Projects (*.fap);;FA2D Projects (*.fa2d);;All Files (*)");
+    if (path.isEmpty())
+        return;
+
+    if (saveDocument(appState_->document(), path)) {
+        appState_->document().setModified(false);
+        setWindowTitle(QString("Free Animation Power - %1").arg(path));
+        statusBar()->showMessage("Project saved: " + path, 3000);
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to save project.");
+    }
+}
+
+void MainWindowV2::exportVideo()
+{
+    if (!canvas_)
+        return;
+
+    QString path = QFileDialog::getSaveFileName(
+        this, "Export Video", "animation.mp4",
+        "MP4 Video (*.mp4);;All Files (*)");
+    if (path.isEmpty())
+        return;
+
+    QTemporaryDir tempDir;
+    if (!tempDir.isValid()) {
+        QMessageBox::warning(this, "Error", "Failed to create temporary directory.");
+        return;
+    }
+
+    statusBar()->showMessage("Rendering frames...");
+
+    auto& doc = appState_->document();
+    int total = doc.totalFrames();
+    for (int frame = 0; frame < total; ++frame) {
+        if (canvas_) canvas_->setCurrentFrame(frame);
+        if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
+        qApp->processEvents();
+
+        QImage image(doc.width(), doc.height(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        if (canvas_) canvas_->render(&painter);
+        painter.end();
+
+        QString framePath = tempDir.path() + QString("/frame_%1.png")
+            .arg(frame + 1, 4, 10, QLatin1Char('0'));
+        image.save(framePath, "PNG");
+        qApp->processEvents();
+    }
+
+    statusBar()->showMessage("Encoding video with FFmpeg...");
+
+    QProcess ffmpeg;
+    QStringList args;
+    args << "-y"
+         << "-framerate" << QString::number(doc.fps())
+         << "-i" << (tempDir.path() + "/frame_%04d.png")
+         << "-c:v" << "libx264"
+         << "-pix_fmt" << "yuv420p"
+         << "-vf" << "pad=ceil(iw/2)*2:ceil(ih/2)*2"
+         << path;
+
+    ffmpeg.start("ffmpeg", args);
+    if (!ffmpeg.waitForFinished(120000)) {
+        QMessageBox::warning(this, "Error", "FFmpeg timed out. Is FFmpeg installed?");
+        statusBar()->showMessage("Video export failed", 5000);
+        return;
+    }
+
+    if (ffmpeg.exitCode() == 0) {
+        statusBar()->showMessage("Video exported: " + path, 5000);
+    } else {
+        QMessageBox::warning(this, "Error",
+            "FFmpeg failed:\n" + QString::fromUtf8(ffmpeg.readAllStandardError()));
+        statusBar()->showMessage("Video export failed", 5000);
+    }
+}
+
+} // namespace fap

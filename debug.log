@@ -1,0 +1,996 @@
+[15:44:40.489] [INFO ] ==============================
+[15:44:40.510] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[15:44:40.510] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[15:44:43.117] [INFO ] MainWindow shown
+[16:53:51.732] [INFO ] Application exiting with code 0
+16:52:54.870] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:52:54.870] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[16:52:58.268] [INFO ] MainWindow shown
+[16:53:56.786] [DEBUG] [Timeline] addFrameAt afterFrame= 2 total= 24
+[16:53:56.786] [DEBUG] [Timeline] addFrameAt result: total= 25 current= 3 thumbSize= 25
+[16:53:56.786] [DEBUG] [MainWindow] frameDuplicated src= 2 dst= 3 totalFrames= 25
+[16:53:56.790] [DEBUG] [MainWindow] frameDuplicated: copied frame 2 to 3
+[16:58:39.485] [INFO ] ==============================
+[16:58:39.487] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:58:39.487] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[16:58:42.732] [INFO ] MainWindow shown
+[17:01:07.716] [INFO ] ==============================
+[17:01:07.718] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[17:01:07.718] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:01:11.500] [INFO ] MainWindow shown
+[17:11:25.539] [DEBUG] [Timeline] addFrameAt afterFrame= 1 total= 24
+[17:11:25.539] [DEBUG] [Timeline] addFrameAt result: total= 25 current= 2 thumbSize= 25
+[17:11:38.211] [DEBUG] [Timeline] addFrameAt afterFrame= 2 total= 25
+[17:11:38.211] [DEBUG] [Timeline] addFrameAt result: total= 26 current= 3 thumbSize= 26
+[17:11:38.211] [DEBUG] [MainWindow] frameDuplicated src= 2 dst= 3 totalFrames= 26
+[17:11:38.218] [DEBUG] [MainWindow] frameDuplicated: copied frame 2 to 3
+[17:14:05.527] [INFO ] ==============================
+[17:14:05.529] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[17:14:05.529] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:14:09.268] [INFO ] MainWindow shown
+[18:15:54.798] [DEBUG] [Timeline] addFrameAt afterFrame= 2 total= 24
+[18:15:54.798] [DEBUG] [Timeline] addFrameAt result: total= 25 current= 3 thumbSize= 25
+[18:15:54.800] [DEBUG] [MainWindow] frameDuplicated src= 2 dst= 3 totalFrames= 25
+[18:15:54.804] [DEBUG] [MainWindow] frameDuplicated: copied frame 2 to 3
+[18:15:57.405] [DEBUG] [Timeline] addFrameAt afterFrame= 3 total= 25
+[18:15:57.405] [DEBUG] [Timeline] addFrameAt result: total= 26 current= 4 thumbSize= 26
+[18:16:02.406] [DEBUG] [Timeline] addFrameAt afterFrame= 2 total= 26
+[18:16:02.406] [DEBUG] [Timeline] addFrameAt result: total= 27 current= 3 thumbSize= 27
+[18:20:10.348] [INFO ] ==============================
+[18:20:10.350] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:20:10.350] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:20:13.976] [INFO ] MainWindow shown
+[18:20:34.389] [DEBUG] [Timeline] addFrameAt afterFrame= 1 total= 23
+[18:20:34.389] [DEBUG] [Timeline] addFrameAt result: total= 24 current= 2 thumbSize= 24
+[18:20:34.389] [DEBUG] [MainWindow] frameDuplicated src= 1 dst= 2 totalFrames= 24
+[18:20:34.393] [DEBUG] [MainWindow] frameDuplicated: copied frame 1 to 2
+[18:20:39.284] [DEBUG] [Timeline] addFrameAt afterFrame= 1 total= 24
+[18:20:39.285] [DEBUG] [Timeline] addFrameAt result: total= 25 current= 2 thumbSize= 25
+[18:24:40.700] [INFO ] ==============================
+[18:24:40.702] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:24:40.702] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:24:43.349] [INFO ] MainWindow shown
+[18:33:08.719] [DEBUG] [Timeline] addFrameAt afterFrame= 1 total= 24
+[18:33:08.719] [DEBUG] [Timeline] addFrameAt result: total= 25 current= 2 thumbSize= 25
+[18:33:08.721] [DEBUG] [MainWindow] frameDuplicated src= 1 dst= 2 totalFrames= 25
+[18:33:08.725] [DEBUG] [MainWindow] frameDuplicated: copied frame 1 to 2
+[18:33:11.287] [DEBUG] [Timeline] addFrameAt afterFrame= 2 total= 25
+[18:33:11.287] [DEBUG] [Timeline] addFrameAt result: total= 26 current= 3 thumbSize= 26
+[18:37:46.725] [INFO ] ==============================
+[18:37:46.727] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:37:46.727] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:37:49.789] [INFO ] MainWindow shown
+[18:39:47.649] [DEBUG] [Timeline] addFrameAt afterFrame= 1 total= 24
+[18:39:47.649] [DEBUG] [Timeline] addFrameAt result: total= 25 current= 2 thumbSize= 25
+[18:39:49.697] [DEBUG] [Timeline] addFrameAt afterFrame= 3 total= 25
+[18:39:49.697] [DEBUG] [Timeline] addFrameAt result: total= 26 current= 4 thumbSize= 26
+[18:40:00.412] [DEBUG] [Timeline] addFrameAt afterFrame= 5 total= 26
+[18:40:00.412] [DEBUG] [Timeline] addFrameAt result: total= 27 current= 6 thumbSize= 27
+[18:40:01.428] [DEBUG] [Timeline] addFrameAt afterFrame= 6 total= 27
+[18:40:01.428] [DEBUG] [Timeline] addFrameAt result: total= 28 current= 7 thumbSize= 28
+[18:40:01.937] [DEBUG] [Timeline] addFrameAt afterFrame= 7 total= 28
+[18:40:01.937] [DEBUG] [Timeline] addFrameAt result: total= 29 current= 8 thumbSize= 29
+[18:40:02.160] [DEBUG] [Timeline] addFrameAt afterFrame= 8 total= 29
+[18:40:02.160] [DEBUG] [Timeline] addFrameAt result: total= 30 current= 9 thumbSize= 30
+[18:40:02.370] [DEBUG] [Timeline] addFrameAt afterFrame= 9 total= 30
+[18:40:02.370] [DEBUG] [Timeline] addFrameAt result: total= 31 current= 10 thumbSize= 31
+[18:40:02.599] [DEBUG] [Timeline] addFrameAt afterFrame= 10 total= 31
+[18:40:02.599] [DEBUG] [Timeline] addFrameAt result: total= 32 current= 11 thumbSize= 32
+[18:40:02.829] [DEBUG] [Timeline] addFrameAt afterFrame= 11 total= 32
+[18:40:02.829] [DEBUG] [Timeline] addFrameAt result: total= 33 current= 12 thumbSize= 33
+[18:40:03.085] [DEBUG] [Timeline] addFrameAt afterFrame= 12 total= 33
+[18:40:03.085] [DEBUG] [Timeline] addFrameAt result: total= 34 current= 13 thumbSize= 34
+[18:43:49.274] [INFO ] ==============================
+[18:43:49.275] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:43:49.275] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:43:53.299] [INFO ] MainWindow shown
+[18:48:58.372] [INFO ] ==============================
+[18:48:58.374] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:48:58.374] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:49:00.985] [INFO ] MainWindow shown
+[18:53:12.288] [INFO ] ==============================
+[18:53:12.290] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:53:12.290] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:53:15.027] [INFO ] MainWindow shown
+[19:00:40.315] [INFO ] ==============================
+[19:00:40.317] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:00:40.317] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:00:42.854] [INFO ] MainWindow shown
+[19:03:21.636] [INFO ] ==============================
+[19:03:21.639] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:03:21.639] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:03:24.336] [INFO ] MainWindow shown
+[19:05:45.772] [INFO ] ==============================
+[19:05:45.774] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:05:45.774] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:05:48.407] [INFO ] MainWindow shown
+[19:08:26.518] [INFO ] ==============================
+[19:08:26.520] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:08:26.520] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:08:29.141] [INFO ] MainWindow shown
+[19:12:56.320] [INFO ] ==============================
+[19:12:56.322] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:12:56.323] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:12:58.980] [INFO ] MainWindow shown
+[19:17:11.779] [INFO ] ==============================
+[19:17:11.781] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:17:11.781] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:17:15.067] [INFO ] MainWindow shown
+[19:20:23.807] [INFO ] ==============================
+[19:20:23.808] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:20:23.808] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:20:26.534] [INFO ] MainWindow shown
+[19:23:31.984] [INFO ] ==============================
+[19:23:31.986] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:23:31.986] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:23:34.531] [INFO ] MainWindow shown
+[19:27:50.940] [WARN ] DirectWrite: CreateFontFaceFromHDC() failed (Indica un error en un archivo de entrada, como un archivo de fuentes.) for QFontDef(Family="8514oem", pointsize=9, pixelsize=20, styleHint=5, weight=400, stretch=100, hintingPreference=0) LOGFONT("8514oem", lfWidth=0, lfHeight=-20) dpi=96
+[19:31:34.091] [INFO ] ==============================
+[19:31:34.093] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:31:34.093] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:31:36.777] [INFO ] MainWindow shown
+[19:32:28.911] [INFO ] ==============================
+[19:32:28.912] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:32:28.912] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:32:31.538] [INFO ] MainWindow shown
+[19:33:08.793] [INFO ] Application exiting with code 0
+[08:34:09.895] [INFO ] ==============================
+[08:34:09.912] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:34:09.912] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:34:14.551] [INFO ] MainWindow shown
+[08:34:25.526] [INFO ] ==============================
+[08:34:25.528] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:34:25.528] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:34:29.083] [INFO ] MainWindow shown
+[08:43:37.029] [INFO ] ==============================
+[08:43:37.031] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:43:37.031] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:43:41.490] [INFO ] MainWindow shown
+[09:04:54.948] [INFO ] ==============================
+[09:04:54.949] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[09:04:54.949] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[09:04:58.377] [INFO ] MainWindow shown
+[09:08:18.385] [INFO ] ==============================
+[09:08:18.387] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[09:08:18.387] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[09:08:21.073] [INFO ] MainWindow shown
+[10:53:14.602] [INFO ] ==============================
+[10:53:14.604] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[10:53:14.604] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[10:53:19.422] [INFO ] MainWindow shown
+[11:02:16.543] [INFO ] ==============================
+[11:02:16.546] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[11:02:16.546] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[11:02:19.805] [INFO ] MainWindow shown
+[11:04:51.542] [INFO ] ==============================
+[11:04:51.544] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[11:04:51.544] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[11:04:54.240] [INFO ] MainWindow shown
+[13:32:28.734] [INFO ] ==============================
+[13:32:28.749] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[13:32:28.749] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[13:32:31.838] [INFO ] MainWindow shown
+[13:40:06.907] [INFO ] ==============================
+[13:40:06.909] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[13:40:06.909] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[13:40:09.602] [INFO ] MainWindow shown
+[14:02:31.007] [INFO ] ==============================
+[14:02:31.010] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[14:02:31.010] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[14:02:35.575] [INFO ] MainWindow shown
+[14:07:27.135] [INFO ] ==============================
+[14:07:27.137] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[14:07:27.138] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[14:07:39.349] [INFO ] MainWindow shown
+[14:26:08.819] [INFO ] ==============================
+[14:26:08.821] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[14:26:08.821] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[14:26:12.639] [INFO ] MainWindow shown
+[14:40:19.395] [INFO ] ==============================
+[14:40:19.397] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[14:40:19.397] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[14:40:22.013] [INFO ] MainWindow shown
+[14:46:03.121] [INFO ] ==============================
+[14:46:03.123] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[14:46:03.123] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[14:46:10.903] [INFO ] MainWindow shown
+[15:46:30.091] [INFO ] ==============================
+[15:46:30.091] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[15:46:30.091] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[15:46:32.975] [INFO ] MainWindow shown
+[16:03:47.694] [INFO ] ==============================
+[16:03:47.695] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:03:47.695] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[16:03:50.248] [INFO ] MainWindow shown
+[16:09:32.356] [INFO ] ==============================
+[16:09:32.356] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:09:32.356] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[16:09:35.022] [INFO ] MainWindow shown
+[16:15:39.238] [INFO ] ==============================
+[16:15:39.249] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:15:39.249] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[16:15:42.493] [INFO ] MainWindow shown
+[16:45:58.050] [INFO ] ==============================
+[16:45:58.078] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:45:58.079] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[16:46:02.767] [INFO ] MainWindow shown
+[16:59:59.682] [INFO ] ==============================
+[16:59:59.684] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[16:59:59.684] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:00:03.265] [INFO ] MainWindow shown
+[17:19:15.825] [INFO ] ==============================
+[17:19:15.828] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[17:19:15.828] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:19:19.519] [INFO ] MainWindow shown
+[17:21:58.562] [INFO ] ==============================
+[17:21:58.562] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[17:21:58.562] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:22:02.225] [INFO ] MainWindow shown
+[17:23:11.762] [INFO ] ==============================
+[17:23:11.775] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[17:23:11.775] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:23:15.146] [INFO ] MainWindow shown
+[17:26:55.090] [INFO ] ==============================
+[17:26:55.092] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[17:26:55.092] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[17:26:58.379] [INFO ] MainWindow shown
+[18:11:18.835] [INFO ] ==============================
+[18:11:18.837] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:11:18.837] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:11:23.623] [INFO ] MainWindow shown
+[18:52:40.881] [INFO ] ==============================
+[18:52:40.883] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:52:40.883] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:52:45.211] [INFO ] MainWindow shown
+[18:58:58.809] [INFO ] ==============================
+[18:58:58.809] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[18:58:58.809] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[18:59:03.248] [INFO ] MainWindow shown
+[19:26:52.017] [INFO ] ==============================
+[19:26:52.018] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:26:52.018] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:26:55.546] [INFO ] MainWindow shown
+[19:27:20.484] [INFO ] ==============================
+[19:27:20.485] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:27:20.485] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:27:23.527] [INFO ] MainWindow shown
+[19:27:53.385] [INFO ] ==============================
+[19:27:53.387] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:27:53.387] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:27:57.382] [INFO ] MainWindow shown
+[19:28:01.330] [INFO ] ==============================
+[19:28:01.332] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:28:01.332] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:28:05.422] [INFO ] MainWindow shown
+[19:28:09.719] [INFO ] Application exiting with code 0
+[19:55:37.814] [INFO ] ==============================
+[19:55:37.815] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:55:37.815] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:55:41.229] [INFO ] MainWindow shown
+[19:56:35.186] [INFO ] Application exiting with code 0
+[19:58:25.078] [INFO ] ==============================
+[19:58:25.081] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:58:25.081] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:58:27.700] [INFO ] MainWindow shown
+[19:58:54.323] [INFO ] Application exiting with code 0
+19:58:32.671] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:58:32.671] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:58:35.494] [INFO ] MainWindow shown
+[19:58:55.101] [INFO ] Application exiting with code 0
+[19:59:33.259] [INFO ] ==============================
+[19:59:33.262] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[19:59:33.262] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[19:59:35.942] [INFO ] MainWindow shown
+[20:04:04.588] [INFO ] ==============================
+[20:04:04.590] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:04:04.590] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:04:07.646] [INFO ] MainWindow shown
+[20:06:59.323] [INFO ] ==============================
+[20:06:59.330] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:06:59.330] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:07:02.479] [INFO ] MainWindow shown
+[20:10:00.947] [INFO ] ==============================
+[20:10:00.949] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:10:00.949] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:10:03.714] [INFO ] MainWindow shown
+[20:15:15.934] [INFO ] ==============================
+[20:15:15.937] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:15:15.937] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:15:18.693] [INFO ] MainWindow shown
+[20:20:58.243] [INFO ] ==============================
+[20:20:58.246] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:20:58.246] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:21:00.996] [INFO ] MainWindow shown
+[20:22:31.557] [INFO ] ==============================
+[20:22:31.558] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:22:31.558] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:22:34.345] [INFO ] MainWindow shown
+[20:25:13.037] [INFO ] ==============================
+[20:25:13.039] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:25:13.039] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:25:15.777] [INFO ] MainWindow shown
+[20:27:04.321] [INFO ] ==============================
+[20:27:04.323] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:27:04.323] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:27:07.072] [INFO ] MainWindow shown
+[20:31:27.638] [INFO ] ==============================
+[20:31:27.640] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:31:27.640] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:31:30.315] [INFO ] MainWindow shown
+[20:31:50.459] [INFO ] ==============================
+[20:31:50.461] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:31:50.461] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:31:53.088] [INFO ] MainWindow shown
+[20:32:20.202] [INFO ] ==============================
+[20:32:20.204] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:32:20.204] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:32:22.857] [INFO ] MainWindow shown
+[20:32:29.544] [INFO ] ==============================
+[20:32:29.547] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[20:32:29.547] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[20:32:32.202] [INFO ] MainWindow shown
+[21:27:14.997] [INFO ] ==============================
+[21:27:14.998] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[21:27:14.998] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[21:27:17.732] [INFO ] MainWindow shown
+[21:29:13.900] [INFO ] ==============================
+[21:29:13.900] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[21:29:13.900] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[21:29:16.497] [INFO ] MainWindow shown
+[21:32:50.263] [INFO ] ==============================
+[21:32:50.270] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[21:32:50.270] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[21:32:52.878] [INFO ] MainWindow shown
+[21:37:02.875] [INFO ] ==============================
+[21:37:02.875] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[21:37:02.875] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[21:37:05.544] [INFO ] MainWindow shown
+[21:37:57.539] [WARN ] DirectWrite: CreateFontFaceFromHDC() failed (Indica un error en un archivo de entrada, como un archivo de fuentes.) for QFontDef(Family="8514oem", pointsize=8.25, pixelsize=20, styleHint=5, weight=400, stretch=100, hintingPreference=0) LOGFONT("8514oem", lfWidth=0, lfHeight=-20) dpi=96
+[21:39:40.312] [INFO ] ==============================
+[21:39:40.314] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[21:39:40.314] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[21:39:43.304] [INFO ] MainWindow shown
+[21:40:56.025] [INFO ] ==============================
+[21:40:56.028] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[21:40:56.028] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[21:40:59.089] [INFO ] MainWindow shown
+[21:45:11.928] [INFO ] Application exiting with code 0
+[22:00:45.010] [INFO ] ==============================
+[22:00:47.862] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:00:47.862] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:00:50.524] [INFO ] MainWindow shown
+[22:01:26.518] [INFO ] Application exiting with code 0
+[22:09:59.318] [INFO ] ==============================
+[22:09:59.320] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:09:59.320] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:10:01.965] [INFO ] MainWindow shown
+[22:13:36.696] [INFO ] ==============================
+[22:13:36.699] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:13:36.699] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:13:39.663] [INFO ] MainWindow shown
+[22:17:41.803] [INFO ] ==============================
+[22:17:44.680] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:17:44.680] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:17:47.733] [INFO ] MainWindow shown
+[22:19:36.018] [INFO ] ==============================
+[22:19:36.021] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:19:36.021] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:19:38.773] [INFO ] MainWindow shown
+[22:22:59.795] [INFO ] ==============================
+[22:22:59.797] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:22:59.797] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:23:02.525] [INFO ] MainWindow shown
+[22:00:38.428] [INFO ] ==============================
+[22:00:38.442] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:00:38.444] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:00:42.457] [INFO ] MainWindow shown
+[22:04:29.463] [INFO ] ==============================
+[22:04:29.466] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:04:29.466] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:04:33.104] [INFO ] MainWindow shown
+[22:15:42.840] [INFO ] ==============================
+[22:15:42.840] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[22:15:42.840] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[22:15:46.373] [INFO ] MainWindow shown
+[22:19:20.569] [INFO ] Application exiting with code 0
+[07:19:40.939] [INFO ] ==============================
+[07:19:40.942] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[07:19:40.942] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[07:19:43.986] [INFO ] MainWindow shown
+[07:26:43.999] [INFO ] ==============================
+[07:26:43.999] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[07:26:43.999] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[07:26:46.812] [INFO ] MainWindow shown
+[07:33:49.733] [INFO ] ==============================
+[07:33:49.733] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[07:33:49.735] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[07:33:52.319] [INFO ] MainWindow shown
+[07:55:56.023] [INFO ] ==============================
+[07:55:56.027] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[07:55:56.027] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[07:55:58.617] [INFO ] MainWindow shown
+[08:03:57.010] [INFO ] ==============================
+[08:03:57.013] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:03:57.013] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:03:59.581] [INFO ] MainWindow shown
+[08:13:20.365] [INFO ] ==============================
+[08:13:20.367] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:13:20.367] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:13:23.155] [INFO ] MainWindow shown
+[08:21:48.141] [INFO ] ==============================
+[08:21:48.143] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:21:48.143] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:21:50.766] [INFO ] MainWindow shown
+[08:39:00.467] [INFO ] ==============================
+[08:39:00.469] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[08:39:00.469] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[08:39:03.015] [INFO ] MainWindow shown
+[09:13:36.420] [INFO ] ==============================
+[09:13:36.423] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[09:13:36.423] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[09:13:40.733] [INFO ] MainWindow shown
+[09:33:20.180] [INFO ] ==============================
+[09:33:20.182] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[09:33:20.182] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[09:33:21.306] [WARN ] QMutex: destroying locked mutex
+[10:06:07.433] [INFO ] ==============================
+[10:06:07.435] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[10:06:07.435] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[10:06:11.704] [INFO ] MainWindow shown
+[10:07:29.477] [INFO ] Application exiting with code 0
+[10:19:22.463] [INFO ] ==============================
+[10:19:22.466] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[10:19:22.466] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[10:19:26.664] [INFO ] MainWindow shown
+[11:49:47.982] [INFO ] ==============================
+[11:49:47.985] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[11:49:47.985] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[11:49:51.003] [INFO ] MainWindow shown
+[11:52:30.282] [DEBUG] [Timeline] addFrameAt afterFrame= 1 total= 23
+[11:52:30.282] [DEBUG] [Timeline] addFrameAt result: total= 24 current= 2 thumbSize= 24
+[11:52:34.140] [DEBUG] [Timeline] addFrameAt afterFrame= 2 total= 16
+[11:52:34.140] [DEBUG] [Timeline] addFrameAt result: total= 17 current= 3 thumbSize= 17
+[11:52:34.142] [DEBUG] [MainWindow] frameDuplicated src= 2 dst= 3 totalFrames= 17
+[11:52:34.148] [DEBUG] [MainWindow] frameDuplicated: copied frame 2 to 3
+[11:52:34.531] [DEBUG] [Timeline] addFrameAt afterFrame= 3 total= 17
+[11:52:34.531] [DEBUG] [Timeline] addFrameAt result: total= 18 current= 4 thumbSize= 18
+[11:52:34.532] [DEBUG] [MainWindow] frameDuplicated src= 3 dst= 4 totalFrames= 18
+[11:52:34.536] [DEBUG] [MainWindow] frameDuplicated: copied frame 3 to 4
+[11:52:34.699] [DEBUG] [Timeline] addFrameAt afterFrame= 4 total= 18
+[11:52:34.699] [DEBUG] [Timeline] addFrameAt result: total= 19 current= 5 thumbSize= 19
+[11:52:34.700] [DEBUG] [MainWindow] frameDuplicated src= 4 dst= 5 totalFrames= 19
+[11:52:34.700] [DEBUG] [MainWindow] frameDuplicated: copied frame 4 to 5
+[11:52:35.723] [DEBUG] [Timeline] addFrameAt afterFrame= 5 total= 19
+[11:52:35.723] [DEBUG] [Timeline] addFrameAt result: total= 20 current= 6 thumbSize= 20
+[11:52:36.001] [DEBUG] [Timeline] addFrameAt afterFrame= 6 total= 20
+[11:52:36.001] [DEBUG] [Timeline] addFrameAt result: total= 21 current= 7 thumbSize= 21
+[13:13:09.175] [INFO ] ==============================
+[13:13:09.203] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[13:13:09.203] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[13:13:13.837] [INFO ] MainWindow shown
+[13:24:07.273] [INFO ] ==============================
+[13:24:07.282] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[13:24:07.282] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[13:24:12.980] [INFO ] MainWindow shown
+[13:42:06.420] [INFO ] ==============================
+[13:42:06.422] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[13:42:06.422] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[13:42:09.996] [INFO ] MainWindow shown
+[14:18:34.067] [INFO ] ==============================
+[14:18:34.068] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[14:18:34.068] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[14:18:37.721] [INFO ] MainWindow shown
+[15:17:10.708] [INFO ] ==============================
+[15:17:10.739] [INFO ] FreeAnimation2dStyle v2.0.0 started
+[15:17:10.739] [INFO ] Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[15:17:15.829] [INFO ] MainWindow shown
+[16:14:15.308] [INFO ] Application exiting with code 0
+[2026-06-19 17:29:57.270] [INFO ] <unknown:0> ==============================
+[2026-06-19 17:29:57.274] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-19 17:29:57.280] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-19 17:30:00.235] [INFO ] <unknown:0> MainWindow shown
+[2026-06-19 17:30:50.323] [INFO ] <unknown:0> ==============================
+[2026-06-19 17:30:53.209] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-19 17:30:53.214] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-19 17:30:57.063] [INFO ] <unknown:0> MainWindow shown
+[2026-06-19 17:31:58.056] [INFO ] <unknown:0> ==============================
+[2026-06-19 17:32:00.933] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-19 17:32:00.937] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-19 17:32:04.141] [INFO ] <unknown:0> MainWindow shown
+[2026-06-19 17:32:19.850] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-188,179 2156x438)
+[2026-06-19 17:32:20.018] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:29.669] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-368,289 1523x606)
+[2026-06-19 17:32:29.672] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:33.280] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:32:35.254] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-694,0 3127x1080)
+[2026-06-19 17:32:35.265] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:37.743] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(182.413,314.155 235.979x111.475) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:32:37.762] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-694,0 3127x1080)
+[2026-06-19 17:32:37.762] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:40.855] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-694,0 3127x1080)
+[2026-06-19 17:32:40.873] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:47.232] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(129.042,32.2605 1810.17x1053.84) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:32:47.240] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-694,0 3127x1080)
+[2026-06-19 17:32:47.253] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:50.273] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:32:51.579] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:32:52.374] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-694,0 3127x1080)
+[2026-06-19 17:32:52.382] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:32:57.751] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-694,0 3127x1080)
+[2026-06-19 17:32:57.756] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:39:34.141] [INFO ] <unknown:0> ==============================
+[2026-06-19 17:39:37.060] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-19 17:39:37.064] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-19 17:39:39.698] [INFO ] <unknown:0> MainWindow shown
+[2026-06-19 17:39:49.081] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-589,3 2722x1007)
+[2026-06-19 17:39:49.088] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:39:52.184] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:39:52.800] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:39:52.806] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:39:53.351] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:39:53.357] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:39:53.951] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:39:53.959] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:39:54.813] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:39:54.822] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:39:58.313] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:40:00.235] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:00.241] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:40:03.339] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-762.862,-170.942 1689.01x1038.41) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:40:03.355] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:03.362] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:40:03.372] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:40:06.694] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:06.701] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:40:10.039] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-1112.4,574.06 2229.91x1163.43) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:40:10.054] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:10.061] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:40:10.072] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:40:14.010] [DEBUG] <unknown:0> [PaintCommand::undo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:14.014] [CRIT ] <unknown:0> [UndoEngine] writeRasterRect ABORTADO: Discordancia de dimensiones. Img: QSize(2722, 1007) Rect: QSize(3538, 1080)
+[2026-06-19 17:40:14.020] [DEBUG] <unknown:0> [PaintCommand::undo] Ejecutado exitosamente.
+[2026-06-19 17:40:22.199] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:22.207] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:40:23.097] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 3538x1080)
+[2026-06-19 17:40:23.104] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:40:27.049] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:40:30.751] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-781,128 3607x640)
+[2026-06-19 17:40:30.758] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:41:03.274] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:41:06.518] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 4053x1080)
+[2026-06-19 17:41:06.525] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:41:44.481] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(1069.03,-206.662 1734.94x936.356) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:41:47.400] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 4053x1080)
+[2026-06-19 17:41:47.406] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:41:47.417] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:41:47.439] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 4053x1080)
+[2026-06-19 17:41:47.446] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:41:48.475] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(1145.57,359.744 762.862x227.073) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:41:48.489] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-1090,0 4053x1080)
+[2026-06-19 17:41:48.495] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:41:48.504] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:41:50.492] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:42:28.837] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:42:46.650] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-2615,0 5578x1878)
+[2026-06-19 17:42:46.661] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:42:47.985] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-2615,0 5578x1878)
+[2026-06-19 17:42:47.995] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:42:49.518] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-2615,0 5578x1878)
+[2026-06-19 17:42:49.531] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:43:05.541] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:43:06.963] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-2615,0 5578x1878)
+[2026-06-19 17:43:06.975] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:43:53.597] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-2304.84,-155.634 4925.1x2162.96) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:43:56.474] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-2615,0 5578x1878)
+[2026-06-19 17:43:56.483] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:43:56.495] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:43:56.501] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:44:09.808] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:44:10.907] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,0 7103x2676)
+[2026-06-19 17:44:10.920] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:44:12.901] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,0 7103x2676)
+[2026-06-19 17:44:12.916] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:44:16.090] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,0 7103x2676)
+[2026-06-19 17:44:16.104] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:44:54.329] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:02.705] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:04.611] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:04.647] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:05.789] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:05.824] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:06.960] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:06.997] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:10.073] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:11.307] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:11.341] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:16.141] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-211.511,-95.6834 2810.07x1248.92) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:45:16.278] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:16.323] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:16.350] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:21.370] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:21.407] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:21.907] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-282.014,407.914 785.611x151.079) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:45:22.042] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-2200 10000x6567)
+[2026-06-19 17:45:22.090] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:22.114] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:23.602] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:39.554] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 5 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:45:44.610] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:45:44.668] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:47.736] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:45:47.792] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:50.518] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:45:50.572] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:55.845] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:45:55.901] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:56.655] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:45:56.709] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:45:58.115] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:04.356] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:05.320] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:05.378] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:06.668] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:06.723] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:09.370] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:09.426] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:12.476] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:15.395] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:17.394] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:17.446] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:24.708] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-3288.49,372.662 1596.4x1379.86) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:46:24.979] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:25.036] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:25.084] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:25.116] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:25.737] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:25.793] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:26.318] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:26.377] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:27.393] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:46:27.451] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:46:46.549] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:56.237] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:46:59.488] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(403,-146 966x2396)
+[2026-06-19 17:46:59.496] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:47:02.981] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-241,-619 2008x2602)
+[2026-06-19 17:47:02.990] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:47:05.141] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:47:09.494] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:47:13.425] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:47:13.481] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:47:20.629] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(301.753,186.377 1171.51x869.76) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 17:47:20.923] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:47:20.986] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:47:21.041] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:47:21.077] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 17:47:21.501] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:47:21.588] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:47:22.532] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:47:22.591] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:47:23.569] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-4140,-4153 10000x10000)
+[2026-06-19 17:47:23.626] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 17:49:42.988] [DEBUG] <unknown:0> [Timeline] addFrameAt afterFrame= 1 total= 24
+[2026-06-19 17:49:42.989] [DEBUG] <unknown:0> [Timeline] addFrameAt result: total= 25 current= 2 thumbSize= 25
+[2026-06-19 18:18:17.035] [INFO ] <unknown:0> ==============================
+[2026-06-19 18:18:17.050] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-19 18:18:17.054] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-19 18:18:20.827] [INFO ] <unknown:0> MainWindow shown
+[2026-06-19 18:19:06.570] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:20:08.267] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:20:09.623] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(-1531,-1276 4856x3566)
+[2026-06-19 18:20:09.637] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:20:13.049] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(-1531,-1276 4856x3566)
+[2026-06-19 18:20:13.062] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:20:15.101] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(-1531,-1276 4856x3566)
+[2026-06-19 18:20:15.112] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:20:16.438] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(-1531,-1276 4856x3566)
+[2026-06-19 18:20:16.450] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:20:26.099] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(-1531,-1276 4856x3566)
+[2026-06-19 18:20:26.111] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:20:27.540] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 4 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:20:31.394] [WARN ] <unknown:0> DirectWrite: CreateFontFaceFromHDC() failed (Indica un error en un archivo de entrada, como un archivo de fuentes.) for QFontDef(Family="8514oem", pointsize=8.25, pixelsize=20, styleHint=5, weight=400, stretch=100, hintingPreference=0) LOGFONT("8514oem", lfWidth=0, lfHeight=-20) dpi=96
+[2026-06-19 18:20:32.964] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(-1531,-1276 4856x3566)
+[2026-06-19 18:20:32.976] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:20:35.660] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:20:38.918] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:20:52.085] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 4 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:20:56.967] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 49 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:20:56.973] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:21:00.470] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:21:01.762] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 49 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:21:01.769] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:21:15.392] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(114.22,-189.763 2176.24x826.771) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 18:21:15.403] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 49 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:21:15.408] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:21:15.417] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:21:18.293] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:21:19.119] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 49 | DirtyRect: QRect(0,-520 1920x1600)
+[2026-06-19 18:21:19.127] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:42:23.230] [INFO ] <unknown:0> ==============================
+[2026-06-19 18:42:26.095] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-19 18:42:26.100] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-19 18:42:28.696] [INFO ] <unknown:0> MainWindow shown
+[2026-06-19 18:42:33.830] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-350,213 1851x604)
+[2026-06-19 18:42:33.837] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:42:37.092] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-342,240 2066x714)
+[2026-06-19 18:42:37.097] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:42:40.384] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(694,87 578x474)
+[2026-06-19 18:42:40.390] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:42:45.706] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(592,222 897x770)
+[2026-06-19 18:42:45.711] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:42:59.615] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:43:00.555] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:43:00.560] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:43:04.478] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(-201.559,-716.938 3288.73x1867.61) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-19 18:43:04.489] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:43:04.495] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:43:04.504] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:43:08.046] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-19 18:43:09.460] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:43:09.465] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:43:10.891] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:43:10.891] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:43:11.722] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:43:11.729] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:43:12.242] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-19 18:43:12.248] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-19 18:44:04.727] [WARN ] <unknown:0> QObject::killTimer: Timers cannot be stopped from another thread
+[2026-06-19 18:44:04.734] [WARN ] <unknown:0> QObject::~QObject: Timers cannot be stopped from another thread
+[2026-06-22 09:01:09.686] [INFO ] <unknown:0> ==============================
+[2026-06-22 09:01:09.705] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 09:01:09.710] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 09:01:13.841] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 09:01:23.875] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-295,122 2774x701)
+[2026-06-22 09:01:23.882] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:26.072] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:01:26.750] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:26.758] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:27.880] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:27.887] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:29.631] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:01:30.967] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:30.974] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:37.541] [INFO ] <unknown:0> [CanvasState] "Inicio commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: true | selRect_: QRectF(404.755,183.055 1012.9x528.825) | floatSel.isNull: false | origFloatSel.isNull: false
+[2026-06-22 09:01:37.562] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:37.569] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:37.583] [INFO ] <unknown:0> [CanvasState] "Fin commitFloatingSelection" | Tool: 9 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:01:37.588] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:01:39.704] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:01:40.813] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:40.821] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:42.199] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:42.207] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:01:43.327] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 3748x1080)
+[2026-06-22 09:01:43.334] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:03:18.276] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-796,0 1152x928)
+[2026-06-22 09:03:18.282] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:03:21.859] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 8 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:16:15.888] [INFO ] <unknown:0> ==============================
+[2026-06-22 09:16:15.895] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 09:16:15.900] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 09:16:19.506] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 09:25:58.719] [INFO ] <unknown:0> ==============================
+[2026-06-22 09:25:58.726] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 09:25:58.732] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 09:26:01.881] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 09:26:08.852] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(85,432 223x186)
+[2026-06-22 09:26:08.859] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:26:13.060] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-248,93 2061x761)
+[2026-06-22 09:26:13.066] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:26:16.523] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 1 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:26:17.077] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-749,0 2669x1800)
+[2026-06-22 09:26:17.085] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:26:18.730] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-749,0 2669x1800)
+[2026-06-22 09:26:18.738] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:26:29.030] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(0,0 1920x1080)
+[2026-06-22 09:26:29.037] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:26:30.044] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 09:26:31.319] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 3 | DirtyRect: QRect(186,34 984x887)
+[2026-06-22 09:26:31.325] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 09:37:31.387] [INFO ] <unknown:0> ==============================
+[2026-06-22 09:37:31.393] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 09:37:31.399] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 09:37:35.174] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 10:35:10.584] [INFO ] <unknown:0> ==============================
+[2026-06-22 10:35:10.720] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 10:35:10.724] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 10:35:14.738] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 10:35:24.039] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(190,264 1378x575)
+[2026-06-22 10:35:24.046] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 10:35:27.654] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 0 | LayerUid: 2 | DirtyRect: QRect(-36,209 1499x574)
+[2026-06-22 10:35:27.660] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 10:35:36.294] [DEBUG] <unknown:0> [PaintCommand::redo] Iniciando | Frame: 1 | LayerUid: 4 | DirtyRect: QRect(210,-32 372x897)
+[2026-06-22 10:35:36.300] [DEBUG] <unknown:0> [PaintCommand::redo] Ejecutado exitosamente.
+[2026-06-22 11:59:59.854] [INFO ] <unknown:0> ==============================
+[2026-06-22 11:59:59.862] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 11:59:59.866] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 12:00:02.605] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 13:00:03.763] [INFO ] <unknown:0> ==============================
+[2026-06-22 13:00:03.772] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 13:00:03.772] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 13:00:03.997] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 13:29:05.369] [INFO ] <unknown:0> ==============================
+[2026-06-22 13:29:05.376] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 13:29:05.378] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 13:29:09.017] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 13:40:51.820] [INFO ] <unknown:0> ==============================
+[2026-06-22 13:40:51.828] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 13:40:51.834] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 13:40:55.929] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 13:45:19.324] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 13:45:26.227] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 13:50:01.014] [INFO ] <unknown:0> ==============================
+[2026-06-22 13:50:01.017] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 13:50:01.025] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 13:50:04.609] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 13:50:16.732] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-22 13:54:37.760] [INFO ] <unknown:0> ==============================
+[2026-06-22 13:54:37.767] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 13:54:37.773] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 13:54:41.600] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 13:59:18.076] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-22 14:03:51.882] [INFO ] <unknown:0> ==============================
+[2026-06-22 14:03:54.769] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 14:03:54.773] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 14:03:58.609] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 16:22:01.225] [INFO ] <unknown:0> ==============================
+[2026-06-22 16:22:01.395] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 16:22:01.398] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 16:22:05.838] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 16:22:08.876] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 16:22:49.379] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-22 16:44:47.406] [INFO ] <unknown:0> ==============================
+[2026-06-22 16:44:50.286] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-22 16:44:50.290] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-22 16:44:52.752] [INFO ] <unknown:0> MainWindow shown
+[2026-06-22 16:45:11.084] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 3 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 16:45:16.060] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-22 16:45:27.662] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 06:45:32.230] [INFO ] <unknown:0> ==============================
+[2026-06-23 06:45:32.238] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 06:45:32.242] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 06:45:36.038] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 06:59:33.386] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-23 07:05:13.630] [INFO ] <unknown:0> ==============================
+[2026-06-23 07:05:13.639] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 07:05:13.643] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 07:05:16.740] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 07:05:19.673] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-23 07:28:14.936] [INFO ] <unknown:0> ==============================
+[2026-06-23 07:28:17.932] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 07:28:17.933] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 07:28:20.435] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 07:30:01.551] [INFO ] <unknown:0> [CanvasState] "Fin setTool" | Tool: 0 | SelState: 0 | floatingActive_: false | selRect_: QRectF(0,0 0x0) | floatSel.isNull: true | origFloatSel.isNull: true
+[2026-06-23 07:55:47.601] [INFO ] <unknown:0> ==============================
+[2026-06-23 07:55:50.498] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 07:55:50.502] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 07:55:53.137] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 09:49:20.436] [INFO ] <unknown:0> ==============================
+[2026-06-23 09:49:23.340] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 09:49:23.343] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 09:49:27.275] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 09:51:14.931] [WARN ] <unknown:0> QWindowsWindow::setGeometry: Unable to set geometry 70x858+1931-23 (frame: 86x897+1923-54) on QWidgetWindow/"toolboxDockV2Window" on "LG ULTRAWIDE". Resulting geometry: 68x858+1931-23 (frame: 84x897+1923-54) margins: 8, 31, 8, 8 minimum size: 68x38 maximum size: 68x524287 MINMAXINFO(maxSize=POINT(x=0, y=0), maxpos=POINT(x=0, y=0), maxtrack=POINT(x=84, y=524326), mintrack=POINT(x=84, y=77)))
+[2026-06-23 09:54:00.687] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 10:27:30.561] [INFO ] <unknown:0> ==============================
+[2026-06-23 10:27:33.482] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 10:27:33.487] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 10:27:36.105] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 10:27:50.274] [WARN ] <unknown:0> QWindowsWindow::setGeometry: Unable to set geometry 70x858+1933-26 (frame: 86x897+1925-57) on QWidgetWindow/"toolboxDockV2Window" on "LG ULTRAWIDE". Resulting geometry: 68x858+1933-26 (frame: 84x897+1925-57) margins: 8, 31, 8, 8 minimum size: 68x38 maximum size: 68x524287 MINMAXINFO(maxSize=POINT(x=0, y=0), maxpos=POINT(x=0, y=0), maxtrack=POINT(x=84, y=524326), mintrack=POINT(x=84, y=77)))
+[2026-06-23 10:27:55.497] [WARN ] <unknown:0> QWindowsWindow::setGeometry: Unable to set geometry 70x359+1923-17 (frame: 86x398+1915-48) on QWidgetWindow/"toolboxDockV2Window" on "LG ULTRAWIDE". Resulting geometry: 68x359+1923-17 (frame: 84x398+1915-48) margins: 8, 31, 8, 8 minimum size: 68x38 maximum size: 68x524287 MINMAXINFO(maxSize=POINT(x=0, y=0), maxpos=POINT(x=0, y=0), maxtrack=POINT(x=84, y=524326), mintrack=POINT(x=84, y=77)))
+[2026-06-23 10:30:09.459] [INFO ] <unknown:0> ==============================
+[2026-06-23 10:30:09.462] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 10:30:09.462] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 10:30:12.129] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 10:31:20.030] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 10:39:59.499] [INFO ] <unknown:0> ==============================
+[2026-06-23 10:39:59.503] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 10:39:59.514] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 10:40:02.178] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 10:44:28.934] [INFO ] <unknown:0> ==============================
+[2026-06-23 10:44:28.934] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 10:44:28.946] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 10:44:31.731] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 10:55:16.484] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 11:16:11.761] [INFO ] <unknown:0> ==============================
+[2026-06-23 11:16:14.619] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 11:16:14.625] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 11:16:18.244] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 11:24:05.711] [INFO ] <unknown:0> ==============================
+[2026-06-23 11:24:05.717] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 11:24:05.723] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 11:24:09.982] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 11:26:16.652] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 11:42:16.080] [INFO ] <unknown:0> ==============================
+[2026-06-23 11:42:16.088] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 11:42:16.092] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 11:42:20.086] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 11:46:23.215] [INFO ] <unknown:0> ==============================
+[2026-06-23 11:46:23.223] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 11:46:23.228] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 11:46:25.919] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 12:05:25.842] [INFO ] <unknown:0> ==============================
+[2026-06-23 12:05:25.849] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 12:05:25.853] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 12:05:29.491] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 12:09:38.009] [INFO ] <unknown:0> ==============================
+[2026-06-23 12:09:38.019] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 12:09:38.021] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 12:09:40.702] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 12:20:11.264] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 12:20:16.372] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 12:23:20.620] [INFO ] <unknown:0> ==============================
+[2026-06-23 12:23:20.626] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 12:23:20.630] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 12:23:24.855] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 12:50:07.796] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 12:52:33.621] [INFO ] <unknown:0> ==============================
+[2026-06-23 12:52:33.627] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 12:52:33.631] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 12:52:37.252] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 12:52:54.887] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 13:01:39.003] [INFO ] <unknown:0> ==============================
+[2026-06-23 13:01:39.386] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 13:01:39.391] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 13:01:42.141] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 13:10:11.231] [INFO ] <unknown:0> ==============================
+[2026-06-23 13:10:11.238] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 13:10:11.245] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 13:10:13.983] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 13:14:38.246] [INFO ] <unknown:0> ==============================
+[2026-06-23 13:14:38.253] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 13:14:38.258] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 13:14:40.995] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 13:14:53.732] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 13:15:53.148] [INFO ] <unknown:0> ==============================
+[2026-06-23 13:15:53.155] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 13:15:53.160] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 13:15:55.790] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 14:02:51.025] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 15:12:28.773] [INFO ] <unknown:0> ==============================
+[2026-06-23 15:12:28.781] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 15:12:28.786] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 15:12:34.161] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 15:23:04.966] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 15:32:44.271] [INFO ] <unknown:0> ==============================
+[2026-06-23 15:32:44.276] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 15:32:44.280] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 15:32:47.950] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 15:45:03.471] [INFO ] <unknown:0> ==============================
+[2026-06-23 15:45:03.477] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 15:45:03.482] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 15:45:07.709] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 15:50:03.473] [INFO ] <unknown:0> ==============================
+[2026-06-23 15:50:03.479] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 15:50:03.484] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 15:50:06.081] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 15:57:39.151] [INFO ] <unknown:0> ==============================
+[2026-06-23 15:57:39.159] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 15:57:39.163] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 15:57:41.911] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 17:02:18.247] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 17:04:05.459] [INFO ] <unknown:0> ==============================
+[2026-06-23 17:04:05.465] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 17:04:05.470] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 17:04:09.372] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 17:05:12.827] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 18:06:50.505] [INFO ] <unknown:0> ==============================
+[2026-06-23 18:06:50.513] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 18:06:50.518] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 18:06:54.329] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 18:13:49.923] [INFO ] <unknown:0> ==============================
+[2026-06-23 18:13:49.930] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 18:13:49.930] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 18:13:52.995] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 18:36:10.562] [INFO ] <unknown:0> Application exiting with code 0
+[2026-06-23 18:57:15.846] [INFO ] <unknown:0> ==============================
+[2026-06-23 18:57:15.854] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 18:57:15.858] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 18:57:19.087] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 19:01:06.954] [INFO ] <unknown:0> ==============================
+[2026-06-23 19:01:06.970] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 19:01:06.971] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 19:01:10.099] [INFO ] <unknown:0> MainWindow shown
+[2026-06-23 19:03:51.497] [INFO ] <unknown:0> ==============================
+[2026-06-23 19:03:51.503] [INFO ] <unknown:0> FreeAnimation2dStyle v2.0.0 started
+[2026-06-23 19:03:51.505] [INFO ] <unknown:0> Log: "D:/EXPERIMENTOS Y APLICACIONES EFIERRO 2026/free animation power/free animation power/debug.log"
+[2026-06-23 19:03:54.418] [INFO ] <unknown:0> MainWindow shown

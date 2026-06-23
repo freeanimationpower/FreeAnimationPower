@@ -1,0 +1,29 @@
+# Build
+build/
+cmake-build-*/
+out/
+CMakeFiles/
+*.cmake
+Makefile
+CMakeCache.txt
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+vcpkg_installed/
