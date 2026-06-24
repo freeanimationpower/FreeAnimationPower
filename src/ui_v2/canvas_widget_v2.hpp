@@ -96,6 +96,7 @@ private:
     QPointF prevVirtualCursorPos_;
     QRect activeDirtyRect_;
     QImage beforeSnapshot_;
+    QImage cleanLayerCopy_;
     QColor brushColor_ = Qt::black;
     int brushSize_ = 20;
     QString brushShape_ = "Round";

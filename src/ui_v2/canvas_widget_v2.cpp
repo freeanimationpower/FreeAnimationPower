@@ -731,22 +731,21 @@ void CanvasWidgetV2::growBeforeSnapshot(const QRect& oldRect, const QRect& newRe
         std::copy(srow, srow + oldRect.width(), drow + ox);
     }
 
-    for (int y = 0; y < grown.height(); ++y) {
-        uint32_t* drow = reinterpret_cast<uint32_t*>(grown.scanLine(y));
-        for (int x = 0; x < grown.width(); ++x) {
-            bool inOld = (x >= ox && x < ox + oldRect.width() &&
-                          y >= oy && y < oy + oldRect.height());
-            if (inOld) continue;
-            int lx = newRect.x() + x;
-            int ly = newRect.y() + y;
-            auto* layer = activeRasterLayer();
-            if (!layer) continue;
-            int lilx = lx - layer->originX();
-            int lily = ly - layer->originY();
-            if (lilx >= 0 && lilx < layer->width() && lily >= 0 && lily < layer->height()) {
-                const uint32_t* src = layer->pixelData() +
-                    static_cast<size_t>(lily) * static_cast<size_t>(layer->width()) + lilx;
-                drow[x] = *src;
+    if (!cleanLayerCopy_.isNull()) {
+        auto* layer = activeRasterLayer();
+        int lox = layer ? layer->originX() : 0;
+        int loy = layer ? layer->originY() : 0;
+        for (int y = 0; y < grown.height(); ++y) {
+            uint32_t* drow = reinterpret_cast<uint32_t*>(grown.scanLine(y));
+            for (int x = 0; x < grown.width(); ++x) {
+                bool inOld = (x >= ox && x < ox + oldRect.width() &&
+                              y >= oy && y < oy + oldRect.height());
+                if (inOld) continue;
+                int lx = newRect.x() + x - lox;
+                int ly = newRect.y() + y - loy;
+                if (lx >= 0 && lx < cleanLayerCopy_.width() && ly >= 0 && ly < cleanLayerCopy_.height()) {
+                    drow[x] = reinterpret_cast<const uint32_t*>(cleanLayerCopy_.constScanLine(ly))[lx];
+                }
             }
         }
     }
@@ -779,6 +778,11 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
 
         int cx = static_cast<int>(cp.x());
         int cy = static_cast<int>(cp.y());
+
+        cleanLayerCopy_ = QImage(reinterpret_cast<const uchar*>(layer->pixelData()),
+                                  layer->width(), layer->height(),
+                                  layer->width() * static_cast<int>(sizeof(uint32_t)),
+                                  QImage::Format_ARGB32_Premultiplied).copy();
 
         activeDirtyRect_ = stampRect(cx, cy);
         beforeSnapshot_ = captureRect(activeDirtyRect_);
@@ -1309,6 +1313,7 @@ void CanvasWidgetV2::commitStroke()
 
     activeDirtyRect_ = QRect();
     beforeSnapshot_ = QImage();
+    cleanLayerCopy_ = QImage();
 
     appState_->thumbnailCache().invalidateFrame(currentFrame_);
 
