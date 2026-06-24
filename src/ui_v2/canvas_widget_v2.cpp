@@ -686,9 +686,13 @@ RasterLayer* CanvasWidgetV2::activeRasterLayer()
 
 QImage CanvasWidgetV2::captureRect(const QRect& r)
 {
-    auto* layer = activeRasterLayer();
-    if (!layer) return QImage();
     if (r.isEmpty()) return QImage();
+
+    QImage snap(r.width(), r.height(), QImage::Format_ARGB32_Premultiplied);
+    snap.fill(0);
+
+    auto* layer = activeRasterLayer();
+    if (!layer) return snap;
 
     int ox = layer->originX();
     int oy = layer->originY();
@@ -699,13 +703,16 @@ QImage CanvasWidgetV2::captureRect(const QRect& r)
     int cy = std::max(r.y(), oy);
     int cw = std::min(r.right(), ox + lw) - cx;
     int ch = std::min(r.bottom(), oy + lh) - cy;
-    if (cw <= 0 || ch <= 0) return QImage();
+    if (cw <= 0 || ch <= 0) return snap;
 
-    QImage snap(cw, ch, QImage::Format_ARGB32_Premultiplied);
+    int dstX = cx - r.x();
+    int dstY = cy - r.y();
+
     const uint32_t* src = layer->pixelData();
     for (int y = 0; y < ch; ++y) {
         int ly = (cy - oy) + y;
-        uint32_t* dst = reinterpret_cast<uint32_t*>(snap.scanLine(y));
+        int dstLine = dstY + y;
+        uint32_t* dst = reinterpret_cast<uint32_t*>(snap.scanLine(dstLine)) + dstX;
         const uint32_t* row = src + static_cast<size_t>(ly) * static_cast<size_t>(lw) + (cx - ox);
         std::copy(row, row + cw, dst);
     }
@@ -1325,6 +1332,9 @@ QImage CanvasWidgetV2::captureLayerRect(RasterLayer* layer, const QRect& r) cons
     if (!layer) return QImage();
     if (r.isEmpty()) return QImage();
 
+    QImage snap(r.width(), r.height(), QImage::Format_ARGB32_Premultiplied);
+    snap.fill(0);
+
     int ox = layer->originX();
     int oy = layer->originY();
     int lw = layer->width();
@@ -1334,13 +1344,16 @@ QImage CanvasWidgetV2::captureLayerRect(RasterLayer* layer, const QRect& r) cons
     int cy = std::max(r.y(), oy);
     int cw = std::min(r.right(), ox + lw) - cx;
     int ch = std::min(r.bottom(), oy + lh) - cy;
-    if (cw <= 0 || ch <= 0) return QImage();
+    if (cw <= 0 || ch <= 0) return snap;
 
-    QImage snap(cw, ch, QImage::Format_ARGB32_Premultiplied);
+    int dstX = cx - r.x();
+    int dstY = cy - r.y();
+
     const uint32_t* src = layer->pixelData();
     for (int y = 0; y < ch; ++y) {
         int ly = (cy - oy) + y;
-        uint32_t* dst = reinterpret_cast<uint32_t*>(snap.scanLine(y));
+        int dstLine = dstY + y;
+        uint32_t* dst = reinterpret_cast<uint32_t*>(snap.scanLine(dstLine)) + dstX;
         const uint32_t* row = src + static_cast<size_t>(ly) * static_cast<size_t>(lw) + (cx - ox);
         std::copy(row, row + cw, dst);
     }
