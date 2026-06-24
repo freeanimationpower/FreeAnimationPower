@@ -276,20 +276,71 @@ void PropertyEditorV2::refreshFields()
 
     auto tool = appState_->toolState().activeTool();
 
-    if (tool == ToolType::Brush || tool == ToolType::Eraser) {
+    bool showBrush = false;
+    bool shapesOnly = false;
+    QString placeholderText;
+
+    switch (tool) {
+    case ToolType::Brush:
+    case ToolType::Eraser:
+        showBrush = true;
+        break;
+    case ToolType::Line:
+    case ToolType::Rectangle:
+    case ToolType::Ellipse:
+        showBrush = true;
+        shapesOnly = true;
+        break;
+    case ToolType::Fill:
+        placeholderText = "Click canvas to flood-fill\ncontiguous color region";
+        break;
+    case ToolType::Text:
+        placeholderText = "Click canvas to add text\nFont dialog will open";
+        break;
+    case ToolType::Move:
+        placeholderText = "Drag on canvas to move\nlayer or selection content";
+        break;
+    case ToolType::Select:
+        placeholderText = "Drag to create selection\nClick inside to move\nPress Enter to commit";
+        break;
+    case ToolType::ColorPicker:
+        placeholderText = "Click to sample a color\nDrag to sample continuously";
+        break;
+    case ToolType::Hand:
+        placeholderText = "Drag to pan canvas\nScroll wheel to zoom\nPress F to fit";
+        break;
+    default:
+        placeholderText = "No properties available";
+        break;
+    }
+
+    if (showBrush) {
         showBrushControls();
+        if (shapesOnly) {
+            shapeCombo_->hide();
+            shapeLabel_->hide();
+            hardnessSlider_->hide();
+            hardnessSpin_->hide();
+            hardnessLabel_->hide();
+            opacitySlider_->hide();
+            opacitySpin_->hide();
+            opacityLabel_->hide();
+            stabilizerSlider_->hide();
+            stabilizerSpin_->hide();
+            stabilizerLabel_->hide();
+            pressureSizeCb_->hide();
+            pressureOpacityCb_->hide();
+            sizeLabel_->setText("WIDTH");
+            placeholderWidget_->hide();
+        } else {
+            showAllBrushControls();
+            sizeLabel_->setText("SIZE");
+        }
         syncFromToolState();
     } else {
+        brushGroup_->hide();
         showPlaceholder();
-        const char* names[] = {
-            "Brush", "Eraser", "Color Picker", "Fill",
-            "Text", "Line", "Rectangle", "Ellipse",
-            "Move", "Select", "Hand"
-        };
-        int idx = static_cast<int>(tool);
-        QString toolName = (idx >= 0 && idx < 11) ? names[idx] : "Unknown";
-        placeholderLabel_->setText(
-            QString("No properties\nfor %1").arg(toolName));
+        placeholderLabel_->setText(placeholderText);
     }
 }
 
@@ -334,6 +385,25 @@ void PropertyEditorV2::showBrushControls()
 {
     brushGroup_->show();
     placeholderWidget_->hide();
+}
+
+void PropertyEditorV2::showAllBrushControls()
+{
+    brushGroup_->show();
+    placeholderWidget_->hide();
+    shapeCombo_->show();
+    shapeLabel_->show();
+    hardnessSlider_->show();
+    hardnessSpin_->show();
+    hardnessLabel_->show();
+    opacitySlider_->show();
+    opacitySpin_->show();
+    opacityLabel_->show();
+    stabilizerSlider_->show();
+    stabilizerSpin_->show();
+    stabilizerLabel_->show();
+    pressureSizeCb_->show();
+    pressureOpacityCb_->show();
 }
 
 void PropertyEditorV2::showPlaceholder()

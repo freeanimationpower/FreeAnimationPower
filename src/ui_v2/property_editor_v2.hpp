@@ -41,6 +41,7 @@ private:
     void onToolChanged();
     void syncFromToolState();
     void showBrushControls();
+    void showAllBrushControls();
     void showPlaceholder();
 
     std::shared_ptr<AppState> appState_;

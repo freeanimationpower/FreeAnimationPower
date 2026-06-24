@@ -6,8 +6,9 @@
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QFrame>
-#include <QtWidgets/QPushButton>
 #include <QtWidgets/QColorDialog>
+
+#include <algorithm>
 
 namespace fap {
 
@@ -17,7 +18,7 @@ static const char* kMutedColor = "#6B7088";
 static const char* kBorderColor = "#2D3139";
 static const char* kInputBg = "#252830";
 
-static const QColor kQuickPalette[] = {
+static const QColor kDefaultPalette[] = {
     Qt::black,
     Qt::white,
     QColor("#E05050"),
@@ -64,23 +65,23 @@ ColorPanelV2::ColorPanelV2(QWidget* parent) : QWidget(parent) {
     swatchRow->addStretch();
     layout->addLayout(swatchRow);
 
+    palette_colors_.assign(std::begin(kDefaultPalette), std::end(kDefaultPalette));
+
     auto* paletteRow = new QHBoxLayout();
     paletteRow->setSpacing(4);
 
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < kMaxPalette; ++i) {
         auto* circle = new QPushButton();
         circle->setFixedSize(16, 16);
         circle->setCursor(Qt::PointingHandCursor);
-        circle->setStyleSheet(
-            QString("QPushButton{background:%1;border:1px solid %2;border-radius:8px;}")
-                .arg(kQuickPalette[i].name(), kBorderColor) +
-            QString("QPushButton:hover{border-color:%1;border-width:2px;}")
-                .arg("#C8CCD8"));
         QObject::connect(circle, &QPushButton::clicked, [this, i]() {
-            setColor(kQuickPalette[i]);
-            emitColorChanged();
+            if (i < static_cast<int>(palette_colors_.size())) {
+                setColor(palette_colors_[i]);
+                emitColorChanged();
+            }
         });
         paletteRow->addWidget(circle);
+        palette_circles_.push_back(circle);
     }
 
     layout->addLayout(paletteRow);
@@ -124,6 +125,7 @@ ColorPanelV2::ColorPanelV2(QWidget* parent) : QWidget(parent) {
     layout->addLayout(rgbaLayout);
     layout->addStretch();
 
+    updatePalette();
     setColor(Qt::black);
 }
 
@@ -136,6 +138,16 @@ void ColorPanelV2::setColor(const QColor& color) {
     a_spin_->setValue(color.alpha());
     blockSpinSignals(false);
     updateSwatch();
+
+    auto it = std::find(palette_colors_.begin(), palette_colors_.end(), color);
+    if (it != palette_colors_.end()) {
+        palette_colors_.erase(it);
+    }
+    palette_colors_.insert(palette_colors_.begin(), color);
+    if (static_cast<int>(palette_colors_.size()) > kMaxPalette) {
+        palette_colors_.resize(kMaxPalette);
+    }
+    updatePalette();
 }
 
 QColor ColorPanelV2::currentColor() const {
@@ -151,6 +163,19 @@ void ColorPanelV2::updateSwatch() {
                         .arg(current_color_.alphaF())
                     + QString("QPushButton:hover{border-color:%1;}").arg("#C8CCD8");
     swatch_->setStyleSheet(style);
+}
+
+void ColorPanelV2::updatePalette() {
+    for (int i = 0; i < kMaxPalette; ++i) {
+        QColor col = (i < static_cast<int>(palette_colors_.size()))
+                         ? palette_colors_[i]
+                         : QColor(64, 64, 64);
+        palette_circles_[i]->setStyleSheet(
+            QString("QPushButton{background:%1;border:1px solid %2;border-radius:8px;}")
+                .arg(col.name(), kBorderColor) +
+            QString("QPushButton:hover{border-color:%1;border-width:2px;}")
+                .arg("#C8CCD8"));
+    }
 }
 
 void ColorPanelV2::emitColorChanged() {

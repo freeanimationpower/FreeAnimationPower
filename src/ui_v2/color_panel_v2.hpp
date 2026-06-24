@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QWidget>
 #include <QtGui/QColor>
+#include <vector>
 
 class QPushButton;
 class QSpinBox;
@@ -21,6 +22,7 @@ signals:
 
 private:
     void updateSwatch();
+    void updatePalette();
     void emitColorChanged();
     void blockSpinSignals(bool block);
 
@@ -30,6 +32,10 @@ private:
     QSpinBox* b_spin_ = nullptr;
     QSpinBox* a_spin_ = nullptr;
     QColor current_color_ = Qt::black;
+
+    std::vector<QPushButton*> palette_circles_;
+    std::vector<QColor> palette_colors_;
+    static constexpr int kMaxPalette = 9;
 };
 
 } // namespace fap

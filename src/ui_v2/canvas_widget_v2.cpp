@@ -1,6 +1,8 @@
 #include "canvas_widget_v2.hpp"
 
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QInputDialog>
+#include <QtWidgets/QFontDialog>
 #include <QtGui/QPainter>
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
@@ -8,10 +10,12 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QPainterPath>
+#include <QtGui/QClipboard>
 #include <cmath>
 #include <algorithm>
 #include <functional>
 #include <cstring>
+#include <deque>
 
 #include "engine/animation/frame_thumbnail.hpp"
 
@@ -380,7 +384,18 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
 
     if (drawing_) {
         auto tool = appState_->toolState().activeTool();
-        if (tool == ToolType::Brush || tool == ToolType::Eraser) {
+        if (tool >= ToolType::Line && tool <= ToolType::Ellipse) {
+            p.setPen(QPen(QColor(60, 140, 255, 180), 2.0f / zoom_, Qt::DashLine));
+            p.setBrush(Qt::NoBrush);
+            double x1 = shapeStart_.x(), y1 = shapeStart_.y();
+            double x2 = shapeEnd_.x(), y2 = shapeEnd_.y();
+            if (tool == ToolType::Line)
+                p.drawLine(QPointF(x1, y1), QPointF(x2, y2));
+            else if (tool == ToolType::Rectangle)
+                p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+            else if (tool == ToolType::Ellipse)
+                p.drawEllipse(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+        } else if (tool == ToolType::Brush || tool == ToolType::Eraser) {
             float r = brushSize_ / 2.0f;
             p.setOpacity(0.5f);
             p.setPen(QPen(QColor("#FF6B4A"), 1.5f / zoom_));
@@ -428,6 +443,60 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
                 p.drawEllipse(center, r - 0.5f / zoom_, r - 0.5f / zoom_);
             }
         }
+    }
+
+    // Selection rectangle and floating selection
+    if (selState_ == SelectionState::Creating || (floatingActive_ && selRect_.isValid())) {
+        p.setPen(QPen(QColor("#FF6B4A"), 1.5f / zoom_, Qt::SolidLine));
+        p.setBrush(QColor(255, 107, 74, 30));
+        p.drawRect(selRect_);
+
+        if (floatingActive_ && !floatingSelection_.isNull()) {
+            p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            p.drawImage(selRect_.topLeft(), floatingSelection_);
+
+            // Marching ants on the selection border
+            if (marchingTimer_.isValid()) {
+                qint64 elapsed = marchingTimer_.elapsed() / 128;
+                int offset = static_cast<int>(elapsed % 16);
+                p.setBrush(Qt::NoBrush);
+                QPen antsPen(QColor(255, 255, 255, 200), 1.0f / zoom_, Qt::CustomDashLine);
+                QVector<qreal> dashes = {4.0f / zoom_, 4.0f / zoom_};
+                antsPen.setDashPattern(dashes);
+                antsPen.setDashOffset(-(offset * 4.0f / zoom_));
+                p.setPen(antsPen);
+                p.drawRect(selRect_);
+            }
+
+            // Selection handles
+            qreal hs = 6.0f / zoom_;
+            p.setPen(QPen(QColor("#FFFFFF"), 1.0f / zoom_));
+            p.setBrush(QColor("#FF6B4A"));
+            QPointF corners[4] = {
+                selRect_.topLeft(), selRect_.topRight(),
+                selRect_.bottomRight(), selRect_.bottomLeft()
+            };
+            for (int i = 0; i < 4; ++i) {
+                p.drawRect(QRectF(corners[i].x() - hs, corners[i].y() - hs, hs * 2, hs * 2));
+            }
+            QPointF midPoints[4] = {
+                QPointF((corners[0].x() + corners[1].x()) * 0.5f, corners[0].y()),
+                QPointF(corners[1].x(), (corners[1].y() + corners[2].y()) * 0.5f),
+                QPointF((corners[2].x() + corners[3].x()) * 0.5f, corners[2].y()),
+                QPointF(corners[0].x(), (corners[0].y() + corners[3].y()) * 0.5f),
+            };
+            for (int i = 0; i < 4; ++i) {
+                p.drawRect(QRectF(midPoints[i].x() - hs * 0.7f, midPoints[i].y() - hs * 0.7f,
+                                   hs * 1.4f, hs * 1.4f));
+            }
+        }
+    }
+
+    // Move preview
+    if (moving_ && !moveImage_.isNull()) {
+        p.setOpacity(0.5f);
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        p.drawImage(moveSrcRect_.topLeft() + moveOffset_, moveImage_);
     }
 
     p.restore();
@@ -543,20 +612,79 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         drawBrushStamp(cx, cy);
     } else if (tool == ToolType::ColorPicker) {
         QPointF cp = widgetToCanvas(event->pos());
-        auto* layer = activeRasterLayer();
-        if (layer) {
-            int lx = static_cast<int>(cp.x()) - layer->originX();
-            int ly = static_cast<int>(cp.y()) - layer->originY();
-            if (lx >= 0 && lx < layer->width() && ly >= 0 && ly < layer->height()) {
-                Color c = layer->pixelAt(lx, ly);
-                QColor qc = QColor::fromRgbF(c.r, c.g, c.b, c.a);
-                brushColor_ = qc;
-                appState_->toolState().setPrimaryColor(qc);
-                emit colorPicked(qc);
+        auto& doc = appState_->document();
+        int cx = static_cast<int>(cp.x());
+        int cy = static_cast<int>(cp.y());
+
+        auto& root = doc.rootLayerForFrame(currentFrame_);
+        for (size_t li = root.layerCount(); li > 0; --li) {
+            const Layer* layer = root.layers()[li - 1].get();
+            if (!layer || !layer->visible()) continue;
+            if (layer->type() != LayerType::Raster) continue;
+            const auto& rl = static_cast<const RasterLayer&>(*layer);
+            int lx = cx - rl.originX();
+            int ly = cy - rl.originY();
+            if (lx >= 0 && lx < rl.width() && ly >= 0 && ly < rl.height()) {
+                Color c = rl.pixelAt(lx, ly);
+                if (c.a > 0.0f) {
+                    QColor qc = QColor::fromRgbF(c.r, c.g, c.b, c.a);
+                    brushColor_ = qc;
+                    appState_->toolState().setPrimaryColor(qc);
+                    emit colorPicked(qc);
+                    return;
+                }
             }
         }
     } else if (tool == ToolType::Hand) {
         lastMousePos_ = event->pos();
+    } else if (tool == ToolType::Fill) {
+        QPointF cp = widgetToCanvas(event->pos());
+        doFill(cp);
+    } else if (tool == ToolType::Text) {
+        QPointF cp = widgetToCanvas(event->pos());
+        doText(cp);
+    } else if (tool == ToolType::Move) {
+        QPointF cp = widgetToCanvas(event->pos());
+        startMove(cp);
+    } else if (tool == ToolType::Select) {
+        QPointF cp = widgetToCanvas(event->pos());
+        if (floatingActive_ && selRect_.isValid()) {
+            qreal hs = 8.0f / zoom_;
+            QPointF c[4] = {selRect_.topLeft(), selRect_.topRight(),
+                            selRect_.bottomRight(), selRect_.bottomLeft()};
+            QPointF h[8] = {
+                c[0], QPointF((c[0].x()+c[1].x())*0.5, c[0].y()),
+                c[1], QPointF(c[1].x(), (c[1].y()+c[2].y())*0.5),
+                c[2], QPointF((c[2].x()+c[3].x())*0.5, c[2].y()),
+                c[3], QPointF(c[0].x(), (c[0].y()+c[3].y())*0.5),
+            };
+            int hit = -1;
+            for (int i = 0; i < 8; ++i) {
+                if (std::abs(cp.x() - h[i].x()) < hs && std::abs(cp.y() - h[i].y()) < hs) {
+                    hit = i; break;
+                }
+            }
+            if (hit >= 0) {
+                selState_ = SelectionState::DraggingHandle;
+                selHandleIdx_ = hit;
+                selDragStart_ = cp;
+                return;
+            }
+            if (selRect_.contains(cp)) {
+                selState_ = SelectionState::MovingContent;
+                selDragStart_ = cp;
+                return;
+            }
+            commitFloatingSelection();
+            return;
+        }
+        selStart_ = cp;
+        selState_ = SelectionState::Creating;
+    } else if (tool >= ToolType::Line && tool <= ToolType::Ellipse) {
+        QPointF cp = widgetToCanvas(event->pos());
+        shapeStart_ = cp;
+        shapeEnd_ = cp;
+        drawing_ = true;
     }
 }
 
@@ -599,18 +727,63 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
         update();
     } else if (tool == ToolType::ColorPicker && event->buttons() & Qt::LeftButton) {
         QPointF cp = widgetToCanvas(event->pos());
-        auto* layer = activeRasterLayer();
-        if (layer) {
-            int lx = static_cast<int>(cp.x()) - layer->originX();
-            int ly = static_cast<int>(cp.y()) - layer->originY();
-            if (lx >= 0 && lx < layer->width() && ly >= 0 && ly < layer->height()) {
-                Color c = layer->pixelAt(lx, ly);
-                QColor qc = QColor::fromRgbF(c.r, c.g, c.b, c.a);
-                brushColor_ = qc;
-                appState_->toolState().setPrimaryColor(qc);
-                emit colorPicked(qc);
+        auto& doc = appState_->document();
+        int cx = static_cast<int>(cp.x());
+        int cy = static_cast<int>(cp.y());
+
+        auto& root = doc.rootLayerForFrame(currentFrame_);
+        for (size_t li = root.layerCount(); li > 0; --li) {
+            const Layer* layer = root.layers()[li - 1].get();
+            if (!layer || !layer->visible()) continue;
+            if (layer->type() != LayerType::Raster) continue;
+            const auto& rl = static_cast<const RasterLayer&>(*layer);
+            int lx = cx - rl.originX();
+            int ly = cy - rl.originY();
+            if (lx >= 0 && lx < rl.width() && ly >= 0 && ly < rl.height()) {
+                Color c = rl.pixelAt(lx, ly);
+                if (c.a > 0.0f) {
+                    QColor qc = QColor::fromRgbF(c.r, c.g, c.b, c.a);
+                    brushColor_ = qc;
+                    appState_->toolState().setPrimaryColor(qc);
+                    emit colorPicked(qc);
+                    break;
+                }
             }
         }
+    } else if (drawing_ && tool >= ToolType::Line && tool <= ToolType::Ellipse) {
+        shapeEnd_ = widgetToCanvas(event->pos());
+        update();
+    } else if (moving_) {
+        QPointF cp = widgetToCanvas(event->pos());
+        updateMove(cp);
+    } else if (selState_ == SelectionState::Creating) {
+        QPointF cp = widgetToCanvas(event->pos());
+        selRect_ = QRectF(selStart_, cp).normalized();
+        update();
+    } else if (selState_ == SelectionState::MovingContent) {
+        QPointF cp = widgetToCanvas(event->pos());
+        QPointF delta = cp - selDragStart_;
+        selRect_.translate(delta);
+        selDragStart_ = cp;
+        update();
+    } else if (selState_ == SelectionState::DraggingHandle) {
+        QPointF cp = widgetToCanvas(event->pos());
+        static const struct { bool l, t, r, b; } edge[8] = {
+            {1,1,0,0},{0,1,0,0},{0,1,1,0},{0,0,1,0},
+            {0,0,1,1},{0,0,0,1},{1,0,0,1},{1,0,0,0},
+        };
+        qreal l = selRect_.left(), t = selRect_.top(), r = selRect_.right(), b = selRect_.bottom();
+        auto& f = edge[selHandleIdx_];
+        if (f.l) l = cp.x();
+        if (f.t) t = cp.y();
+        if (f.r) r = cp.x();
+        if (f.b) b = cp.y();
+        qreal nl = std::min(l, r), nr = std::max(l, r);
+        qreal nt = std::min(t, b), nb = std::max(t, b);
+        if (nr - nl < 2.0) { nr = nl + 2.0; if (f.l) nl = nr - 2.0; else if (f.r) nr = nl + 2.0; }
+        if (nb - nt < 2.0) { nb = nt + 2.0; if (f.t) nt = nb - 2.0; else if (f.b) nb = nt + 2.0; }
+        selRect_ = QRectF(QPointF(nl, nt), QPointF(nr, nb));
+        update();
     }
 }
 
@@ -619,8 +792,42 @@ void CanvasWidgetV2::mouseReleaseEvent(QMouseEvent* event)
     if (event->button() != Qt::LeftButton) return;
 
     if (drawing_) {
+        auto tool = appState_->toolState().activeTool();
+        if (tool >= ToolType::Line && tool <= ToolType::Ellipse) {
+            if (shapeStart_.x() >= 0 && shapeEnd_.x() >= 0) {
+                drawShape();
+            }
+            shapeStart_ = {-1, -1};
+            shapeEnd_ = {-1, -1};
+            drawing_ = false;
+            emit canvasUpdated();
+            return;
+        }
         drawing_ = false;
         commitStroke();
+    }
+
+    if (moving_) {
+        commitMove();
+    }
+
+    if (selState_ == SelectionState::Creating) {
+        if (selRect_.width() < 3 || selRect_.height() < 3) {
+            selRect_ = QRectF();
+            floatingSelection_ = QImage();
+            originalFloatingSelection_ = QImage();
+            selState_ = SelectionState::None;
+            update();
+            return;
+        }
+        commitSelection();
+        selState_ = SelectionState::None;
+    } else if (selState_ == SelectionState::MovingContent) {
+        selState_ = SelectionState::None;
+        update();
+    } else if (selState_ == SelectionState::DraggingHandle) {
+        selState_ = SelectionState::None;
+        update();
     }
 }
 
@@ -899,6 +1106,518 @@ void CanvasWidgetV2::commitStroke()
 
     appState_->thumbnailCache().invalidateFrame(currentFrame_);
 
+    emit canvasUpdated();
+}
+
+QImage CanvasWidgetV2::captureLayerRect(RasterLayer* layer, const QRect& r) const
+{
+    if (!layer) return QImage();
+    if (r.isEmpty()) return QImage();
+
+    int ox = layer->originX();
+    int oy = layer->originY();
+    int lw = layer->width();
+    int lh = layer->height();
+
+    int cx = std::max(r.x(), ox);
+    int cy = std::max(r.y(), oy);
+    int cw = std::min(r.right(), ox + lw) - cx;
+    int ch = std::min(r.bottom(), oy + lh) - cy;
+    if (cw <= 0 || ch <= 0) return QImage();
+
+    QImage snap(cw, ch, QImage::Format_ARGB32_Premultiplied);
+    const uint32_t* src = layer->pixelData();
+    for (int y = 0; y < ch; ++y) {
+        int ly = (cy - oy) + y;
+        uint32_t* dst = reinterpret_cast<uint32_t*>(snap.scanLine(y));
+        const uint32_t* row = src + static_cast<size_t>(ly) * static_cast<size_t>(lw) + (cx - ox);
+        std::copy(row, row + cw, dst);
+    }
+    return snap;
+}
+
+QImage CanvasWidgetV2::snapFullLayer(RasterLayer* layer)
+{
+    if (!layer) return QImage();
+    QRect fullRect(layer->originX(), layer->originY(), layer->width(), layer->height());
+    return captureLayerRect(layer, fullRect);
+}
+
+void CanvasWidgetV2::pushFullLayerUndo(RasterLayer* layer, const QImage& beforeSnap)
+{
+    if (!layer || beforeSnap.isNull()) return;
+
+    QRect fullRect(layer->originX(), layer->originY(), layer->width(), layer->height());
+    QImage afterSnap = captureLayerRect(layer, fullRect);
+
+    if (afterSnap.isNull()) return;
+
+    appState_->document().setModified(true);
+
+    auto cmd = std::make_unique<PaintCommandV2>(
+        layer->uid(), currentFrame_, currentLayerIndex_,
+        QImage(beforeSnap), std::move(afterSnap), fullRect);
+    cmd->setLayerAccess([this]() -> RasterLayer* {
+        return activeRasterLayer();
+    });
+
+    appState_->document().undoManager().pushCommand(std::move(cmd));
+    appState_->thumbnailCache().invalidateFrame(currentFrame_);
+}
+
+void CanvasWidgetV2::drawShape()
+{
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+
+    double x1 = shapeStart_.x(), y1 = shapeStart_.y();
+    double x2 = shapeEnd_.x(), y2 = shapeEnd_.y();
+    if (x1 == x2 && y1 == y2) return;
+
+    layer->ensureUnique();
+
+    int pad = brushSize_ + 2;
+    int minX = static_cast<int>(std::min(x1, x2)) - pad;
+    int minY = static_cast<int>(std::min(y1, y2)) - pad;
+    int maxX = static_cast<int>(std::max(x1, x2)) + pad;
+    int maxY = static_cast<int>(std::max(y1, y2)) + pad;
+
+    layer->ensureContains(minX, minY, maxX - minX, maxY - minY);
+
+    QRect dirtyRect(minX, minY, maxX - minX, maxY - minY);
+    QImage before = captureLayerRect(layer, dirtyRect);
+
+    QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
+               layer->width(), layer->height(),
+               layer->width() * static_cast<int>(sizeof(uint32_t)),
+               QImage::Format_ARGB32_Premultiplied);
+    img = img.copy();
+
+    {
+        QPainter p(&img);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(QPen(brushColor_, static_cast<qreal>(brushSize_),
+                      Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        p.setBrush(Qt::NoBrush);
+
+        auto tool = appState_->toolState().activeTool();
+        if (tool == ToolType::Line) {
+            p.drawLine(QPointF(x1, y1), QPointF(x2, y2));
+        } else if (tool == ToolType::Rectangle) {
+            p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+        } else if (tool == ToolType::Ellipse) {
+            p.drawEllipse(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+        }
+    }
+
+    int ox = layer->originX();
+    int oy = layer->originY();
+    int lw = layer->width();
+    for (int dy = 0; dy < dirtyRect.height(); ++dy) {
+        int ly = dirtyRect.y() + dy - oy;
+        if (ly < 0 || ly >= layer->height()) continue;
+        int lx = dirtyRect.x() - ox;
+        if (lx < 0) lx = 0;
+        int copyW = std::min(dirtyRect.width(), lw - lx);
+        if (copyW <= 0) continue;
+        const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(ly)) + lx;
+        uint32_t* dst = layer->pixelData() + static_cast<size_t>(ly) * static_cast<size_t>(lw) + static_cast<size_t>(lx);
+        std::copy(src, src + copyW, dst);
+    }
+
+    layer->bufferEpochTick();
+
+    QImage after = captureLayerRect(layer, dirtyRect);
+
+    if (before.isNull() || after.isNull()) return;
+
+    appState_->document().setModified(true);
+
+    auto cmd = std::make_unique<PaintCommandV2>(
+        layer->uid(), currentFrame_, currentLayerIndex_,
+        std::move(before), std::move(after), dirtyRect);
+    cmd->setLayerAccess([this]() -> RasterLayer* {
+        return activeRasterLayer();
+    });
+
+    appState_->document().undoManager().pushCommand(std::move(cmd));
+    appState_->thumbnailCache().invalidateFrame(currentFrame_);
+}
+
+void CanvasWidgetV2::doFill(QPointF cpos)
+{
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+
+    int ox = layer->originX();
+    int oy = layer->originY();
+    int lx = static_cast<int>(cpos.x()) - ox;
+    int ly = static_cast<int>(cpos.y()) - oy;
+
+    if (lx < 0 || lx >= layer->width() || ly < 0 || ly >= layer->height()) return;
+
+    Color targetColor = layer->pixelAt(lx, ly);
+    QColor targetQC = QColor::fromRgbF(targetColor.r, targetColor.g, targetColor.b, targetColor.a);
+    if (targetQC == brushColor_) return;
+
+    layer->ensureUnique();
+
+    QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
+               layer->width(), layer->height(),
+               layer->width() * static_cast<int>(sizeof(uint32_t)),
+               QImage::Format_ARGB32_Premultiplied);
+    img = img.copy();
+
+    QImage before = snapFullLayer(layer);
+
+    if (targetQC.alpha() < 20) {
+        floodFillByAlpha(img, lx, ly, brushColor_, 100);
+    } else {
+        floodFill(img, lx, ly, brushColor_, targetQC, 32);
+    }
+
+    for (int y = 0; y < img.height(); ++y) {
+        const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(y));
+        uint32_t* dst = layer->pixelData() + static_cast<size_t>(y) * static_cast<size_t>(layer->width());
+        std::copy(src, src + img.width(), dst);
+    }
+
+    layer->bufferEpochTick();
+
+    pushFullLayerUndo(layer, before);
+    emit canvasUpdated();
+}
+
+void CanvasWidgetV2::floodFill(QImage& img, int sx, int sy,
+                                const QColor& fillColor, const QColor& target, int tolerance)
+{
+    int w = img.width(), h = img.height();
+    std::vector<std::pair<int, int>> stack;
+    stack.reserve(4096);
+    stack.push_back({sx, sy});
+
+    while (!stack.empty()) {
+        auto [px, py] = stack.back();
+        stack.pop_back();
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+
+        QColor c = img.pixelColor(px, py);
+        if (std::abs(c.red() - target.red()) > tolerance ||
+            std::abs(c.green() - target.green()) > tolerance ||
+            std::abs(c.blue() - target.blue()) > tolerance ||
+            std::abs(c.alpha() - target.alpha()) > tolerance)
+            continue;
+        if (c == fillColor) continue;
+
+        int lx = px;
+        while (lx >= 0) {
+            QColor lc = img.pixelColor(lx, py);
+            if (std::abs(lc.red() - target.red()) > tolerance) break;
+            img.setPixelColor(lx, py, fillColor);
+            if (py > 0) stack.push_back({lx, py - 1});
+            if (py < h - 1) stack.push_back({lx, py + 1});
+            --lx;
+        }
+        int rx = px + 1;
+        while (rx < w) {
+            QColor rc = img.pixelColor(rx, py);
+            if (std::abs(rc.red() - target.red()) > tolerance) break;
+            img.setPixelColor(rx, py, fillColor);
+            if (py > 0) stack.push_back({rx, py - 1});
+            if (py < h - 1) stack.push_back({rx, py + 1});
+            ++rx;
+        }
+    }
+}
+
+void CanvasWidgetV2::floodFillByAlpha(QImage& img, int sx, int sy,
+                                       const QColor& fillColor, int boundaryAlpha)
+{
+    int w = img.width(), h = img.height();
+    std::vector<std::pair<int, int>> stack;
+    stack.reserve(4096);
+    stack.push_back({sx, sy});
+
+    while (!stack.empty()) {
+        auto [px, py] = stack.back();
+        stack.pop_back();
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+
+        QColor c = img.pixelColor(px, py);
+        if (c.alpha() >= boundaryAlpha) continue;
+        if (c == fillColor) continue;
+
+        int lx = px;
+        while (lx >= 0) {
+            QColor lc = img.pixelColor(lx, py);
+            if (lc.alpha() >= boundaryAlpha) break;
+            img.setPixelColor(lx, py, fillColor);
+            if (py > 0) stack.push_back({lx, py - 1});
+            if (py < h - 1) stack.push_back({lx, py + 1});
+            --lx;
+        }
+        int rx = px + 1;
+        while (rx < w) {
+            QColor rc = img.pixelColor(rx, py);
+            if (rc.alpha() >= boundaryAlpha) break;
+            img.setPixelColor(rx, py, fillColor);
+            if (py > 0) stack.push_back({rx, py - 1});
+            if (py < h - 1) stack.push_back({rx, py + 1});
+            ++rx;
+        }
+    }
+}
+
+void CanvasWidgetV2::doText(QPointF cpos)
+{
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+
+    bool ok = false;
+    QString text = QInputDialog::getMultiLineText(this, "Add Text", "Enter text:", "", &ok);
+    if (!ok || text.isEmpty()) return;
+
+    bool fontOk = false;
+    QFont chosen = QFontDialog::getFont(&fontOk, textFont_, this, "Choose Font");
+    if (fontOk) textFont_ = chosen;
+
+    layer->ensureUnique();
+
+    QImage before = snapFullLayer(layer);
+
+    QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
+               layer->width(), layer->height(),
+               layer->width() * static_cast<int>(sizeof(uint32_t)),
+               QImage::Format_ARGB32_Premultiplied);
+    img = img.copy();
+
+    {
+        QPainter p(&img);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setFont(textFont_);
+        p.setPen(brushColor_);
+        p.drawText(cpos, text);
+    }
+
+    for (int y = 0; y < img.height(); ++y) {
+        const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(y));
+        uint32_t* dst = layer->pixelData() + static_cast<size_t>(y) * static_cast<size_t>(layer->width());
+        std::copy(src, src + img.width(), dst);
+    }
+
+    layer->bufferEpochTick();
+
+    pushFullLayerUndo(layer, before);
+    emit canvasUpdated();
+}
+
+void CanvasWidgetV2::startMove(QPointF cpos)
+{
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+
+    moveStart_ = cpos;
+    moveOffset_ = QPointF(0, 0);
+
+    if (floatingActive_ && !floatingSelection_.isNull() && selRect_.isValid()) {
+        moveImage_ = floatingSelection_;
+        moveSrcRect_ = selRect_;
+    } else {
+        moveImage_ = snapFullLayer(layer);
+        int mx = layer->originX();
+        int my = layer->originY();
+        moveSrcRect_ = QRectF(mx, my, layer->width(), layer->height());
+    }
+    moving_ = true;
+}
+
+void CanvasWidgetV2::updateMove(QPointF cpos)
+{
+    if (!moving_) return;
+    moveOffset_ = QPointF(cpos.x() - moveStart_.x(), cpos.y() - moveStart_.y());
+    update();
+}
+
+void CanvasWidgetV2::commitMove()
+{
+    if (!moving_) return;
+    moving_ = false;
+
+    auto* layer = activeRasterLayer();
+    if (!layer) return;
+
+    constexpr double kMaxMoveDelta = 40000.0;
+    double clampedDx = std::clamp(moveOffset_.x(), -kMaxMoveDelta, kMaxMoveDelta);
+    double clampedDy = std::clamp(moveOffset_.y(), -kMaxMoveDelta, kMaxMoveDelta);
+
+    if (std::abs(clampedDx) < 0.5 && std::abs(clampedDy) < 0.5) {
+        moveImage_ = QImage();
+        if (floatingActive_) {
+            commitFloatingSelection();
+        }
+        return;
+    }
+
+    if (floatingActive_ && !floatingSelection_.isNull()) {
+        selRect_.translate(clampedDx, clampedDy);
+        moveImage_ = QImage();
+        update();
+        return;
+    }
+
+    layer->ensureUnique();
+
+    int lw = layer->width();
+    int lh = layer->height();
+
+    QImage before = snapFullLayer(layer);
+
+    std::vector<uint32_t> newPixels(static_cast<size_t>(lw) * static_cast<size_t>(lh), 0);
+
+    for (int y = 0; y < lh; ++y) {
+        for (int x = 0; x < lw; ++x) {
+            int srcX = x - static_cast<int>(clampedDx);
+            int srcY = y - static_cast<int>(clampedDy);
+            if (srcX >= 0 && srcX < lw && srcY >= 0 && srcY < lh) {
+                size_t srcIdx = static_cast<size_t>(srcY) * static_cast<size_t>(lw) + static_cast<size_t>(srcX);
+                size_t dstIdx = static_cast<size_t>(y) * static_cast<size_t>(lw) + static_cast<size_t>(x);
+                newPixels[dstIdx] = layer->pixelData()[srcIdx];
+            }
+        }
+    }
+
+    std::copy(newPixels.begin(), newPixels.end(), layer->pixelData());
+    layer->bufferEpochTick();
+
+    moveOffset_ = QPointF(0, 0);
+    moveImage_ = QImage();
+
+    pushFullLayerUndo(layer, before);
+    emit canvasUpdated();
+}
+
+void CanvasWidgetV2::commitSelection()
+{
+    if (!selRect_.isValid() || selRect_.width() < 3 || selRect_.height() < 3) {
+        selRect_ = QRectF();
+        floatingSelection_ = QImage();
+        originalFloatingSelection_ = QImage();
+        update();
+        return;
+    }
+
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+
+    layer->ensureUnique();
+
+    QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
+               layer->width(), layer->height(),
+               layer->width() * static_cast<int>(sizeof(uint32_t)),
+               QImage::Format_ARGB32_Premultiplied);
+    img = img.copy();
+
+    int ox = layer->originX();
+    int oy = layer->originY();
+    QRect bufRect(
+        static_cast<int>(selRect_.x() - ox),
+        static_cast<int>(selRect_.y() - oy),
+        static_cast<int>(selRect_.width()),
+        static_cast<int>(selRect_.height()));
+
+    bufRect = bufRect.intersected(QRect(0, 0, layer->width(), layer->height()));
+    if (bufRect.isEmpty()) return;
+
+    floatingSelection_ = img.copy(bufRect);
+    originalFloatingSelection_ = floatingSelection_;
+    selImage_ = img.copy(bufRect);
+
+    QImage before = snapFullLayer(layer);
+
+    {
+        QPainter cp(&img);
+        cp.setCompositionMode(QPainter::CompositionMode_Clear);
+        cp.fillRect(bufRect, Qt::transparent);
+    }
+
+    for (int y = 0; y < img.height(); ++y) {
+        const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(y));
+        uint32_t* dst = layer->pixelData() + static_cast<size_t>(y) * static_cast<size_t>(layer->width());
+        std::copy(src, src + img.width(), dst);
+    }
+
+    layer->bufferEpochTick();
+
+    floatingActive_ = true;
+    marchingTimer_.start();
+
+    pushFullLayerUndo(layer, before);
+    emit canvasUpdated();
+}
+
+void CanvasWidgetV2::commitFloatingSelection()
+{
+    if (!floatingActive_ || floatingSelection_.isNull()) {
+        floatingActive_ = false;
+        floatingSelection_ = QImage();
+        originalFloatingSelection_ = QImage();
+        selRect_ = QRectF();
+        update();
+        return;
+    }
+
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+    if (layer->type() != LayerType::Raster) return;
+
+    layer->ensureUnique();
+
+    int ox = layer->originX();
+    int oy = layer->originY();
+
+    int ix = static_cast<int>(selRect_.x() - ox);
+    int iy = static_cast<int>(selRect_.y() - oy);
+    int iw = floatingSelection_.width();
+    int ih = floatingSelection_.height();
+
+    layer->ensureContains(ix, iy, iw, ih);
+
+    ox = layer->originX();
+    oy = layer->originY();
+    ix = static_cast<int>(selRect_.x() - ox);
+    iy = static_cast<int>(selRect_.y() - oy);
+
+    QImage before = snapFullLayer(layer);
+
+    QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
+               layer->width(), layer->height(),
+               layer->width() * static_cast<int>(sizeof(uint32_t)),
+               QImage::Format_ARGB32_Premultiplied);
+    img = img.copy();
+
+    {
+        QPainter layerPainter(&img);
+        layerPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        layerPainter.setRenderHint(QPainter::SmoothPixmapTransform);
+        layerPainter.drawImage(ix, iy, floatingSelection_);
+    }
+
+    for (int y = 0; y < img.height(); ++y) {
+        const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(y));
+        uint32_t* dst = layer->pixelData() + static_cast<size_t>(y) * static_cast<size_t>(layer->width());
+        std::copy(src, src + img.width(), dst);
+    }
+
+    layer->bufferEpochTick();
+
+    floatingActive_ = false;
+    floatingSelection_ = QImage();
+    originalFloatingSelection_ = QImage();
+    selImage_ = QImage();
+    selRect_ = QRectF();
+    selState_ = SelectionState::None;
+
+    pushFullLayerUndo(layer, before);
     emit canvasUpdated();
 }
 

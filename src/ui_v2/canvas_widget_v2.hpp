@@ -3,8 +3,10 @@
 #include <QtWidgets/QWidget>
 #include <QtGui/QColor>
 #include <QtGui/QImage>
+#include <QtGui/QFont>
 #include <QtCore/QPointF>
 #include <QtCore/QRect>
+#include <QtCore/QElapsedTimer>
 #include <memory>
 #include <vector>
 
@@ -99,11 +101,57 @@ private:
     QRect stampRect(int cx, int cy) const;
     void commitStroke();
     QImage captureRect(const QRect& r);
+    QImage captureLayerRect(RasterLayer* layer, const QRect& r) const;
     void growBeforeSnapshot(const QRect& oldRect, const QRect& newRect);
     QPointF widgetToCanvas(const QPointF& pos) const;
     QPointF canvasToWidget(const QPointF& pos) const;
 
     RasterLayer* activeRasterLayer();
+
+    // Shape drawing (Line, Rectangle, Ellipse)
+    QPointF shapeStart_{-1, -1};
+    QPointF shapeEnd_{-1, -1};
+    void drawShape();
+
+    // Fill tool
+    void doFill(QPointF cpos);
+    void floodFill(QImage& img, int x, int y, const QColor& fillColor,
+                   const QColor& target, int tolerance);
+    void floodFillByAlpha(QImage& img, int x, int y, const QColor& fillColor,
+                          int boundaryAlpha);
+
+    // Text tool
+    void doText(QPointF cpos);
+    QFont textFont_;
+
+    // Move tool
+    bool moving_ = false;
+    QImage moveImage_;
+    QPointF moveStart_;
+    QPointF moveOffset_;
+    QRectF moveSrcRect_;
+    void startMove(QPointF cpos);
+    void updateMove(QPointF cpos);
+    void commitMove();
+
+    // Select tool
+    enum class SelectionState : uint8_t { None, Creating, MovingContent, DraggingHandle };
+    SelectionState selState_ = SelectionState::None;
+    int selHandleIdx_ = -1;
+    QPointF selDragStart_;
+    QPointF selStart_;
+    QRectF selRect_;
+    QImage selImage_;
+    bool floatingActive_ = false;
+    QImage floatingSelection_;
+    QImage originalFloatingSelection_;
+    QElapsedTimer marchingTimer_;
+    void commitSelection();
+    void commitFloatingSelection();
+
+    // Undo helper
+    void pushFullLayerUndo(RasterLayer* layer, const QImage& beforeSnap);
+    QImage snapFullLayer(RasterLayer* layer);
 };
 
 } // namespace fap
