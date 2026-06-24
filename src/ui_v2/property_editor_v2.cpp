@@ -2,12 +2,14 @@
 
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QPushButton>
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
@@ -180,6 +182,20 @@ void PropertyEditorV2::setupUI()
     shapeRow->addWidget(shapeCombo_, 1);
     brushLayout->addLayout(shapeRow);
 
+    auto* lineStyleRow = new QHBoxLayout();
+    lineStyleRow->setSpacing(6);
+    lineStyleLabel_ = new QLabel("LINE STYLE", this);
+    lineStyleLabel_->setStyleSheet(kLabelStyle);
+    lineStyleLabel_->setFixedWidth(52);
+    lineStyleRow->addWidget(lineStyleLabel_);
+
+    lineStyleCombo_ = new QComboBox(this);
+    lineStyleCombo_->addItems({ "Solid", "Tapered", "Dashed", "Dotted" });
+    lineStyleCombo_->setCurrentIndex(0);
+    lineStyleCombo_->setStyleSheet(shapeCombo_->styleSheet());
+    lineStyleRow->addWidget(lineStyleCombo_, 1);
+    brushLayout->addLayout(lineStyleRow);
+
     auto* sep4 = new QFrame(this);
     sep4->setFrameShape(QFrame::HLine);
     sep4->setStyleSheet(kSeparatorStyle);
@@ -226,6 +242,98 @@ void PropertyEditorV2::setupUI()
 
     mainLayout->addWidget(brushGroup_);
 
+    // === Pick Color group ===
+    pickColorGroup_ = new QWidget(this);
+    auto* pickerLayout = new QVBoxLayout(pickColorGroup_);
+    pickerLayout->setContentsMargins(0, 0, 0, 0);
+    pickerLayout->setSpacing(6);
+
+    pickColorLabel_ = new QLabel("COLOR PICKER", pickColorGroup_);
+    pickColorLabel_->setStyleSheet(kLabelStyle);
+    pickerLayout->addWidget(pickColorLabel_);
+
+    auto* swatchRow = new QHBoxLayout();
+    swatchRow->setSpacing(8);
+    colorSwatch_ = new QPushButton(pickColorGroup_);
+    colorSwatch_->setFixedSize(48, 48);
+    colorSwatch_->setCursor(Qt::PointingHandCursor);
+    colorSwatch_->setToolTip("Sampled color. Click to apply as primary.");
+    swatchRow->addWidget(colorSwatch_);
+
+    colorHexLabel_ = new QLabel("#000000", pickColorGroup_);
+    colorHexLabel_->setStyleSheet(kValueLabelStyle);
+    swatchRow->addWidget(colorHexLabel_, 1);
+    pickerLayout->addLayout(swatchRow);
+
+    auto* sepPicker1 = new QFrame(pickColorGroup_);
+    sepPicker1->setFrameShape(QFrame::HLine);
+    sepPicker1->setStyleSheet(kSeparatorStyle);
+    pickerLayout->addWidget(sepPicker1);
+
+    auto* varTypeRow = new QHBoxLayout();
+    varTypeRow->setSpacing(6);
+    auto* varTypeLabel = new QLabel("VARIATION", pickColorGroup_);
+    varTypeLabel->setStyleSheet(kLabelStyle);
+    varTypeLabel->setFixedWidth(52);
+    varTypeRow->addWidget(varTypeLabel);
+
+    variationTypeCombo_ = new QComboBox(pickColorGroup_);
+    variationTypeCombo_->addItems({ "Monochromatic", "Analogous", "Triadic" });
+    variationTypeCombo_->setCurrentIndex(0);
+    variationTypeCombo_->setStyleSheet(shapeCombo_->styleSheet());
+    varTypeRow->addWidget(variationTypeCombo_, 1);
+    pickerLayout->addLayout(varTypeRow);
+
+    variationGrid_ = new QWidget(pickColorGroup_);
+    auto* vgLayout = new QGridLayout(variationGrid_);
+    vgLayout->setContentsMargins(0, 4, 0, 0);
+    vgLayout->setSpacing(3);
+    for (int i = 0; i < 9; ++i) {
+        auto* btn = new QPushButton(variationGrid_);
+        btn->setFixedSize(28, 28);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setToolTip("Click to select this color variation");
+        int row = i / 3;
+        int col = i % 3;
+        vgLayout->addWidget(btn, row, col);
+        variationButtons_.push_back(btn);
+
+        connect(btn, &QPushButton::clicked, [this, i]() {
+            onVariationClicked(i);
+        });
+    }
+    pickerLayout->addWidget(variationGrid_);
+
+    mainLayout->addWidget(pickColorGroup_);
+
+    connect(variationTypeCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &PropertyEditorV2::onColorVariationTypeChanged);
+
+    // === Fill group ===
+    fillGroup_ = new QWidget(this);
+    auto* fillLayout = new QVBoxLayout(fillGroup_);
+    fillLayout->setContentsMargins(0, 0, 0, 0);
+    fillLayout->setSpacing(6);
+
+    auto* fillTypeRow = new QHBoxLayout();
+    fillTypeRow->setSpacing(6);
+    fillTypeLabel_ = new QLabel("FILL TYPE", fillGroup_);
+    fillTypeLabel_->setStyleSheet(kLabelStyle);
+    fillTypeLabel_->setFixedWidth(52);
+    fillTypeRow->addWidget(fillTypeLabel_);
+
+    fillTypeCombo_ = new QComboBox(fillGroup_);
+    fillTypeCombo_->addItems({ "Solid", "Fabric", "Ramp" });
+    fillTypeCombo_->setCurrentIndex(0);
+    fillTypeCombo_->setStyleSheet(shapeCombo_->styleSheet());
+    fillTypeRow->addWidget(fillTypeCombo_, 1);
+    fillLayout->addLayout(fillTypeRow);
+
+    mainLayout->addWidget(fillGroup_);
+
+    connect(fillTypeCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &PropertyEditorV2::onFillTypeComboChanged);
+
     placeholderWidget_ = new QWidget(this);
     auto* placeholderLayout = new QVBoxLayout(placeholderWidget_);
     placeholderLayout->setContentsMargins(0, 0, 0, 0);
@@ -238,6 +346,9 @@ void PropertyEditorV2::setupUI()
     mainLayout->addWidget(placeholderWidget_);
 
     mainLayout->addStretch();
+
+    pickColorGroup_->hide();
+    fillGroup_->hide();
 
     connect(sizeSlider_, &QSlider::valueChanged,
             this, &PropertyEditorV2::onSizeSliderChanged);
@@ -257,6 +368,8 @@ void PropertyEditorV2::setupUI()
             this, &PropertyEditorV2::onHardnessSpinChanged);
     connect(shapeCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &PropertyEditorV2::onShapeChanged);
+    connect(lineStyleCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &PropertyEditorV2::onLineStyleChanged);
     connect(pressureSizeCb_, &QCheckBox::toggled, [this](bool checked) {
         if (appState_) { appState_->toolState().setPressureSize(checked); }
     });
@@ -292,7 +405,11 @@ void PropertyEditorV2::refreshFields()
         shapesOnly = true;
         break;
     case ToolType::Fill:
-        placeholderText = "Click canvas to flood-fill\ncontiguous color region";
+        brushGroup_->hide();
+        pickColorGroup_->hide();
+        placeholderWidget_->hide();
+        fillGroup_->show();
+        syncFromToolState();
         break;
     case ToolType::Text:
         placeholderText = "Click canvas to add text\nFont dialog will open";
@@ -304,7 +421,11 @@ void PropertyEditorV2::refreshFields()
         placeholderText = "Drag to create selection\nClick inside to move\nPress Enter to commit";
         break;
     case ToolType::ColorPicker:
-        placeholderText = "Click to sample a color\nDrag to sample continuously";
+        brushGroup_->hide();
+        fillGroup_->hide();
+        placeholderWidget_->hide();
+        pickColorGroup_->show();
+        updateColorVariations();
         break;
     case ToolType::Hand:
         placeholderText = "Drag to pan canvas\nScroll wheel to zoom\nPress F to fit";
@@ -314,6 +435,7 @@ void PropertyEditorV2::refreshFields()
         break;
     }
 
+    bool needsPlaceholder = !placeholderText.isEmpty();
     if (showBrush) {
         showBrushControls();
         if (shapesOnly) {
@@ -331,14 +453,18 @@ void PropertyEditorV2::refreshFields()
             pressureSizeCb_->hide();
             pressureOpacityCb_->hide();
             sizeLabel_->setText("WIDTH");
+            lineStyleLabel_->show();
+            lineStyleCombo_->show();
             placeholderWidget_->hide();
         } else {
             showAllBrushControls();
             sizeLabel_->setText("SIZE");
         }
         syncFromToolState();
-    } else {
+    } else if (needsPlaceholder) {
         brushGroup_->hide();
+        pickColorGroup_->hide();
+        fillGroup_->hide();
         showPlaceholder();
         placeholderLabel_->setText(placeholderText);
     }
@@ -378,6 +504,12 @@ void PropertyEditorV2::syncFromToolState()
     pressureOpacityCb_->setChecked(ts.pressureOpacity());
     pressureOpacityCb_->blockSignals(false);
 
+    if (ts.lineStyle() >= 0 && ts.lineStyle() <= 3) {
+        lineStyleCombo_->blockSignals(true);
+        lineStyleCombo_->setCurrentIndex(ts.lineStyle());
+        lineStyleCombo_->blockSignals(false);
+    }
+
     updatingFromState_ = false;
 }
 
@@ -385,12 +517,16 @@ void PropertyEditorV2::showBrushControls()
 {
     brushGroup_->show();
     placeholderWidget_->hide();
+    pickColorGroup_->hide();
+    fillGroup_->hide();
 }
 
 void PropertyEditorV2::showAllBrushControls()
 {
     brushGroup_->show();
     placeholderWidget_->hide();
+    pickColorGroup_->hide();
+    fillGroup_->hide();
     shapeCombo_->show();
     shapeLabel_->show();
     hardnessSlider_->show();
@@ -404,11 +540,15 @@ void PropertyEditorV2::showAllBrushControls()
     stabilizerLabel_->show();
     pressureSizeCb_->show();
     pressureOpacityCb_->show();
+    lineStyleLabel_->hide();
+    lineStyleCombo_->hide();
 }
 
 void PropertyEditorV2::showPlaceholder()
 {
     brushGroup_->hide();
+    pickColorGroup_->hide();
+    fillGroup_->hide();
     placeholderWidget_->show();
 }
 
@@ -528,6 +668,142 @@ void PropertyEditorV2::onStabilizerSpinChanged(int value)
         appState_->toolState().setStabilizerLevel(value);
     }
     emit stabilizerChanged(value);
+}
+
+void PropertyEditorV2::showPickColorControls()
+{
+    brushGroup_->hide();
+    fillGroup_->hide();
+    placeholderWidget_->hide();
+    pickColorGroup_->show();
+}
+
+void PropertyEditorV2::showFillControls()
+{
+    brushGroup_->hide();
+    pickColorGroup_->hide();
+    placeholderWidget_->hide();
+    fillGroup_->show();
+}
+
+void PropertyEditorV2::updateColorVariations()
+{
+    if (!appState_) return;
+    auto& ts = appState_->toolState();
+    QColor base = ts.sampledColor();
+    if (!base.isValid()) base = ts.primaryColor();
+
+    QString hex = QString("#%1%2%3")
+        .arg(base.red(), 2, 16, QChar('0'))
+        .arg(base.green(), 2, 16, QChar('0'))
+        .arg(base.blue(), 2, 16, QChar('0'));
+    colorHexLabel_->setText(hex.toUpper());
+
+    QString swatchStyle = QString(
+        "QPushButton { background-color:%1; border:2px solid #2D3139; border-radius:4px; }"
+        "QPushButton:hover { border-color:#FF6B4A; }"
+    ).arg(base.name());
+    colorSwatch_->setStyleSheet(swatchStyle);
+
+    int total = static_cast<int>(variationButtons_.size());
+    for (int i = 0; i < total; ++i) {
+        QColor var = generateVariation(base, i, total);
+        QString vStyle = QString(
+            "QPushButton { background-color:%1; border:1px solid #2D3139; border-radius:3px; }"
+            "QPushButton:hover { border-color:#FF6B4A; }"
+        ).arg(var.name());
+        variationButtons_[static_cast<size_t>(i)]->setStyleSheet(vStyle);
+    }
+
+    int varTypeIdx = variationTypeCombo_->findText(
+        ts.colorVariationType() == 0 ? "Monochromatic" :
+        ts.colorVariationType() == 1 ? "Analogous" : "Triadic");
+    if (varTypeIdx >= 0) {
+        variationTypeCombo_->blockSignals(true);
+        variationTypeCombo_->setCurrentIndex(varTypeIdx);
+        variationTypeCombo_->blockSignals(false);
+    }
+
+    if (ts.fillType() >= 0 && ts.fillType() <= 2) {
+        fillTypeCombo_->blockSignals(true);
+        fillTypeCombo_->setCurrentIndex(ts.fillType());
+        fillTypeCombo_->blockSignals(false);
+    }
+}
+
+QColor PropertyEditorV2::generateVariation(const QColor& base, int index, int total) const
+{
+    float h = 0, s = 0, l = 0, a = 0;
+    base.getHslF(&h, &s, &l, &a);
+
+    int varType = 0;
+    if (appState_) varType = appState_->toolState().colorVariationType();
+
+    int cols = 3;
+    int row = index / cols;
+    int col = index % cols;
+
+    switch (varType) {
+    case 0: { // Monochromatic: vary lightness and saturation
+        float newS = 0.2f + col * 0.4f;
+        float newL = 0.1f + row * 0.4f;
+        return QColor::fromHslF(h, std::clamp(newS, 0.0f, 1.0f),
+                                std::clamp(newL, 0.0f, 1.0f), a);
+    }
+    case 1: { // Analogous: vary hue slightly
+        float hueShift = (col - 1) * 0.05f;
+        float newH = std::fmod(h + hueShift + 1.0f, 1.0f);
+        float newL = 0.2f + row * 0.3f;
+        return QColor::fromHslF(newH, s, std::clamp(newL, 0.0f, 1.0f), a);
+    }
+    case 2: { // Triadic: vary hue by 120 degrees
+        float hueShift = col * 0.3333f;
+        float newH = std::fmod(h + hueShift + 1.0f, 1.0f);
+        float newL = 0.2f + row * 0.3f;
+        return QColor::fromHslF(newH, s, std::clamp(newL, 0.0f, 1.0f), a);
+    }
+    default:
+        return base;
+    }
+}
+
+void PropertyEditorV2::onVariationClicked(int index)
+{
+    if (!appState_) return;
+    QColor base = appState_->toolState().sampledColor();
+    if (!base.isValid()) base = appState_->toolState().primaryColor();
+    int total = static_cast<int>(variationButtons_.size());
+    QColor selected = generateVariation(base, index, total);
+    appState_->toolState().setPrimaryColor(selected);
+    appState_->toolState().setSampledColor(selected);
+    updateColorVariations();
+    emit primaryColorChanged(selected);
+}
+
+void PropertyEditorV2::onFillTypeComboChanged(int index)
+{
+    if (updatingFromState_) return;
+    if (appState_) {
+        appState_->toolState().setFillType(index);
+    }
+    emit fillTypeChanged(index);
+}
+
+void PropertyEditorV2::onColorVariationTypeChanged(int index)
+{
+    if (updatingFromState_) return;
+    if (appState_) {
+        appState_->toolState().setColorVariationType(index);
+    }
+    updateColorVariations();
+}
+
+void PropertyEditorV2::onLineStyleChanged(int index)
+{
+    if (updatingFromState_) return;
+    if (appState_) {
+        appState_->toolState().setLineStyle(index);
+    }
 }
 
 } // namespace fap

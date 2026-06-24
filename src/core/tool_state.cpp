@@ -22,6 +22,11 @@ bool ToolState::onionEnabled() const { return onion_enabled_; }
 int ToolState::onionPrevFrames() const { return onion_prev_frames_; }
 int ToolState::onionNextFrames() const { return onion_next_frames_; }
 int ToolState::onionOpacity() const { return onion_opacity_; }
+int ToolState::fillType() const { return fill_type_; }
+QColor ToolState::sampledColor() const { return sampled_color_; }
+int ToolState::colorVariationType() const { return color_variation_type_; }
+int ToolState::colorVariationCount() const { return color_variation_count_; }
+int ToolState::lineStyle() const { return line_style_; }
 
 void ToolState::setActiveTool(ToolType tool) {
     if (active_tool_ != tool) {
@@ -164,6 +169,11 @@ void ToolState::resetToDefaults() {
     setOnionPrevFrames(3);
     setOnionNextFrames(1);
     setOnionOpacity(35);
+    setFillType(0);
+    setSampledColor(QColor(0, 0, 0));
+    setColorVariationType(0);
+    setColorVariationCount(9);
+    setLineStyle(0);
 }
 
 void ToolState::setOnionEnabled(bool enabled) {
@@ -194,6 +204,50 @@ void ToolState::setOnionOpacity(int opacity) {
     if (onion_opacity_ != clamped) {
         onion_opacity_ = clamped;
         emit onionOpacityChanged(clamped);
+    }
+}
+
+void ToolState::setFillType(int type) {
+    int clamped = std::clamp(type, 0, 2);
+    if (fill_type_ != clamped) {
+        fill_type_ = clamped;
+        emit fillTypeChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setSampledColor(const QColor& color) {
+    if (sampled_color_ != color) {
+        sampled_color_ = color;
+        emit sampledColorChanged(color);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setColorVariationType(int type) {
+    int clamped = std::clamp(type, 0, 2);
+    if (color_variation_type_ != clamped) {
+        color_variation_type_ = clamped;
+        emit colorVariationTypeChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setColorVariationCount(int count) {
+    int clamped = std::clamp(count, 3, 25);
+    if (color_variation_count_ != clamped) {
+        color_variation_count_ = clamped;
+        emit colorVariationCountChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setLineStyle(int style) {
+    int clamped = std::clamp(style, 0, 3);
+    if (line_style_ != clamped) {
+        line_style_ = clamped;
+        emit lineStyleChanged(clamped);
+        emit toolSettingsChanged();
     }
 }
 

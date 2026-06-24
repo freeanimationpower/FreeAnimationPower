@@ -47,6 +47,11 @@ public:
 
     void undo();
     void redo();
+    void copySelection();
+    void cutSelection();
+    void pasteClipboard();
+    void deleteSelection();
+    void resetView();
 
 signals:
     void canvasUpdated();
@@ -119,6 +124,9 @@ private:
                    const QColor& target, int tolerance);
     void floodFillByAlpha(QImage& img, int x, int y, const QColor& fillColor,
                           int boundaryAlpha);
+    void floodFillFabric(QImage& img, int sx, int sy,
+                              const QColor& baseColor, const QColor& target);
+    void floodFillRamp(QImage& img, int sx, int sy, const QColor& baseColor);
 
     // Text tool
     void doText(QPointF cpos);

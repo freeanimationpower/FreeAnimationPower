@@ -69,9 +69,9 @@ static const struct {
     { "Fill",        "G", ":/icons/tools/fill.png",        "Fill a contiguous area with the current foreground color." },
     { "Text",        "T", ":/icons/tools/text.png",        "Place text annotations on the canvas." },
     { "Line",        "L", ":/icons/tools/line.png",        "Draw straight line segments between two points." },
-    { "Rectangle",   "R", ":/icons/tools/rectangle.png",   "Draw rectangle shapes by dragging." },
-    { "Ellipse",     "O", ":/icons/tools/ellipse.png",     "Draw ellipse shapes by dragging." },
-    { "Move",        "V", ":/icons/tools/move.png",        "Move or transform selected content on the canvas." },
+    { "Rectangle",   "U", ":/icons/tools/rectangle.png",   "Draw rectangle shapes by dragging." },
+    { "Ellipse",     "Y", ":/icons/tools/ellipse.png",     "Draw ellipse shapes by dragging." },
+    { "Move",        "M", ":/icons/tools/move.png",        "Move or transform selected content on the canvas." },
     { "Select",      "S", ":/icons/tools/select.png",      "Select a rectangular region of the canvas." },
     { "Hand",        "H", ":/icons/tools/hand.png",        "Pan and scroll the canvas view. Hold Space for quick access." },
 };

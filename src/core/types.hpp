@@ -57,6 +57,25 @@ enum class ToolType {
     TweenEdit
 };
 
+enum class FillType {
+    Solid,
+    Fabric,
+    Ramp
+};
+
+enum class ColorVariationType {
+    Monochromatic,
+    Analogous,
+    Triadic
+};
+
+enum class LineStyle {
+    Solid,
+    Tapered,
+    Dashed,
+    Dotted
+};
+
 struct Color {
     float r = 0.0f;
     float g = 0.0f;

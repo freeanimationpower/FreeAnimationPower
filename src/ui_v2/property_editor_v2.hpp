@@ -2,12 +2,14 @@
 
 #include <QtWidgets/QWidget>
 #include <memory>
+#include <vector>
 
 class QSlider;
 class QLabel;
 class QSpinBox;
 class QComboBox;
 class QCheckBox;
+class QPushButton;
 
 namespace fap {
 
@@ -26,6 +28,8 @@ signals:
     void brushHardnessChanged(int hardness);
     void brushShapeChanged(const QString& shape);
     void stabilizerChanged(int level);
+    void fillTypeChanged(int type);
+    void primaryColorChanged(const QColor& color);
 
 private:
     void setupUI();
@@ -43,12 +47,23 @@ private:
     void showBrushControls();
     void showAllBrushControls();
     void showPlaceholder();
+    void showPickColorControls();
+    void showFillControls();
+    void updateColorVariations();
+    void onVariationClicked(int index);
+    void onFillTypeComboChanged(int index);
+    void onColorVariationTypeChanged(int index);
+    void onLineStyleChanged(int index);
+    QColor generateVariation(const QColor& base, int index, int total) const;
 
     std::shared_ptr<AppState> appState_;
 
     QWidget* brushGroup_ = nullptr;
     QWidget* placeholderWidget_ = nullptr;
+    QWidget* pickColorGroup_ = nullptr;
+    QWidget* fillGroup_ = nullptr;
 
+    // Brush controls
     QLabel* sizeLabel_ = nullptr;
     QSlider* sizeSlider_ = nullptr;
     QSpinBox* sizeSpin_ = nullptr;
@@ -72,6 +87,22 @@ private:
     QCheckBox* pressureOpacityCb_ = nullptr;
 
     QLabel* placeholderLabel_ = nullptr;
+
+    // Pick Color controls
+    QPushButton* colorSwatch_ = nullptr;
+    QLabel* colorHexLabel_ = nullptr;
+    QLabel* pickColorLabel_ = nullptr;
+    QComboBox* variationTypeCombo_ = nullptr;
+    QWidget* variationGrid_ = nullptr;
+    std::vector<QPushButton*> variationButtons_;
+
+    // Fill controls
+    QLabel* fillTypeLabel_ = nullptr;
+    QComboBox* fillTypeCombo_ = nullptr;
+
+    // Line tool controls
+    QLabel* lineStyleLabel_ = nullptr;
+    QComboBox* lineStyleCombo_ = nullptr;
 
     bool updatingFromState_ = false;
 };

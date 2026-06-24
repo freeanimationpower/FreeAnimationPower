@@ -112,20 +112,24 @@ void MainWindowV2::setupTopBar()
 
     auto* newAct = toolbar->addAction(QIcon(":/icons/toolbar/new_project.png"), "");
     newAct->setToolTip("New Project (Ctrl+N)");
+    newAct->setShortcut(QKeySequence("Ctrl+N"));
     connect(newAct, &QAction::triggered, this, [this]() { newProject(); });
 
     auto* openAct = toolbar->addAction(QIcon(":/icons/toolbar/open_project.png"), "");
     openAct->setToolTip("Open Project (Ctrl+O)");
+    openAct->setShortcut(QKeySequence("Ctrl+O"));
     connect(openAct, &QAction::triggered, this, [this]() { openProjectDialog(); });
 
     auto* saveAct = toolbar->addAction(QIcon(":/icons/toolbar/save_project.png"), "");
     saveAct->setToolTip("Save Project (Ctrl+S)");
+    saveAct->setShortcut(QKeySequence("Ctrl+S"));
     connect(saveAct, &QAction::triggered, this, [this]() { saveProject(); });
 
     toolbar->addSeparator();
 
     auto* exportVidAct = toolbar->addAction(QIcon(":/icons/toolbar/export_video.png"), "");
-    exportVidAct->setToolTip("Export Video (MP4)");
+    exportVidAct->setToolTip("Export Video (Ctrl+E)");
+    exportVidAct->setShortcut(QKeySequence("Ctrl+E"));
     connect(exportVidAct, &QAction::triggered, this, &MainWindowV2::exportVideo);
 
     auto* exportGifAct = toolbar->addAction(QIcon(":/icons/toolbar/export_gif.png"), "");
@@ -431,6 +435,12 @@ void MainWindowV2::setupConnections()
 
     connect(property_editor_, &PropertyEditorV2::brushShapeChanged, [this](const QString& shape) {
         if (canvas_) { canvas_->setBrushShape(shape); canvas_->update(); }
+    });
+
+    connect(property_editor_, &PropertyEditorV2::primaryColorChanged, [this](const QColor& color) {
+        if (canvas_) canvas_->setColor(color);
+        toolbox_panel_->setColor(color);
+        color_panel_->setColor(color);
     });
 }
 

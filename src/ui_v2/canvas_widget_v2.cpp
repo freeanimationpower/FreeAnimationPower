@@ -289,6 +289,180 @@ void CanvasWidgetV2::redo()
     }
 }
 
+void CanvasWidgetV2::copySelection()
+{
+    QImage toCopy;
+    if (floatingActive_ && !floatingSelection_.isNull()) {
+        toCopy = floatingSelection_;
+    } else if (!selImage_.isNull()) {
+        toCopy = selImage_;
+    } else if (selRect_.isValid()) {
+        auto* layer = activeRasterLayer();
+        if (layer) {
+            QRect r(static_cast<int>(selRect_.x() - layer->originX()),
+                    static_cast<int>(selRect_.y() - layer->originY()),
+                    static_cast<int>(selRect_.width()),
+                    static_cast<int>(selRect_.height()));
+            QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
+                       layer->width(), layer->height(),
+                       layer->width() * static_cast<int>(sizeof(uint32_t)),
+                       QImage::Format_ARGB32_Premultiplied);
+            toCopy = img.copy(r.intersected(QRect(0, 0, layer->width(), layer->height())));
+        }
+    }
+    if (toCopy.isNull()) return;
+    QApplication::clipboard()->setImage(toCopy);
+    emit statusMessage("Copied to clipboard");
+}
+
+void CanvasWidgetV2::cutSelection()
+{
+    copySelection();
+
+    if (floatingActive_) {
+        auto* layer = activeRasterLayer();
+        if (layer && !layer->locked()) {
+            pushFullLayerUndo(layer, snapFullLayer(layer));
+        }
+        floatingSelection_ = QImage();
+        originalFloatingSelection_ = QImage();
+        selImage_ = QImage();
+        selRect_ = QRectF();
+        floatingActive_ = false;
+        selState_ = SelectionState::None;
+        emit canvasUpdated();
+        emit statusMessage("Cut to clipboard");
+        return;
+    }
+
+    if (!selRect_.isValid()) return;
+
+    auto* layer = activeRasterLayer();
+    if (layer && !layer->locked()) {
+        auto before = snapFullLayer(layer);
+        int ox = layer->originX();
+        int oy = layer->originY();
+        QRect bufRect(static_cast<int>(selRect_.x() - ox),
+                      static_cast<int>(selRect_.y() - oy),
+                      static_cast<int>(selRect_.width()),
+                      static_cast<int>(selRect_.height()));
+        bufRect = bufRect.intersected(QRect(0, 0, layer->width(), layer->height()));
+
+        QImage img(reinterpret_cast<uchar*>(layer->pixelData()),
+                   layer->width(), layer->height(),
+                   layer->width() * static_cast<int>(sizeof(uint32_t)),
+                   QImage::Format_ARGB32_Premultiplied);
+        img = img.copy();
+        {
+            QPainter cp(&img);
+            cp.setCompositionMode(QPainter::CompositionMode_Clear);
+            cp.fillRect(bufRect, Qt::transparent);
+        }
+        for (int y = 0; y < img.height(); ++y) {
+            const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(y));
+            uint32_t* dst = layer->pixelData() + static_cast<size_t>(y) * static_cast<size_t>(layer->width());
+            std::copy(src, src + img.width(), dst);
+        }
+        layer->bufferEpochTick();
+        pushFullLayerUndo(layer, before);
+    }
+
+    selRect_ = QRectF();
+    selImage_ = QImage();
+    selState_ = SelectionState::None;
+    emit canvasUpdated();
+    emit statusMessage("Cut to clipboard");
+}
+
+void CanvasWidgetV2::pasteClipboard()
+{
+    QImage clip = QApplication::clipboard()->image();
+    if (clip.isNull()) return;
+
+    if (floatingActive_ && !floatingSelection_.isNull()) {
+        commitFloatingSelection();
+    }
+
+    floatingSelection_ = clip.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    originalFloatingSelection_ = floatingSelection_;
+    QPointF vc = widgetToCanvas(QPointF(width() / 2.0f, height() / 2.0f));
+    int px = qRound(vc.x() - clip.width() / 2.0f);
+    int py = qRound(vc.y() - clip.height() / 2.0f);
+    selRect_ = QRectF(px, py, clip.width(), clip.height());
+    selImage_ = QImage();
+    floatingActive_ = true;
+    selState_ = SelectionState::None;
+    marchingTimer_.start();
+    setTool(9);
+    emit toolChangedByKey(9);
+    emit canvasUpdated();
+    emit statusMessage("Pasted");
+}
+
+void CanvasWidgetV2::deleteSelection()
+{
+    if (floatingActive_ && !floatingSelection_.isNull()) {
+        auto* layer = activeRasterLayer();
+        if (layer && !layer->locked()) {
+            pushFullLayerUndo(layer, snapFullLayer(layer));
+        }
+        floatingSelection_ = QImage();
+        originalFloatingSelection_ = QImage();
+        selImage_ = QImage();
+        selRect_ = QRectF();
+        floatingActive_ = false;
+        selState_ = SelectionState::None;
+        emit canvasUpdated();
+        return;
+    }
+
+    if (selRect_.isValid()) {
+        auto* layer = activeRasterLayer();
+        if (layer && !layer->locked()) {
+            auto before = snapFullLayer(layer);
+            int ox = layer->originX();
+            int oy = layer->originY();
+            QRect bufRect(static_cast<int>(selRect_.x() - ox),
+                          static_cast<int>(selRect_.y() - oy),
+                          static_cast<int>(selRect_.width()),
+                          static_cast<int>(selRect_.height()));
+            bufRect = bufRect.intersected(QRect(0, 0, layer->width(), layer->height()));
+
+            QImage img(reinterpret_cast<uchar*>(layer->pixelData()),
+                       layer->width(), layer->height(),
+                       layer->width() * static_cast<int>(sizeof(uint32_t)),
+                       QImage::Format_ARGB32_Premultiplied);
+            img = img.copy();
+            {
+                QPainter cp(&img);
+                cp.setCompositionMode(QPainter::CompositionMode_Clear);
+                cp.fillRect(bufRect, Qt::transparent);
+            }
+            for (int y = 0; y < img.height(); ++y) {
+                const uint32_t* src = reinterpret_cast<const uint32_t*>(img.constScanLine(y));
+                uint32_t* dst = layer->pixelData() + static_cast<size_t>(y) * static_cast<size_t>(layer->width());
+                std::copy(src, src + img.width(), dst);
+            }
+            layer->bufferEpochTick();
+            pushFullLayerUndo(layer, before);
+        }
+        selRect_ = QRectF();
+        selImage_ = QImage();
+        selState_ = SelectionState::None;
+        emit canvasUpdated();
+    }
+}
+
+void CanvasWidgetV2::resetView()
+{
+    zoom_ = 1.0f;
+    offsetX_ = 0.0f;
+    offsetY_ = 0.0f;
+    rotationAngle_ = 0.0f;
+    fit();
+    update();
+}
+
 void CanvasWidgetV2::paintEvent(QPaintEvent* event)
 {
     QPainter p(this);
@@ -630,6 +804,7 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
                     QColor qc = QColor::fromRgbF(c.r, c.g, c.b, c.a);
                     brushColor_ = qc;
                     appState_->toolState().setPrimaryColor(qc);
+                    appState_->toolState().setSampledColor(qc);
                     emit colorPicked(qc);
                     return;
                 }
@@ -745,6 +920,7 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
                     QColor qc = QColor::fromRgbF(c.r, c.g, c.b, c.a);
                     brushColor_ = qc;
                     appState_->toolState().setPrimaryColor(qc);
+                    appState_->toolState().setSampledColor(qc);
                     emit colorPicked(qc);
                     break;
                 }
@@ -841,6 +1017,25 @@ void CanvasWidgetV2::wheelEvent(QWheelEvent* event)
 void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
 {
     bool handled = true;
+    bool ctrl = event->modifiers() & Qt::ControlModifier;
+
+    if (ctrl) {
+        switch (event->key()) {
+            case Qt::Key_C: copySelection(); break;
+            case Qt::Key_X: cutSelection(); break;
+            case Qt::Key_V: pasteClipboard(); break;
+            case Qt::Key_H: flippedH_ = !flippedH_; update(); break;
+            case Qt::Key_0: resetView(); break;
+            default: handled = false; break;
+        }
+        if (handled) {
+            event->accept();
+            emit canvasUpdated();
+            return;
+        }
+    }
+
+    handled = true;
     switch (event->key()) {
         case Qt::Key_B: emit toolChangedByKey(0); break;
         case Qt::Key_E: emit toolChangedByKey(1); break;
@@ -857,6 +1052,13 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
         case Qt::Key_R: rotateCanvas(); break;
         case Qt::Key_Apostrophe: toggleGrid(); break;
         case Qt::Key_Space: emit togglePlayPause(); break;
+        case Qt::Key_Delete:
+        case Qt::Key_Backspace: deleteSelection(); break;
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+            if (floatingActive_) { commitFloatingSelection(); }
+            else if (selState_ == SelectionState::MovingContent) { commitSelection(); }
+            break;
         case Qt::Key_BracketLeft: {
             int newSize = std::max(1, brushSize_ - 5);
             setBrushSize(newSize);
@@ -1196,17 +1398,91 @@ void CanvasWidgetV2::drawShape()
     {
         QPainter p(&img);
         p.setRenderHint(QPainter::Antialiasing, true);
-        p.setPen(QPen(brushColor_, static_cast<qreal>(brushSize_),
-                      Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        p.setBrush(Qt::NoBrush);
 
         auto tool = appState_->toolState().activeTool();
-        if (tool == ToolType::Line) {
-            p.drawLine(QPointF(x1, y1), QPointF(x2, y2));
-        } else if (tool == ToolType::Rectangle) {
-            p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
-        } else if (tool == ToolType::Ellipse) {
-            p.drawEllipse(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+        int lineStyle = appState_->toolState().lineStyle();
+
+        auto drawTaperedSegment = [&](double ax, double ay, double bx, double by) -> QPainterPath {
+            double dx = bx - ax;
+            double dy = by - ay;
+            double len = std::sqrt(dx * dx + dy * dy);
+            QPainterPath seg;
+            if (len < 1.0) return seg;
+            double ux = dx / len;
+            double uy = dy / len;
+            double px = -uy;
+            double py = ux;
+            double mx = (ax + bx) * 0.5;
+            double my = (ay + by) * 0.5;
+            double thinW = brushSize_ * 0.15;
+            double thickW = brushSize_ * 0.55;
+
+            seg.moveTo(ax + px * thinW, ay + py * thinW);
+            seg.lineTo(mx + px * thickW, my + py * thickW);
+            seg.lineTo(bx + px * thinW, by + py * thinW);
+            seg.lineTo(bx - px * thinW, by - py * thinW);
+            seg.lineTo(mx - px * thickW, my - py * thickW);
+            seg.lineTo(ax - px * thinW, ay - py * thinW);
+            seg.closeSubpath();
+            return seg;
+        };
+
+        if (lineStyle == 1) {
+            p.setPen(Qt::NoPen);
+            p.setBrush(brushColor_);
+
+            if (tool == ToolType::Line) {
+                QPainterPath path = drawTaperedSegment(x1, y1, x2, y2);
+                p.drawPath(path);
+                double thinW = brushSize_ * 0.15;
+                p.drawEllipse(QPointF(x1, y1), thinW, thinW);
+                p.drawEllipse(QPointF(x2, y2), thinW, thinW);
+            } else if (tool == ToolType::Rectangle) {
+                double minX = std::min(x1, x2);
+                double maxX = std::max(x1, x2);
+                double minY = std::min(y1, y2);
+                double maxY = std::max(y1, y2);
+                p.drawPath(drawTaperedSegment(minX, minY, maxX, minY));
+                p.drawPath(drawTaperedSegment(maxX, minY, maxX, maxY));
+                p.drawPath(drawTaperedSegment(maxX, maxY, minX, maxY));
+                p.drawPath(drawTaperedSegment(minX, maxY, minX, minY));
+            } else if (tool == ToolType::Ellipse) {
+                double minX = std::min(x1, x2);
+                double maxX = std::max(x1, x2);
+                double minY = std::min(y1, y2);
+                double maxY = std::max(y1, y2);
+                double cx = (minX + maxX) * 0.5;
+                double cy = (minY + maxY) * 0.5;
+                double rx = (maxX - minX) * 0.5;
+                double ry = (maxY - minY) * 0.5;
+                int steps = 48;
+                double prevX = cx + rx;
+                double prevY = cy;
+                for (int i = 1; i <= steps; ++i) {
+                    double angle = 2.0 * 3.141592653589793 * i / steps;
+                    double curX = cx + rx * std::cos(angle);
+                    double curY = cy + ry * std::sin(angle);
+                    p.drawPath(drawTaperedSegment(prevX, prevY, curX, curY));
+                    prevX = curX;
+                    prevY = curY;
+                }
+            }
+        } else {
+            Qt::PenStyle penStyle = Qt::SolidLine;
+            if (lineStyle == 2) penStyle = Qt::DashLine;
+            else if (lineStyle == 3) penStyle = Qt::DotLine;
+
+            p.setPen(QPen(brushColor_, static_cast<qreal>(brushSize_),
+                          penStyle, Qt::RoundCap, Qt::RoundJoin));
+            p.setBrush(Qt::NoBrush);
+
+            if (tool == ToolType::Line) {
+                p.drawLine(QPointF(x1, y1), QPointF(x2, y2));
+            } else if (tool == ToolType::Rectangle) {
+                p.drawRect(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+            } else if (tool == ToolType::Ellipse) {
+                p.drawEllipse(QRectF(QPointF(x1, y1), QPointF(x2, y2)).normalized());
+            }
         }
     }
 
@@ -1256,9 +1532,11 @@ void CanvasWidgetV2::doFill(QPointF cpos)
 
     if (lx < 0 || lx >= layer->width() || ly < 0 || ly >= layer->height()) return;
 
+    int fillType = appState_->toolState().fillType();
+
     Color targetColor = layer->pixelAt(lx, ly);
     QColor targetQC = QColor::fromRgbF(targetColor.r, targetColor.g, targetColor.b, targetColor.a);
-    if (targetQC == brushColor_) return;
+    if (fillType == 0 && targetQC == brushColor_) return;
 
     layer->ensureUnique();
 
@@ -1270,10 +1548,20 @@ void CanvasWidgetV2::doFill(QPointF cpos)
 
     QImage before = snapFullLayer(layer);
 
-    if (targetQC.alpha() < 20) {
-        floodFillByAlpha(img, lx, ly, brushColor_, 100);
-    } else {
-        floodFill(img, lx, ly, brushColor_, targetQC, 32);
+    switch (fillType) {
+    case 0: // Solid
+        if (targetQC.alpha() < 20) {
+            floodFillByAlpha(img, lx, ly, brushColor_, 100);
+        } else {
+            floodFill(img, lx, ly, brushColor_, targetQC, 32);
+        }
+        break;
+    case 1: // Fabric
+        floodFillFabric(img, lx, ly, brushColor_, targetQC);
+        break;
+    case 2: // Ramp
+        floodFillRamp(img, lx, ly, brushColor_);
+        break;
     }
 
     for (int y = 0; y < img.height(); ++y) {
@@ -1286,6 +1574,167 @@ void CanvasWidgetV2::doFill(QPointF cpos)
 
     pushFullLayerUndo(layer, before);
     emit canvasUpdated();
+}
+
+void CanvasWidgetV2::floodFillFabric(QImage& img, int sx, int sy,
+                                          const QColor& baseColor, const QColor& target)
+{
+    int w = img.width(), h = img.height();
+    int hBase = baseColor.hue();
+    if (hBase < 0) hBase = 0;
+    int sBase = baseColor.saturation();
+    int vBase = baseColor.value();
+    int aBase = baseColor.alpha();
+
+    bool byAlpha = target.alpha() < 20;
+
+    std::vector<uint8_t> visited(static_cast<size_t>(w) * h, 0);
+
+    std::vector<std::pair<int, int>> stack;
+    stack.reserve(4096);
+    stack.push_back({sx, sy});
+
+    while (!stack.empty()) {
+        auto [px, py] = stack.back();
+        stack.pop_back();
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+        if (visited[static_cast<size_t>(py) * w + px]) continue;
+
+        QColor c = img.pixelColor(px, py);
+        if (byAlpha) {
+            if (c.alpha() >= 100) continue;
+        } else {
+            if (std::abs(c.red() - target.red()) > 32 ||
+                std::abs(c.green() - target.green()) > 32 ||
+                std::abs(c.blue() - target.blue()) > 32 ||
+                std::abs(c.alpha() - target.alpha()) > 32)
+                continue;
+        }
+
+        int lx = px;
+        while (lx >= 0) {
+            if (visited[static_cast<size_t>(py) * w + lx]) break;
+            QColor lc = img.pixelColor(lx, py);
+            if (byAlpha && lc.alpha() >= 100) break;
+            if (!byAlpha && std::abs(lc.red() - target.red()) > 32) break;
+
+            visited[static_cast<size_t>(py) * w + lx] = 1;
+
+            int noiseH = ((lx * 7 + py * 13 + 17) % 31) - 15;
+            int noiseA = ((lx * 11 + py * 5 + 3) % 41) - 20;
+            int h = std::clamp(hBase + noiseH / 2, 0, 359);
+            int s = std::clamp(sBase - std::abs(noiseH), 0, 255);
+            int a = std::clamp(aBase + noiseA, 30, 255);
+
+            QColor wc;
+            wc.setHsv(h, s, vBase, a);
+            img.setPixelColor(lx, py, wc);
+
+            if (py > 0) stack.push_back({lx, py - 1});
+            if (py < h - 1) stack.push_back({lx, py + 1});
+            --lx;
+        }
+        int rx = px + 1;
+        while (rx < w) {
+            if (visited[static_cast<size_t>(py) * w + rx]) break;
+            QColor rc = img.pixelColor(rx, py);
+            if (byAlpha && rc.alpha() >= 100) break;
+            if (!byAlpha && std::abs(rc.red() - target.red()) > 32) break;
+
+            visited[static_cast<size_t>(py) * w + rx] = 1;
+
+            int noiseH = ((rx * 7 + py * 13 + 17) % 31) - 15;
+            int noiseA = ((rx * 11 + py * 5 + 3) % 41) - 20;
+            int h = std::clamp(hBase + noiseH / 2, 0, 359);
+            int s = std::clamp(sBase - std::abs(noiseH), 0, 255);
+            int a = std::clamp(aBase + noiseA, 30, 255);
+
+            QColor wc;
+            wc.setHsv(h, s, vBase, a);
+            img.setPixelColor(rx, py, wc);
+
+            if (py > 0) stack.push_back({rx, py - 1});
+            if (py < h - 1) stack.push_back({rx, py + 1});
+            ++rx;
+        }
+    }
+}
+
+void CanvasWidgetV2::floodFillRamp(QImage& img, int sx, int sy, const QColor& baseColor)
+{
+    int w = img.width(), h = img.height();
+    QColor target = img.pixelColor(sx, sy);
+
+    int hBase = baseColor.hue();
+    if (hBase < 0) hBase = 0;
+    int sBase = baseColor.saturation();
+    int vBase = baseColor.value();
+    int aBase = baseColor.alpha();
+
+    std::vector<uint8_t> visited(static_cast<size_t>(w) * h, 0);
+    std::vector<std::pair<int, int>> region;
+    region.reserve(static_cast<size_t>(w) * h / 4);
+
+    std::vector<std::pair<int, int>> stack;
+    stack.reserve(4096);
+    stack.push_back({sx, sy});
+
+    while (!stack.empty()) {
+        auto [px, py] = stack.back();
+        stack.pop_back();
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+        if (visited[static_cast<size_t>(py) * w + px]) continue;
+
+        QColor c = img.pixelColor(px, py);
+        if (std::abs(c.red() - target.red()) > 32 ||
+            std::abs(c.green() - target.green()) > 32 ||
+            std::abs(c.blue() - target.blue()) > 32 ||
+            std::abs(c.alpha() - target.alpha()) > 32)
+            continue;
+
+        visited[static_cast<size_t>(py) * w + px] = 1;
+        region.push_back({px, py});
+
+        if (py > 0) stack.push_back({px, py - 1});
+        if (py < h - 1) stack.push_back({px, py + 1});
+        if (px > 0) stack.push_back({px - 1, py});
+        if (px < w - 1) stack.push_back({px + 1, py});
+    }
+
+    if (region.empty()) return;
+
+    float maxDist = 0.0f;
+    for (auto [rx, ry] : region) {
+        float dx = static_cast<float>(rx - sx);
+        float dy = static_cast<float>(ry - sy);
+        float d = std::sqrt(dx * dx + dy * dy);
+        if (d > maxDist) maxDist = d;
+    }
+    if (maxDist < 1.0f) maxDist = 1.0f;
+
+    float hF = static_cast<float>(hBase);
+    float sF = static_cast<float>(sBase);
+    float vF = static_cast<float>(vBase);
+    float aF = static_cast<float>(aBase);
+
+    for (auto [rx, ry] : region) {
+        float dx = static_cast<float>(rx - sx);
+        float dy = static_cast<float>(ry - sy);
+        float dist = std::sqrt(dx * dx + dy * dy);
+        float t = std::min(dist / maxDist, 1.0f);
+
+        float hOut = std::fmod(hF + t * 30.0f, 360.0f);
+        float sOut = sF * (1.0f - t * 0.6f);
+        float vOut = vF * (1.0f + t * 0.5f);
+        float aOut = aF * (1.0f - t * 0.8f);
+
+        QColor rampC;
+        rampC.setHsv(static_cast<int>(hOut),
+                     static_cast<int>(std::clamp(sOut, 0.0f, 255.0f)),
+                     static_cast<int>(std::clamp(vOut, 0.0f, 255.0f)),
+                     static_cast<int>(std::clamp(aOut, 0.0f, 255.0f)));
+        img.setPixelColor(rx, ry, rampC);
+    }
 }
 
 void CanvasWidgetV2::floodFill(QImage& img, int sx, int sy,

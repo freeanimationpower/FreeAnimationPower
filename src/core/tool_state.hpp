@@ -24,6 +24,11 @@ class ToolState : public QObject {
     Q_PROPERTY(int onionPrevFrames READ onionPrevFrames WRITE setOnionPrevFrames NOTIFY onionPrevFramesChanged)
     Q_PROPERTY(int onionNextFrames READ onionNextFrames WRITE setOnionNextFrames NOTIFY onionNextFramesChanged)
     Q_PROPERTY(int onionOpacity READ onionOpacity WRITE setOnionOpacity NOTIFY onionOpacityChanged)
+    Q_PROPERTY(int fillType READ fillType WRITE setFillType NOTIFY fillTypeChanged)
+    Q_PROPERTY(QColor sampledColor READ sampledColor WRITE setSampledColor NOTIFY sampledColorChanged)
+    Q_PROPERTY(int colorVariationType READ colorVariationType WRITE setColorVariationType NOTIFY colorVariationTypeChanged)
+    Q_PROPERTY(int colorVariationCount READ colorVariationCount WRITE setColorVariationCount NOTIFY colorVariationCountChanged)
+    Q_PROPERTY(int lineStyle READ lineStyle WRITE setLineStyle NOTIFY lineStyleChanged)
 
 public:
     explicit ToolState(QObject* parent = nullptr);
@@ -43,6 +48,11 @@ public:
     int onionPrevFrames() const;
     int onionNextFrames() const;
     int onionOpacity() const;
+    int fillType() const;
+    QColor sampledColor() const;
+    int colorVariationType() const;
+    int colorVariationCount() const;
+    int lineStyle() const;
 
 public slots:
     void setActiveTool(ToolType tool);
@@ -62,6 +72,11 @@ public slots:
     void setOnionPrevFrames(int count);
     void setOnionNextFrames(int count);
     void setOnionOpacity(int opacity);
+    void setFillType(int type);
+    void setSampledColor(const QColor& color);
+    void setColorVariationType(int type);
+    void setColorVariationCount(int count);
+    void setLineStyle(int style);
 
     void resetToDefaults();
 
@@ -82,6 +97,11 @@ signals:
     void onionPrevFramesChanged(int count);
     void onionNextFramesChanged(int count);
     void onionOpacityChanged(int opacity);
+    void fillTypeChanged(int type);
+    void sampledColorChanged(const QColor& color);
+    void colorVariationTypeChanged(int type);
+    void colorVariationCountChanged(int count);
+    void lineStyleChanged(int style);
     void toolSettingsChanged();
 
 private:
@@ -100,6 +120,11 @@ private:
     int onion_prev_frames_ = 3;
     int onion_next_frames_ = 1;
     int onion_opacity_ = 35;
+    int fill_type_ = 0;
+    QColor sampled_color_ = QColor(0, 0, 0);
+    int color_variation_type_ = 0;
+    int color_variation_count_ = 9;
+    int line_style_ = 0;
 };
 
 } // namespace fap
