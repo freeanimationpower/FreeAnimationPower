@@ -76,6 +76,7 @@ public:
 
     Color pixelAt(int x, int y) const;
     void setPixel(int x, int y, const Color& color);
+    void blendPixel(int x, int y, const Color& color);
     void clear(const Color& color = Color{0.0f, 0.0f, 0.0f, 0.0f});
     void resize(int width, int height);
     void ensureContains(int x, int y, int w, int h);

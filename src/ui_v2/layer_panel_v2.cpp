@@ -12,6 +12,7 @@
 #include <QtCore/QEvent>
 #include <QtCore/QTimer>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QIcon>
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
@@ -58,8 +59,10 @@ static const char* kInlineBtnChecked =
     "  color:#FF6B4A;"
     "}";
 
-static QPushButton* makeIconButton(const QString& icon, const QString& tip) {
-    auto* btn = new QPushButton(icon);
+static QPushButton* makeIconButton(const QString& iconPath, const QString& tip) {
+    auto* btn = new QPushButton();
+    btn->setIcon(QIcon(iconPath));
+    btn->setIconSize(QSize(24, 20));
     btn->setFixedSize(28, 24);
     btn->setToolTip(tip);
     btn->setCursor(Qt::PointingHandCursor);
@@ -90,12 +93,12 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     headerRow->addWidget(titleLabel);
     headerRow->addStretch();
 
-    auto* addRasterBtn = makeIconButton("[+]",
+    auto* addRasterBtn = makeIconButton(":/icons/layers/new_raster.png",
         "New Raster Layer\nCreate a new pixel-based layer for drawing and painting.");
     QObject::connect(addRasterBtn, &QPushButton::clicked, this, &LayerPanelV2::addRasterLayer);
     headerRow->addWidget(addRasterBtn);
 
-    auto* addVecBtn = makeIconButton("[V]",
+    auto* addVecBtn = makeIconButton(":/icons/layers/new_vector.png",
         "New Vector Layer\nCreate a new resolution-independent vector layer for clean lines and shapes.");
     QObject::connect(addVecBtn, &QPushButton::clicked, this, &LayerPanelV2::addVectorLayer);
     headerRow->addWidget(addVecBtn);
@@ -118,22 +121,22 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     auto* btnRow = new QHBoxLayout();
     btnRow->setSpacing(4);
 
-    auto* dupBtn = makeIconButton("\xE2\x9D\xB0",
+    auto* dupBtn = makeIconButton(":/icons/layers/duplicate.png",
         "Duplicate Layer\nCreate an identical copy of the selected layer.");
     QObject::connect(dupBtn, &QPushButton::clicked, this, &LayerPanelV2::duplicateLayer);
     btnRow->addWidget(dupBtn);
 
-    auto* upBtn = makeIconButton("\xE2\x96\xB2",
+    auto* upBtn = makeIconButton(":/icons/layers/move_up.png",
         "Move Layer Up\nMove the selected layer one position higher in the stack.");
     QObject::connect(upBtn, &QPushButton::clicked, this, &LayerPanelV2::moveLayerUp);
     btnRow->addWidget(upBtn);
 
-    auto* downBtn = makeIconButton("\xE2\x96\xBC",
+    auto* downBtn = makeIconButton(":/icons/layers/move_down.png",
         "Move Layer Down\nMove the selected layer one position lower in the stack.");
     QObject::connect(downBtn, &QPushButton::clicked, this, &LayerPanelV2::moveLayerDown);
     btnRow->addWidget(downBtn);
 
-    auto* delBtn = makeIconButton("\xE2\x9C\x96",
+    auto* delBtn = makeIconButton(":/icons/layers/delete.png",
         "Delete Layer\nRemove the selected layer permanently. Cannot delete the last remaining layer.");
     delBtn->setStyleSheet(
         QString("QPushButton{background:%1;color:%2;border:1px solid %3;border-radius:3px;font-size:13px;}")
@@ -195,7 +198,8 @@ QWidget* LayerPanelV2::createLayerRow(int index, const Layer* layer) {
     visBtn->setFixedSize(22, 22);
     visBtn->setCheckable(true);
     visBtn->setChecked(visible);
-    visBtn->setText(visible ? "\xE2\x97\x89" : "\xE2\x97\x8B");
+    visBtn->setIcon(QIcon(visible ? ":/icons/layers/visibility_on.png" : ":/icons/layers/visibility_off.png"));
+    visBtn->setIconSize(QSize(18, 18));
     visBtn->setToolTip(visible ? "Hide this layer" : "Show this layer");
     visBtn->setCursor(Qt::PointingHandCursor);
     visBtn->setStyleSheet(
@@ -207,15 +211,15 @@ QWidget* LayerPanelV2::createLayerRow(int index, const Layer* layer) {
     });
     rowLayout->addWidget(visBtn);
 
-    QString typeIcon;
+    QString typeTag;
     switch (layer->type()) {
-    case LayerType::Raster: typeIcon = "\xF0\x9F\x96\xBC"; break;
-    case LayerType::Vector: typeIcon = "\xE2\x9C\x8F"; break;
-    case LayerType::Group:  typeIcon = "\xF0\x9F\x93\x81"; break;
-    default:                typeIcon = "\xE2\x97\x8F"; break;
+    case LayerType::Raster: typeTag = "[R]"; break;
+    case LayerType::Vector: typeTag = "[V]"; break;
+    case LayerType::Group:  typeTag = "[G]"; break;
+    default:                typeTag = "[-]"; break;
     }
 
-    QString layerText = QString("%1 %2").arg(typeIcon, QString::fromStdString(layer->name()));
+    QString layerText = QString("%1 %2").arg(typeTag, QString::fromStdString(layer->name()));
 
     auto* nameLabel = new QLabel(layerText);
     nameLabel->setStyleSheet(

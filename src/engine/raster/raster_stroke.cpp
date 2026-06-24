@@ -27,16 +27,16 @@ float lerp(float a, float b, float t) {
 }
 
 inline uint32_t packRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    return (static_cast<uint32_t>(r)) |
+    return (static_cast<uint32_t>(b)) |
            (static_cast<uint32_t>(g) << 8) |
-           (static_cast<uint32_t>(b) << 16) |
+           (static_cast<uint32_t>(r) << 16) |
            (static_cast<uint32_t>(a) << 24);
 }
 
 inline void unpackRGBA(uint32_t p, uint8_t& r, uint8_t& g, uint8_t& b, uint8_t& a) {
-    r = static_cast<uint8_t>(p & 0xFF);
+    b = static_cast<uint8_t>(p & 0xFF);
     g = static_cast<uint8_t>((p >> 8) & 0xFF);
-    b = static_cast<uint8_t>((p >> 16) & 0xFF);
+    r = static_cast<uint8_t>((p >> 16) & 0xFF);
     a = static_cast<uint8_t>((p >> 24) & 0xFF);
 }
 

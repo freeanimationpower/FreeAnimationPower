@@ -1,20 +1,51 @@
 <RCC>
-    <qresource prefix="/icons">
-        <!-- Layer panel icons -->
-        <file alias="eye_visible.svg">icons/eye_visible.svg</file>
-        <file alias="eye_hidden.svg">icons/eye_hidden.svg</file>
-        <file alias="lock_closed.svg">icons/lock_closed.svg</file>
-        <file alias="lock_open.svg">icons/lock_open.svg</file>
-        <file alias="new_layer.svg">icons/new_layer.svg</file>
-        <file alias="duplicate.svg">icons/duplicate.svg</file>
-        <file alias="delete.svg">icons/delete.svg</file>
-        <file alias="move_up.svg">icons/move_up.svg</file>
-        <file alias="move_down.svg">icons/move_down.svg</file>
+    <qresource prefix="/icons/toolbar">
+        <file alias="new_project.png">icons/toolbar/new project.png</file>
+        <file alias="open_project.png">icons/toolbar/open project.png</file>
+        <file alias="save_project.png">icons/toolbar/save project.png</file>
+        <file alias="export_video.png">icons/toolbar/export video.png</file>
+        <file alias="export_gif.png">icons/toolbar/export gif.png</file>
+        <file alias="fit_canvas.png">icons/toolbar/fit canvas.png</file>
+        <file alias="flip_horizontal.png">icons/toolbar/Flip horizontal.png</file>
+        <file alias="rotate.png">icons/toolbar/rotate +15.png</file>
+        <file alias="toggle_grid.png">icons/toolbar/toggle grid.png</file>
+        <file alias="undo.png">icons/toolbar/undo.png</file>
+        <file alias="redo.png">icons/toolbar/redo.png</file>
+        <file alias="help_shortcuts.png">icons/toolbar/help shortcuts.png</file>
+    </qresource>
+    <qresource prefix="/icons/tools">
+        <file alias="brush.png">icons/tools/brush.png</file>
+        <file alias="eraser.png">icons/tools/eraser.png</file>
+        <file alias="pick_color.png">icons/tools/pick color.png</file>
+        <file alias="fill.png">icons/tools/fill.png</file>
+        <file alias="text.png">icons/tools/text.png</file>
+        <file alias="line.png">icons/tools/line.png</file>
+        <file alias="rectangle.png">icons/tools/rectangle.png</file>
+        <file alias="ellipse.png">icons/tools/elipse.png</file>
+        <file alias="move.png">icons/tools/move.png</file>
+        <file alias="select.png">icons/tools/select.png</file>
+        <file alias="hand.png">icons/tools/hand.png</file>
+    </qresource>
+    <qresource prefix="/icons/layers">
+        <file alias="new_raster.png">icons/layers/new raster layer.png</file>
+        <file alias="new_vector.png">icons/layers/new vector layer.png</file>
+        <file alias="visibility_on.png">icons/layers/visibility on.png</file>
+        <file alias="visibility_off.png">icons/layers/visibility off.png</file>
+        <file alias="duplicate.png">icons/layers/duplicate layer.png</file>
+        <file alias="move_up.png">icons/layers/move layer up.png</file>
+        <file alias="move_down.png">icons/layers/move layer down.png</file>
+        <file alias="delete.png">icons/layers/delete layer.png</file>
+        <file alias="lock.png">icons/layers/lock.png</file>
+        <file alias="unlock.png">icons/layers/unlock.png</file>
+    </qresource>
+    <qresource prefix="/icons/timeline">
+        <file alias="prev_frame.png">icons/timeline/previous frame.png</file>
+        <file alias="play_pause.png">icons/timeline/play pause.png</file>
+        <file alias="stop.png">icons/timeline/stop.png</file>
+        <file alias="next_frame.png">icons/timeline/next frame.png</file>
     </qresource>
     <qresource prefix="/brushes">
-        <!-- Brush tips (PNG) would go here -->
     </qresource>
     <qresource prefix="/palettes">
-        <!-- Color palettes would go here -->
     </qresource>
 </RCC>

@@ -41,9 +41,9 @@ void compositeRasterLayer(const RasterLayer& raster, RasterEngine& target) {
             uint8_t sa = static_cast<uint8_t>((sp >> 24) & 0xFF);
             if (sa == 0) continue;
 
-            float sr = static_cast<float>(sp & 0xFF) / 255.0f;
+            float sb = static_cast<float>(sp & 0xFF) / 255.0f;
             float sg = static_cast<float>((sp >> 8) & 0xFF) / 255.0f;
-            float sb = static_cast<float>((sp >> 16) & 0xFF) / 255.0f;
+            float sr = static_cast<float>((sp >> 16) & 0xFF) / 255.0f;
             float sAlpha = (static_cast<float>(sa) / 255.0f) * layerOpacity;
 
             blendPixel(dst, tgtW, tgtH, tx, ty, sr, sg, sb, sAlpha, mode);

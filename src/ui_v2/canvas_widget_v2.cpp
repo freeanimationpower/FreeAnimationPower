@@ -164,6 +164,14 @@ void CanvasWidgetV2::setBrushSize(int size)
     }
 }
 
+void CanvasWidgetV2::setBrushShape(const QString& shape)
+{
+    if (brushShape_ != shape) {
+        brushShape_ = shape;
+        update();
+    }
+}
+
 void CanvasWidgetV2::setOnionEnabled(bool enabled)
 {
     onionEnabled_ = enabled;
@@ -319,12 +327,19 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
             QColor tint;
             if (frameOffset < 0) tint = QColor(255, 100, 80, static_cast<int>(alpha * 255));
             else                 tint = QColor(80, 180, 255, static_cast<int>(alpha * 255));
+
+            QImage tinted(img.size(), QImage::Format_ARGB32_Premultiplied);
+            tinted.fill(tint);
+            {
+                QPainter tp(&tinted);
+                tp.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+                tp.drawImage(0, 0, img);
+            }
+
             p.save();
             p.setCompositionMode(QPainter::CompositionMode_SourceOver);
             p.setOpacity(alpha);
-            p.drawImage(QPoint(rl.originX(), rl.originY()), img);
-            p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-            p.fillRect(canvasRect, tint);
+            p.drawImage(QPoint(rl.originX(), rl.originY()), tinted);
             p.restore();
         }
     };
@@ -370,9 +385,48 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
             p.setOpacity(0.5f);
             p.setPen(QPen(QColor("#FF6B4A"), 1.5f / zoom_));
             p.setBrush(Qt::NoBrush);
-            p.drawEllipse(QPointF(virtualCursorPos_), r, r);
+
+            QPointF center = virtualCursorPos_;
+            float flatStretch = 4.0f;
+            float calliStretch = 5.0f;
+            float highlighterStretch = 8.0f;
+
+            if (brushShape_ == "Square") {
+                p.drawRect(QRectF(center.x() - r, center.y() - r, r * 2, r * 2));
+            } else if (brushShape_ == "Flat") {
+                p.save();
+                p.translate(center);
+                p.scale(flatStretch, 1.0);
+                p.drawEllipse(QPointF(0, 0), r, r);
+                p.restore();
+            } else if (brushShape_ == "Calligraphy") {
+                p.save();
+                p.translate(center);
+                p.rotate(45.0f);
+                p.scale(calliStretch, 1.0);
+                p.drawEllipse(QPointF(0, 0), r, r);
+                p.restore();
+            } else if (brushShape_ == "Pencil") {
+                p.drawEllipse(center, r, r);
+                p.setPen(QPen(QColor("#FF6B4A"), 0.5f / zoom_, Qt::DotLine));
+                p.drawEllipse(center, r * 0.85f, r * 0.85f);
+            } else if (brushShape_ == "Highlighter") {
+                p.save();
+                p.translate(center);
+                p.scale(highlighterStretch, highlighterStretch * 0.30f);
+                p.drawEllipse(QPointF(0, 0), r, r);
+                p.restore();
+            } else {
+                p.drawEllipse(center, r, r);
+            }
+
             p.setPen(QPen(QColor("#FFFFFF"), 0.5f / zoom_));
-            p.drawEllipse(QPointF(virtualCursorPos_), r - 0.5f / zoom_, r - 0.5f / zoom_);
+            if (brushShape_ == "Square") {
+                p.drawRect(QRectF(center.x() - r + 0.5f / zoom_, center.y() - r + 0.5f / zoom_,
+                                   r * 2 - 1.0f / zoom_, r * 2 - 1.0f / zoom_));
+            } else {
+                p.drawEllipse(center, r - 0.5f / zoom_, r - 0.5f / zoom_);
+            }
         }
     }
 
@@ -473,6 +527,7 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         layer->ensureUnique();
 
         drawing_ = true;
+        strokeDistance_ = 0.0f;
         lastMousePos_ = event->pos();
 
         QPointF cp = widgetToCanvas(event->pos());
@@ -526,8 +581,11 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
         prevVirtualCursorPos_ = virtualCursorPos_;
         virtualCursorPos_ = newVirtual;
 
-        bool moved = (prevVirtualCursorPos_ != virtualCursorPos_);
-        if (moved) {
+        float segLen = std::sqrt(
+            (virtualCursorPos_.x() - prevVirtualCursorPos_.x()) * (virtualCursorPos_.x() - prevVirtualCursorPos_.x()) +
+            (virtualCursorPos_.y() - prevVirtualCursorPos_.y()) * (virtualCursorPos_.y() - prevVirtualCursorPos_.y()));
+        if (segLen > 0.1f) {
+            strokeDistance_ += segLen;
             drawLineStamps(prevVirtualCursorPos_, virtualCursorPos_);
         }
 
@@ -686,6 +744,13 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
     if (!layer) return;
 
     int radius = brushSize_ / 2;
+
+    if (brushShape_ == "Calligraphy") {
+        float maxDist = 200.0f;
+        float t = std::min(strokeDistance_ / maxDist, 1.0f);
+        float scale = 0.15f + t * 0.85f;
+        radius = std::max(1, static_cast<int>(radius * scale));
+    }
     int ox = layer->originX();
     int oy = layer->originY();
 
@@ -698,20 +763,74 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
         color = QColor(0, 0, 0, 0);
     }
 
+    float flatStretch = 4.0f;
+    float calliStretch = 5.0f;
+    float calliAngle = 0.785398f;  // 45 degrees in radians
+    float highlighterStretch = 8.0f;
+
     for (int dy = -radius; dy <= radius; ++dy) {
         for (int dx = -radius; dx <= radius; ++dx) {
-            if (dx * dx + dy * dy > radius * radius) continue;
+            bool inside = false;
+            float r2 = static_cast<float>(radius * radius);
+
+            if (brushShape_ == "Round") {
+                inside = (dx * dx + dy * dy <= r2);
+            } else if (brushShape_ == "Square") {
+                inside = true;
+            } else if (brushShape_ == "Flat") {
+                float ex = static_cast<float>(dx) / flatStretch;
+                inside = (ex * ex + dy * dy <= r2);
+            } else if (brushShape_ == "Calligraphy") {
+                float cosA = std::cos(calliAngle);
+                float sinA = std::sin(calliAngle);
+                float rx = dx * cosA + dy * sinA;
+                float ry = -dx * sinA + dy * cosA;
+                float ex = rx / calliStretch;
+                inside = (ex * ex + ry * ry <= r2);
+            } else if (brushShape_ == "Pencil") {
+                float dist = static_cast<float>(dx * dx + dy * dy);
+                float edgeFuzz = (static_cast<float>((dx * 7 + dy * 13) & 0xFF) / 512.0f) * r2;
+                inside = (dist <= r2 + edgeFuzz);
+                if (inside) {
+                    uint32_t hash = static_cast<uint32_t>(dx * 374761393 + dy * 668265263 + cx * 1267128163 + cy * 3266489917);
+                    hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+                    hash = ((hash >> 16) ^ hash);
+                    float grain = static_cast<float>(hash & 0xFFFF) / 65536.0f;
+                    float threshold = 0.25f;
+                    float edgeFactor = (r2 - dist) / r2;
+                    if (edgeFactor < 0.2f) threshold = 0.15f;
+                    if (grain < threshold) inside = false;
+                }
+            } else if (brushShape_ == "Highlighter") {
+                float ex = static_cast<float>(dx) / highlighterStretch;
+                float ey = static_cast<float>(dy) / (highlighterStretch * 0.30f);
+                inside = (ex * ex + ey * ey <= r2);
+            } else {
+                inside = (dx * dx + dy * dy <= r2);
+            }
+
+            if (!inside) continue;
+
             int lx = cx + dx - ox;
             int ly = cy + dy - oy;
             if (lx < 0 || lx >= layer->width() || ly < 0 || ly >= layer->height()) continue;
 
             float alpha = static_cast<float>(color.alpha()) / 255.0f * opacity;
+            bool blendMode = false;
+            if (brushShape_ == "Highlighter") {
+                alpha *= 0.35f;
+                blendMode = true;
+            }
             Color c = Color::fromRGBA(
                 static_cast<uint8_t>(color.red()),
                 static_cast<uint8_t>(color.green()),
                 static_cast<uint8_t>(color.blue()),
                 static_cast<uint8_t>(alpha * 255.0f));
-            layer->setPixel(lx, ly, c);
+            if (blendMode) {
+                layer->blendPixel(lx, ly, c);
+            } else {
+                layer->setPixel(lx, ly, c);
+            }
         }
     }
 }
@@ -719,16 +838,13 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
 void CanvasWidgetV2::drawLineStamps(const QPointF& from, const QPointF& to)
 {
     float radius = brushSize_ / 2.0f;
-    float spacing = std::max(1.0f, radius * 0.25f);
+    float spacing = std::max(0.5f, radius * 0.08f);
 
     float dx = static_cast<float>(to.x() - from.x());
     float dy = static_cast<float>(to.y() - from.y());
     float dist = std::sqrt(dx * dx + dy * dy);
 
-    if (dist < 0.5f) return;
-
-    int steps = static_cast<int>(dist / spacing);
-    if (steps < 1) steps = 1;
+    int steps = std::max(1, static_cast<int>(dist / spacing));
 
     for (int i = 0; i <= steps; ++i) {
         float t = static_cast<float>(i) / static_cast<float>(steps);

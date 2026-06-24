@@ -54,9 +54,9 @@ Color RasterLayer::pixelAt(int x, int y) const {
     if (idx == static_cast<size_t>(-1)) return {};
     uint32_t p = pixelBuffer_->pixels[idx];
     return Color::fromRGBA(
-        static_cast<uint8_t>(p & 0xFF),
-        static_cast<uint8_t>((p >> 8) & 0xFF),
         static_cast<uint8_t>((p >> 16) & 0xFF),
+        static_cast<uint8_t>((p >> 8) & 0xFF),
+        static_cast<uint8_t>(p & 0xFF),
         static_cast<uint8_t>((p >> 24) & 0xFF)
     );
 }
@@ -69,10 +69,41 @@ void RasterLayer::setPixel(int x, int y, const Color& color) {
     uint8_t g = static_cast<uint8_t>(std::clamp(color.g, 0.0f, 1.0f) * 255.0f);
     uint8_t b = static_cast<uint8_t>(std::clamp(color.b, 0.0f, 1.0f) * 255.0f);
     uint8_t a = static_cast<uint8_t>(std::clamp(color.a, 0.0f, 1.0f) * 255.0f);
-    pixelBuffer_->pixels[idx] = (static_cast<uint32_t>(r))
+    pixelBuffer_->pixels[idx] = (static_cast<uint32_t>(b))
                               | (static_cast<uint32_t>(g) << 8)
-                              | (static_cast<uint32_t>(b) << 16)
+                              | (static_cast<uint32_t>(r) << 16)
                               | (static_cast<uint32_t>(a) << 24);
+    ++buffer_epoch_;
+}
+
+void RasterLayer::blendPixel(int x, int y, const Color& color) {
+    ensureUnique();
+    size_t idx = indexAt(x, y);
+    if (idx == static_cast<size_t>(-1)) return;
+
+    uint8_t sr = static_cast<uint8_t>(std::clamp(color.r, 0.0f, 1.0f) * 255.0f);
+    uint8_t sg = static_cast<uint8_t>(std::clamp(color.g, 0.0f, 1.0f) * 255.0f);
+    uint8_t sb = static_cast<uint8_t>(std::clamp(color.b, 0.0f, 1.0f) * 255.0f);
+    uint8_t sa = static_cast<uint8_t>(std::clamp(color.a, 0.0f, 1.0f) * 255.0f);
+
+    uint32_t dst = pixelBuffer_->pixels[idx];
+    uint8_t db = static_cast<uint8_t>(dst & 0xFF);
+    uint8_t dg = static_cast<uint8_t>((dst >> 8) & 0xFF);
+    uint8_t dr = static_cast<uint8_t>((dst >> 16) & 0xFF);
+    uint8_t da = static_cast<uint8_t>((dst >> 24) & 0xFF);
+
+    float srcA = static_cast<float>(sa) / 255.0f;
+    float oneMinusSrcA = 1.0f - srcA;
+
+    uint8_t outB = static_cast<uint8_t>(sb * srcA + db * oneMinusSrcA);
+    uint8_t outG = static_cast<uint8_t>(sg * srcA + dg * oneMinusSrcA);
+    uint8_t outR = static_cast<uint8_t>(sr * srcA + dr * oneMinusSrcA);
+    uint8_t outA = static_cast<uint8_t>(sa + da * oneMinusSrcA);
+
+    pixelBuffer_->pixels[idx] = (static_cast<uint32_t>(outB))
+                              | (static_cast<uint32_t>(outG) << 8)
+                              | (static_cast<uint32_t>(outR) << 16)
+                              | (static_cast<uint32_t>(outA) << 24);
     ++buffer_epoch_;
 }
 
@@ -82,9 +113,9 @@ void RasterLayer::clear(const Color& color) {
     uint8_t g = static_cast<uint8_t>(std::clamp(color.g, 0.0f, 1.0f) * 255.0f);
     uint8_t b = static_cast<uint8_t>(std::clamp(color.b, 0.0f, 1.0f) * 255.0f);
     uint8_t a = static_cast<uint8_t>(std::clamp(color.a, 0.0f, 1.0f) * 255.0f);
-    uint32_t val = (static_cast<uint32_t>(r))
+    uint32_t val = (static_cast<uint32_t>(b))
                  | (static_cast<uint32_t>(g) << 8)
-                 | (static_cast<uint32_t>(b) << 16)
+                 | (static_cast<uint32_t>(r) << 16)
                  | (static_cast<uint32_t>(a) << 24);
     std::fill(pixelBuffer_->pixels.begin(), pixelBuffer_->pixels.end(), val);
     ++buffer_epoch_;

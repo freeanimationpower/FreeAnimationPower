@@ -28,6 +28,7 @@ public:
     void setColor(const QColor& color);
 
     void setBrushSize(int size);
+    void setBrushShape(const QString& shape);
     void setOnionEnabled(bool enabled);
     void setOnionSettings(int prevFrames, int nextFrames, int opacity);
 
@@ -90,6 +91,8 @@ private:
     QImage beforeSnapshot_;
     QColor brushColor_ = Qt::black;
     int brushSize_ = 20;
+    QString brushShape_ = "Round";
+    float strokeDistance_ = 0.0f;
 
     void drawBrushStamp(int cx, int cy);
     void drawLineStamps(const QPointF& from, const QPointF& to);

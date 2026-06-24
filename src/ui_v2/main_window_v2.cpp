@@ -11,7 +11,6 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
-#include <QtWidgets/QStyle>
 #include <QtCore/QProcess>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryDir>
@@ -76,74 +75,7 @@ QListWidget::item:selected { background:#FF6B4A; color:#fff; }
 QListWidget::item:hover { background:#1E2130; }
 )";
 
-static QIcon makeRotateIcon()
-{
-    QPixmap pm(16, 16);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor("#8B8FA3"));
-    p.drawEllipse(QRectF(2, 2, 12, 12));
-    p.setCompositionMode(QPainter::CompositionMode_Clear);
-    p.drawEllipse(QRectF(5, 5, 6, 6));
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    p.setBrush(QColor("#8B8FA3"));
-    QPolygonF arrow;
-    arrow << QPointF(8, 1) << QPointF(10.5, 5) << QPointF(5.5, 5);
-    p.drawPolygon(arrow);
-    p.end();
-    return QIcon(pm);
-}
 
-static QIcon makeFlipIcon()
-{
-    QPixmap pm(16, 16);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setPen(QPen(QColor("#8B8FA3"), 1.5));
-    p.drawLine(QPointF(4, 4), QPointF(4, 12));
-    p.drawLine(QPointF(12, 4), QPointF(12, 12));
-    p.drawLine(QPointF(3, 4), QPointF(13, 4));
-    QPolygonF left, right;
-    left << QPointF(3, 4) << QPointF(6, 2) << QPointF(6, 6);
-    right << QPointF(13, 4) << QPointF(10, 2) << QPointF(10, 6);
-    p.setBrush(QColor("#8B8FA3"));
-    p.drawPolygon(left);
-    p.drawPolygon(right);
-    p.end();
-    return QIcon(pm);
-}
-
-static QIcon makeGridIcon()
-{
-    QPixmap pm(16, 16);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setPen(QPen(QColor("#8B8FA3"), 1));
-    for (int i = 0; i <= 16; i += 5) {
-        p.drawLine(QPointF(i, 0), QPointF(i, 16));
-        p.drawLine(QPointF(0, i), QPointF(16, i));
-    }
-    p.end();
-    return QIcon(pm);
-}
-
-static QIcon makeGifIcon()
-{
-    QPixmap pm(16, 16);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    QFont f = p.font();
-    f.setPixelSize(10);
-    f.setBold(true);
-    p.setFont(f);
-    p.setPen(QColor("#8B8FA3"));
-    p.drawText(pm.rect(), Qt::AlignCenter, "G");
-    p.end();
-    return QIcon(pm);
-}
 
 MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
     : QMainWindow(parent)
@@ -175,30 +107,28 @@ void MainWindowV2::setupTopBar()
     auto* toolbar = addToolBar("MainBar");
     toolbar->setMovable(false);
     toolbar->setObjectName("mainToolBarV2");
-    toolbar->setIconSize(QSize(18, 18));
-    toolbar->setFixedHeight(32);
+    toolbar->setIconSize(QSize(32, 32));
+    toolbar->setFixedHeight(52);
 
-    auto* style = this->style();
-
-    auto* newAct = toolbar->addAction(style->standardIcon(QStyle::SP_FileIcon), "");
+    auto* newAct = toolbar->addAction(QIcon(":/icons/toolbar/new_project.png"), "");
     newAct->setToolTip("New Project (Ctrl+N)");
     connect(newAct, &QAction::triggered, this, [this]() { newProject(); });
 
-    auto* openAct = toolbar->addAction(style->standardIcon(QStyle::SP_DialogOpenButton), "");
+    auto* openAct = toolbar->addAction(QIcon(":/icons/toolbar/open_project.png"), "");
     openAct->setToolTip("Open Project (Ctrl+O)");
     connect(openAct, &QAction::triggered, this, [this]() { openProjectDialog(); });
 
-    auto* saveAct = toolbar->addAction(style->standardIcon(QStyle::SP_DialogSaveButton), "");
+    auto* saveAct = toolbar->addAction(QIcon(":/icons/toolbar/save_project.png"), "");
     saveAct->setToolTip("Save Project (Ctrl+S)");
     connect(saveAct, &QAction::triggered, this, [this]() { saveProject(); });
 
     toolbar->addSeparator();
 
-    auto* exportVidAct = toolbar->addAction(style->standardIcon(QStyle::SP_MediaPlay), "");
+    auto* exportVidAct = toolbar->addAction(QIcon(":/icons/toolbar/export_video.png"), "");
     exportVidAct->setToolTip("Export Video (MP4)");
     connect(exportVidAct, &QAction::triggered, this, &MainWindowV2::exportVideo);
 
-    auto* exportGifAct = toolbar->addAction(makeGifIcon(), "");
+    auto* exportGifAct = toolbar->addAction(QIcon(":/icons/toolbar/export_gif.png"), "");
     exportGifAct->setToolTip("Export GIF");
     connect(exportGifAct, &QAction::triggered, this, [this]() {
         if (!canvas_) return;
@@ -263,25 +193,25 @@ void MainWindowV2::setupTopBar()
 
     toolbar->addSeparator();
 
-    auto* fitAct = toolbar->addAction(style->standardIcon(QStyle::SP_ArrowDown), "");
+    auto* fitAct = toolbar->addAction(QIcon(":/icons/toolbar/fit_canvas.png"), "");
     fitAct->setToolTip("Fit Canvas (F)");
     connect(fitAct, &QAction::triggered, [this]() { if (canvas_) canvas_->fit(); });
 
-    auto* flipAct = toolbar->addAction(makeFlipIcon(), "");
+    auto* flipAct = toolbar->addAction(QIcon(":/icons/toolbar/flip_horizontal.png"), "");
     flipAct->setToolTip("Flip Horizontal (Ctrl+H)");
     connect(flipAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->flipH(); canvas_->update(); } });
 
-    auto* rotAct = toolbar->addAction(makeRotateIcon(), "");
+    auto* rotAct = toolbar->addAction(QIcon(":/icons/toolbar/rotate.png"), "");
     rotAct->setToolTip("Rotate +15deg (R)");
     connect(rotAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvas(); canvas_->update(); } });
 
-    auto* gridAct = toolbar->addAction(makeGridIcon(), "");
+    auto* gridAct = toolbar->addAction(QIcon(":/icons/toolbar/toggle_grid.png"), "");
     gridAct->setToolTip("Toggle Grid (')");
     connect(gridAct, &QAction::triggered, [this]() { if (canvas_) canvas_->toggleGrid(); });
 
     toolbar->addSeparator();
 
-    undoAct_ = toolbar->addAction(style->standardIcon(QStyle::SP_ArrowBack), "");
+    undoAct_ = toolbar->addAction(QIcon(":/icons/toolbar/undo.png"), "");
     undoAct_->setToolTip("Undo (Ctrl+Z)");
     undoAct_->setShortcut(QKeySequence::Undo);
     connect(undoAct_, &QAction::triggered, this, [this]() {
@@ -292,7 +222,7 @@ void MainWindowV2::setupTopBar()
         }
     });
 
-    redoAct_ = toolbar->addAction(style->standardIcon(QStyle::SP_ArrowForward), "");
+    redoAct_ = toolbar->addAction(QIcon(":/icons/toolbar/redo.png"), "");
     redoAct_->setToolTip("Redo (Ctrl+Y)");
     redoAct_->setShortcut(QKeySequence::Redo);
     connect(redoAct_, &QAction::triggered, this, [this]() {
@@ -307,7 +237,7 @@ void MainWindowV2::setupTopBar()
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     toolbar->addWidget(spacer);
 
-    auto* helpAct = toolbar->addAction(style->standardIcon(QStyle::SP_MessageBoxQuestion), "");
+    auto* helpAct = toolbar->addAction(QIcon(":/icons/toolbar/help_shortcuts.png"), "");
     helpAct->setToolTip("Keyboard Shortcuts (F1)");
     connect(helpAct, &QAction::triggered, [this]() {
         QMessageBox::about(this, "Keyboard Shortcuts",
@@ -497,6 +427,10 @@ void MainWindowV2::setupConnections()
 
     connect(property_editor_, &PropertyEditorV2::brushOpacityChanged, [this](int) {
         if (canvas_) { canvas_->update(); }
+    });
+
+    connect(property_editor_, &PropertyEditorV2::brushShapeChanged, [this](const QString& shape) {
+        if (canvas_) { canvas_->setBrushShape(shape); canvas_->update(); }
     });
 }
 

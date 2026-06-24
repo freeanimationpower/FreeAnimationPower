@@ -164,7 +164,7 @@ void PropertyEditorV2::setupUI()
     shapeRow->addWidget(shapeLabel_);
 
     shapeCombo_ = new QComboBox(this);
-    shapeCombo_->addItems({ "Round", "Square", "Flat", "Calligraphy" });
+    shapeCombo_->addItems({ "Round", "Square", "Flat", "Calligraphy", "Pencil", "Highlighter" });
     shapeCombo_->setCurrentIndex(0);
     shapeCombo_->setStyleSheet(
         "QComboBox {"

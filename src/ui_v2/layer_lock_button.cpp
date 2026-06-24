@@ -1,11 +1,12 @@
 #include "layer_lock_button.hpp"
 
 #include <QtGui/QKeySequence>
+#include <QtGui/QIcon>
 
 namespace fap {
 
-const char* LayerLockButton::kUnlockedIcon = "\xF0\x9F\x94\x93";
-const char* LayerLockButton::kLockedIcon   = "\xF0\x9F\x94\x92";
+const char* LayerLockButton::kUnlockedIcon = ":/icons/layers/unlock.png";
+const char* LayerLockButton::kLockedIcon   = ":/icons/layers/lock.png";
 const char* LayerLockButton::kNeutralColor = "#C8CCD8";
 const char* LayerLockButton::kLockedColor  = "#FF0000";
 const char* LayerLockButton::kHoverBg      = "#2D3139";
@@ -52,10 +53,11 @@ void LayerLockButton::setLocked(bool locked)
 
 void LayerLockButton::updateAppearance()
 {
-    const char* icon  = locked_ ? kLockedIcon : kUnlockedIcon;
+    const char* iconPath = locked_ ? kLockedIcon : kUnlockedIcon;
     const char* color = locked_ ? kLockedColor : kNeutralColor;
 
-    setText(icon);
+    setIcon(QIcon(iconPath));
+    setIconSize(QSize(18, 18));
     setToolTip(locked_ ? "Unlock this layer" : "Lock this layer");
     setAccessibleDescription(locked_
         ? "Layer is locked. Click to unlock."

@@ -14,6 +14,7 @@
 #include <QtGui/QContextMenuEvent>
 #include <QtGui/QFont>
 #include <QtGui/QImage>
+#include <QtGui/QIcon>
 #include <algorithm>
 
 #include "core/app_state.hpp"
@@ -70,8 +71,10 @@ void TimelinePanelV2::setupUI()
     auto* topBar = new QHBoxLayout();
     topBar->setSpacing(4);
 
-    auto makeBtn = [&](const QString& text, const QString& tip, int w = 26, int h = 22) -> QPushButton* {
-        auto* btn = new QPushButton(text, this);
+    auto makeBtn = [&](const QString& iconPath, const QString& tip, int w = 26, int h = 22) -> QPushButton* {
+        auto* btn = new QPushButton(this);
+        btn->setIcon(QIcon(iconPath));
+        btn->setIconSize(QSize(w > 20 ? w - 4 : w, h > 18 ? h - 4 : h));
         btn->setFixedSize(w, h);
         btn->setToolTip(tip);
         btn->setStyleSheet(QString(
@@ -83,16 +86,16 @@ void TimelinePanelV2::setupUI()
         return btn;
     };
 
-    prevBtn_ = makeBtn("\u25C0", "Previous Frame (,)");
+    prevBtn_ = makeBtn(":/icons/timeline/prev_frame.png", "Previous Frame (,)");
     topBar->addWidget(prevBtn_);
 
-    playBtn_ = makeBtn("\u25B6", "Play / Pause (Space)");
+    playBtn_ = makeBtn(":/icons/timeline/play_pause.png", "Play / Pause (Space)");
     topBar->addWidget(playBtn_);
 
-    stopBtn_ = makeBtn("\u25A0", "Stop");
+    stopBtn_ = makeBtn(":/icons/timeline/stop.png", "Stop");
     topBar->addWidget(stopBtn_);
 
-    nextBtn_ = makeBtn("\u25B6", "Next Frame (.)");
+    nextBtn_ = makeBtn(":/icons/timeline/next_frame.png", "Next Frame (.)");
     topBar->addWidget(nextBtn_);
 
     topBar->addSpacing(6);
@@ -221,12 +224,12 @@ void TimelinePanelV2::onPlayPause()
     if (playing_) {
         playbackTimer_->stop();
         playing_ = false;
-        playBtn_->setText("\u25B6");
+        playBtn_->setToolTip("Play / Pause (Space)");
         emit playbackToggled(false);
     } else {
         playbackTimer_->start(1000 / fps_);
         playing_ = true;
-        playBtn_->setText("\u23F8");
+        playBtn_->setToolTip("Playing... Click to Pause (Space)");
         emit playbackToggled(true);
     }
 }
@@ -235,7 +238,7 @@ void TimelinePanelV2::onStop()
 {
     playbackTimer_->stop();
     playing_ = false;
-    playBtn_->setText("\u25B6");
+    playBtn_->setToolTip("Play / Pause (Space)");
     currentFrame_ = 0;
     scrollOffset_ = 0;
     appState_->setCurrentFrame(0);

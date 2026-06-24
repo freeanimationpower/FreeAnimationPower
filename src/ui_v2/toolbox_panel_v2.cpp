@@ -11,8 +11,10 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QColorDialog>
+#include <QtWidgets/QFrame>
 #include <QtGui/QPainter>
 #include <QtGui/QLinearGradient>
+#include <QtGui/QIcon>
 
 #include "core/app_state.hpp"
 #include "core/tool_state.hpp"
@@ -58,20 +60,20 @@ private:
 static const struct {
     const char* name;
     const char* shortcut;
-    const char* icon;
+    const char* iconPath;
     const char* description;
 } kTools[] = {
-    { "Brush",       "B", "\u270E", "Draw freehand strokes on raster layers." },
-    { "Eraser",      "E", "\u232B", "Erase pixels from raster layers." },
-    { "Pick Color",  "I", "\u2714", "Sample a color from the canvas with the eye dropper." },
-    { "Fill",        "G", "\u25A0", "Fill a contiguous area with the current foreground color." },
-    { "Text",        "T", "T",      "Place text annotations on the canvas." },
-    { "Line",        "L", "\u2571", "Draw straight line segments between two points." },
-    { "Rectangle",   "R", "\u25AD", "Draw rectangle shapes by dragging." },
-    { "Ellipse",     "O", "\u25CB", "Draw ellipse shapes by dragging." },
-    { "Move",        "V", "\u2726", "Move or transform selected content on the canvas." },
-    { "Select",      "S", "\u2B1A", "Select a rectangular region of the canvas." },
-    { "Hand",        "H", "\u270B", "Pan and scroll the canvas view. Hold Space for quick access." },
+    { "Brush",       "B", ":/icons/tools/brush.png",       "Draw freehand strokes on raster layers." },
+    { "Eraser",      "E", ":/icons/tools/eraser.png",      "Erase pixels from raster layers." },
+    { "Pick Color",  "I", ":/icons/tools/pick_color.png",  "Sample a color from the canvas with the eye dropper." },
+    { "Fill",        "G", ":/icons/tools/fill.png",        "Fill a contiguous area with the current foreground color." },
+    { "Text",        "T", ":/icons/tools/text.png",        "Place text annotations on the canvas." },
+    { "Line",        "L", ":/icons/tools/line.png",        "Draw straight line segments between two points." },
+    { "Rectangle",   "R", ":/icons/tools/rectangle.png",   "Draw rectangle shapes by dragging." },
+    { "Ellipse",     "O", ":/icons/tools/ellipse.png",     "Draw ellipse shapes by dragging." },
+    { "Move",        "V", ":/icons/tools/move.png",        "Move or transform selected content on the canvas." },
+    { "Select",      "S", ":/icons/tools/select.png",      "Select a rectangular region of the canvas." },
+    { "Hand",        "H", ":/icons/tools/hand.png",        "Pan and scroll the canvas view. Hold Space for quick access." },
 };
 
 static const int kToolCount = sizeof(kTools) / sizeof(kTools[0]);
@@ -149,23 +151,29 @@ static const char* kCheckStyle =
 
 static const char* kGroupBoxStyle =
     "QGroupBox {"
-    "  color: #E0E2EA;"
+    "  color: #6B7088;"
     "  font-size: 10px;"
-    "  font-weight: bold;"
+    "  font-weight: 600;"
     "  text-transform: uppercase;"
     "  letter-spacing: 1px;"
-    "  border: none;"
-    "  padding-top: 14px;"
-    "  margin-top: 8px;"
+    "  border: 1px solid #2D3139;"
+    "  border-radius: 6px;"
+    "  margin-top: 14px;"
+    "  padding: 10px 8px 8px 8px;"
+    "  background: #1A1D24;"
     "}"
     "QGroupBox::title {"
     "  subcontrol-origin: margin;"
-    "  left: 0px;"
-    "  padding: 0 2px;"
+    "  left: 8px;"
+    "  padding: 0 6px;"
+    "  background: #1A1D24;"
+    "  border-radius: 3px;"
     "}";
 
-QPushButton* ToolboxPanelV2::createToolButton(const QString& icon, const QString& tooltip, int id) {
-    auto* btn = new QPushButton(icon);
+QPushButton* ToolboxPanelV2::createToolButton(const QString& iconPath, const QString& tooltip, int id) {
+    auto* btn = new QPushButton();
+    btn->setIcon(QIcon(iconPath));
+    btn->setIconSize(QSize(36, 32));
     btn->setCheckable(true);
     btn->setFixedSize(36, 32);
     btn->setToolTip(tooltip);
@@ -202,7 +210,7 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     for (int i = 0; i < kToolCount; ++i) {
         QString tip = QString("%1 Tool (%2)\n%3")
             .arg(kTools[i].name, kTools[i].shortcut, kTools[i].description);
-        auto* btn = createToolButton(kTools[i].icon, tip, i);
+        auto* btn = createToolButton(kTools[i].iconPath, tip, i);
         layout->addWidget(btn, 0, Qt::AlignHCenter);
     }
 
@@ -210,6 +218,13 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
         appState_->toolState().setActiveTool(static_cast<ToolType>(id));
         emit toolChanged(id);
     });
+
+    layout->addSpacing(8);
+
+    auto* sepLine = new QFrame();
+    sepLine->setFrameShape(QFrame::HLine);
+    sepLine->setStyleSheet("QFrame{color:#2D3139;max-height:1px;}");
+    layout->addWidget(sepLine);
 
     layout->addSpacing(6);
 
@@ -223,6 +238,8 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
         }
     });
     layout->addWidget(colorSwatch_, 0, Qt::AlignHCenter);
+
+    layout->addSpacing(10);
 
     auto* onionGroup = new QGroupBox("Onion Skin");
     onionGroup->setStyleSheet(kGroupBoxStyle);
