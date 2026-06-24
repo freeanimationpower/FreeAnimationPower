@@ -219,22 +219,16 @@ void MainWindowV2::setupTopBar()
     undoAct_->setToolTip("Undo (Ctrl+Z)");
     undoAct_->setShortcut(QKeySequence::Undo);
     connect(undoAct_, &QAction::triggered, this, [this]() {
-        auto& um = appState_->document().undoManager();
-        if (um.canUndo()) {
-            um.undo();
-            updateUIState();
-        }
+        if (canvas_) { canvas_->undo(); }
+        updateUIState();
     });
 
     redoAct_ = toolbar->addAction(QIcon(":/icons/toolbar/redo.png"), "");
     redoAct_->setToolTip("Redo (Ctrl+Y)");
     redoAct_->setShortcut(QKeySequence::Redo);
     connect(redoAct_, &QAction::triggered, this, [this]() {
-        auto& um = appState_->document().undoManager();
-        if (um.canRedo()) {
-            um.redo();
-            updateUIState();
-        }
+        if (canvas_) { canvas_->redo(); }
+        updateUIState();
     });
 
     auto* spacer = new QWidget();

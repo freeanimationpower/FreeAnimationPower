@@ -1021,6 +1021,8 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
 
     if (ctrl) {
         switch (event->key()) {
+            case Qt::Key_Z: undo(); break;
+            case Qt::Key_Y: redo(); break;
             case Qt::Key_C: copySelection(); break;
             case Qt::Key_X: cutSelection(); break;
             case Qt::Key_V: pasteClipboard(); break;
