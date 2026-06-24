@@ -782,8 +782,6 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
 
         activeDirtyRect_ = stampRect(cx, cy);
         beforeSnapshot_ = captureRect(activeDirtyRect_);
-
-        drawBrushStamp(cx, cy);
     } else if (tool == ToolType::ColorPicker) {
         QPointF cp = widgetToCanvas(event->pos());
         auto& doc = appState_->document();
@@ -978,6 +976,10 @@ void CanvasWidgetV2::mouseReleaseEvent(QMouseEvent* event)
             drawing_ = false;
             emit canvasUpdated();
             return;
+        }
+        if (strokeDistance_ < 0.01f) {
+            drawBrushStamp(static_cast<int>(virtualCursorPos_.x()),
+                           static_cast<int>(virtualCursorPos_.y()));
         }
         drawing_ = false;
         commitStroke();
