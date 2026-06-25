@@ -24,6 +24,7 @@ public:
     void setFPS(int fps);
     void setOnionSkin(int prev, int next);
     void setFrameThumbnail(int frame, const QImage& thumb);
+    void purgeThumbnails();
 
     void togglePlayback();
 

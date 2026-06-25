@@ -136,12 +136,8 @@ void PaintCommand::redo() {
 }
 
 bool PaintCommand::mergeWith(const QUndoCommand* other) {
-    auto* cmd = dynamic_cast<const PaintCommand*>(other);
-    if (!cmd || cmd->layerUid_ != layerUid_ || cmd->frame_ != frame_)
-        return false;
-    afterPixels_ = cmd->afterPixels_;
-    afterStrokes_ = cmd->afterStrokes_;
-    return true;
+    (void)other;
+    return false;
 }
 
 MoveCommand::MoveCommand(CanvasWidget* canvas, int frame, int layerIdx,

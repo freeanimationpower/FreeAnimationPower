@@ -271,13 +271,19 @@ void TimelinePanel::setOnionSkin(int prev, int next) {
 }
 
 void TimelinePanel::setFrameThumbnail(int frame, const QImage& thumb) {
-    int idx = frame - 1;
+    int idx = frame;
     if (idx >= 0 && idx < total_frames_) {
         if (static_cast<size_t>(idx) >= thumbnails_.size())
             thumbnails_.resize(idx + 1);
         thumbnails_[idx] = thumb;
         grid_view_->update();
     }
+}
+
+void TimelinePanel::purgeThumbnails() {
+    thumbnails_.clear();
+    thumbnails_.resize(total_frames_);
+    grid_view_->update();
 }
 
 void TimelinePanel::togglePlayback() {

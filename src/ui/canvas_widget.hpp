@@ -78,6 +78,7 @@ public:
     void removeFrameData(int frameIdx);
     void undo();
     void redo();
+    void purgeMemory();
     void pushUndo(QUndoCommand* cmd);
     void pushFullLayerUndo(Layer* layer, const QImage& beforeSnap, const QString& desc);
     QUndoStack* undoStack() { return &undoStack_; }
@@ -214,8 +215,11 @@ private:
     QImage readRasterRect(RasterLayer* raster, const QRect& rect) const;
     void writeRasterRect(RasterLayer* raster, const QRect& rect, const QImage& pixels);
     Layer* resolveCurrentLayer() const;
+    QImage buildPaddedImage(const QImage& src) const;
 
     std::map<int, std::vector<RawStroke>> vectorStrokes_;
+    std::map<LayerUid, QImage> paddedLayerCaches_;
+    std::map<LayerUid, uint64_t> paddedCacheEpochs_;
     void flattenVectorStrokes(int frame);
     void renderVectorStrokes(QPainter& p, int frame, LayerUid filterUid = 0);
     void renderVectorStroke(QPainter& p, const RawStroke& vs);

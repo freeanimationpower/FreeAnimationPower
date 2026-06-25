@@ -34,6 +34,8 @@ private:
     void setupMenuBar();
     void undo();
     void redo();
+    void purgeUndo();
+    void purgeAllMemory();
     void updateFrameThumbnail(int frame);
     void updateAllThumbnails();
 

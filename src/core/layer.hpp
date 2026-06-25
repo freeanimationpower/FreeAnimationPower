@@ -65,6 +65,7 @@ public:
 
     const uint32_t* pixelData() const { return pixelBuffer_->pixels.data(); }
     uint32_t* pixelData() { return pixelBuffer_->pixels.data(); }
+    const std::shared_ptr<PixelBuffer>& pixelBuffer() const { return pixelBuffer_; }
     std::span<const uint32_t> pixelSpan() const { return pixelBuffer_->pixels; }
     std::span<uint32_t> mutablePixelSpan() { return pixelBuffer_->pixels; }
     size_t pixelCount() const { return pixelBuffer_->pixels.size(); }

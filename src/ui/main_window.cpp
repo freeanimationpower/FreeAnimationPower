@@ -174,12 +174,12 @@ void MainWindow::setupConnections()
 
     QObject::connect(timeline_panel_, &TimelinePanel::frameDuplicated, this,
         [this](int sourceFrame, int newFrame) {
-            QImage composite = canvas_->compositeFrame(sourceFrame);
+            QImage composite = canvas_->compositeFrame(sourceFrame - 1);
             auto* layer = layer_panel_->currentLayer();
             if (layer) {
                 canvas_->writeLayerPixels(layer, composite);
             }
-            updateFrameThumbnail(newFrame);
+            updateFrameThumbnail(newFrame - 1);
         });
 
     QObject::connect(canvas_, &CanvasWidget::canvasUpdated, this,
@@ -263,6 +263,16 @@ void MainWindow::setupMenuBar()
     QObject::connect(redo_action, &QAction::triggered, this, [this]() {
         redo();
     });
+
+    edit_menu->addSeparator();
+
+    auto* purge_menu = edit_menu->addMenu("Pur&ge");
+
+    auto* purge_undo_action = purge_menu->addAction("&Undo History");
+    QObject::connect(purge_undo_action, &QAction::triggered, this, &MainWindow::purgeUndo);
+
+    auto* purge_all_action = purge_menu->addAction("&All Memory");
+    QObject::connect(purge_all_action, &QAction::triggered, this, &MainWindow::purgeAllMemory);
 }
 
 void MainWindow::undo() {
@@ -273,6 +283,19 @@ void MainWindow::undo() {
 void MainWindow::redo() {
     canvas_->redo();
     canvas_->update();
+}
+
+void MainWindow::purgeUndo() {
+    canvas_->undoStack()->clear();
+    canvas_->update();
+    statusBar()->showMessage(QStringLiteral("Undo history purged"), 3000);
+}
+
+void MainWindow::purgeAllMemory() {
+    canvas_->purgeMemory();
+    timeline_panel_->purgeThumbnails();
+    updateAllThumbnails();
+    statusBar()->showMessage(QStringLiteral("Memory purged"), 3000);
 }
 
 void MainWindow::newProject()

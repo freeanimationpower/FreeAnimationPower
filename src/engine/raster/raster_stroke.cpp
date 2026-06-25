@@ -114,8 +114,8 @@ void renderRasterStroke(RasterEngine& target,
             opacity *= lerp(preset.dynamics.min_opacity, preset.dynamics.max_opacity, p.pressure);
         }
         stampBrush(target,
-                   static_cast<int>(p.position.x),
-                   static_cast<int>(p.position.y),
+                   static_cast<int>(std::round(p.position.x)),
+                   static_cast<int>(std::round(p.position.y)),
                    size * 0.5f,
                    preset.tip.hardness,
                    preset.color.r, preset.color.g, preset.color.b,
@@ -141,8 +141,8 @@ void renderRasterStroke(RasterEngine& target,
                 opacity *= lerp(preset.dynamics.min_opacity, preset.dynamics.max_opacity, p0.pressure);
             }
             stampBrush(target,
-                       static_cast<int>(p0.position.x),
-                       static_cast<int>(p0.position.y),
+                       static_cast<int>(std::round(p0.position.x)),
+                       static_cast<int>(std::round(p0.position.y)),
                        size * 0.5f,
                        preset.tip.hardness,
                        preset.color.r, preset.color.g, preset.color.b,
@@ -169,8 +169,8 @@ void renderRasterStroke(RasterEngine& target,
             }
 
             stampBrush(target,
-                       static_cast<int>(pos.x),
-                       static_cast<int>(pos.y),
+                       static_cast<int>(std::round(pos.x)),
+                       static_cast<int>(std::round(pos.y)),
                        size * 0.5f,
                        preset.tip.hardness,
                        preset.color.r, preset.color.g, preset.color.b,

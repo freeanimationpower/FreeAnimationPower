@@ -213,30 +213,24 @@ bool PaperTexture::load(const std::string& path) {
 float PaperTexture::sample(float u, float v) const {
     if (!loaded_ || width_ <= 0 || height_ <= 0) return 0.0f;
 
-    u = u - std::floor(u);
-    v = v - std::floor(v);
-
-    float fx = u * static_cast<float>(width_) - 0.5f;
-    float fy = v * static_cast<float>(height_) - 0.5f;
-
-    int x0 = static_cast<int>(std::floor(fx));
-    int y0 = static_cast<int>(std::floor(fy));
-    int x1 = x0 + 1;
-    int y1 = y0 + 1;
-
-    float tx = fx - static_cast<float>(x0);
-    float ty = fy - static_cast<float>(y0);
-
-    auto wrap = [](int coord, int max) -> int {
+    auto wrapCoord = [](int coord, int max) -> int {
         coord = coord % max;
         if (coord < 0) coord += max;
         return coord;
     };
 
-    x0 = wrap(x0, width_);
-    y0 = wrap(y0, height_);
-    x1 = wrap(x1, width_);
-    y1 = wrap(y1, height_);
+    float fx = (u - std::floor(u)) * static_cast<float>(width_) - 0.5f;
+    float fy = (v - std::floor(v)) * static_cast<float>(height_) - 0.5f;
+
+    int x0 = static_cast<int>(std::floor(fx));
+    int y0 = static_cast<int>(std::floor(fy));
+    float tx = fx - static_cast<float>(x0);
+    float ty = fy - static_cast<float>(y0);
+
+    x0 = wrapCoord(x0, width_);
+    y0 = wrapCoord(y0, height_);
+    int x1 = wrapCoord(x0 + 1, width_);
+    int y1 = wrapCoord(y0 + 1, height_);
 
     float p00 = pixels_[static_cast<size_t>(y0) * static_cast<size_t>(width_) +
                         static_cast<size_t>(x0)] / 255.0f;
