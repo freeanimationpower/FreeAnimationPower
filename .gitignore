@@ -29,3 +29,6 @@ Thumbs.db
 vcpkg_installed/
 
 debug.log
+debug_*.log
+debug_*.png
+TROUBLESHOOTING*.md

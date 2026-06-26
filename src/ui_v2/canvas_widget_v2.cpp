@@ -1965,20 +1965,36 @@ void CanvasWidgetV2::commitMove()
 
     layer->ensureUnique();
 
+    int ox = layer->originX();
+    int oy = layer->originY();
     int lw = layer->width();
     int lh = layer->height();
 
+    int dx = static_cast<int>(clampedDx);
+    int dy = static_cast<int>(clampedDy);
+
+    int minX = std::min(ox, ox + dx);
+    int minY = std::min(oy, oy + dy);
+    int maxX = std::max(ox + lw, ox + lw + dx);
+    int maxY = std::max(oy + lh, oy + lh + dy);
+    layer->ensureContains(minX, minY, maxX - minX, maxY - minY);
+
+    int newOx = layer->originX();
+    int newOy = layer->originY();
+    int newLw = layer->width();
+    int newLh = layer->height();
+
     QImage before = snapFullLayer(layer);
 
-    std::vector<uint32_t> newPixels(static_cast<size_t>(lw) * static_cast<size_t>(lh), 0);
+    std::vector<uint32_t> newPixels(static_cast<size_t>(newLw) * static_cast<size_t>(newLh), 0);
 
-    for (int y = 0; y < lh; ++y) {
-        for (int x = 0; x < lw; ++x) {
-            int srcX = x - static_cast<int>(clampedDx);
-            int srcY = y - static_cast<int>(clampedDy);
-            if (srcX >= 0 && srcX < lw && srcY >= 0 && srcY < lh) {
-                size_t srcIdx = static_cast<size_t>(srcY) * static_cast<size_t>(lw) + static_cast<size_t>(srcX);
-                size_t dstIdx = static_cast<size_t>(y) * static_cast<size_t>(lw) + static_cast<size_t>(x);
+    for (int y = 0; y < newLh; ++y) {
+        for (int x = 0; x < newLw; ++x) {
+            int srcX = x - dx;
+            int srcY = y - dy;
+            if (srcX >= 0 && srcX < newLw && srcY >= 0 && srcY < newLh) {
+                size_t srcIdx = static_cast<size_t>(srcY) * static_cast<size_t>(newLw) + static_cast<size_t>(srcX);
+                size_t dstIdx = static_cast<size_t>(y) * static_cast<size_t>(newLw) + static_cast<size_t>(x);
                 newPixels[dstIdx] = layer->pixelData()[srcIdx];
             }
         }
