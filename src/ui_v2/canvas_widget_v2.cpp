@@ -263,9 +263,14 @@ void CanvasWidgetV2::render(QPainter* painter)
                    rl.width(), rl.height(),
                    rl.width() * static_cast<int>(sizeof(uint32_t)),
                    QImage::Format_ARGB32_Premultiplied);
+        QImage display = img.convertToFormat(QImage::Format_ARGB32);
         painter->setOpacity(layer->opacity());
         painter->setCompositionMode(toQtCompositionMode(layer->blendMode()));
-        painter->drawImage(QPoint(rl.originX(), rl.originY()), img);
+        painter->setRenderHint(QPainter::Antialiasing, false);
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter->drawImage(QPoint(rl.originX(), rl.originY()), display);
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter->setRenderHint(QPainter::Antialiasing, true);
     }
 
     painter->restore();
@@ -517,7 +522,9 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
             p.save();
             p.setCompositionMode(QPainter::CompositionMode_SourceOver);
             p.setOpacity(alpha);
-            p.drawImage(QPoint(rl.originX(), rl.originY()), tinted);
+            p.setRenderHint(QPainter::Antialiasing, false);
+            p.setRenderHint(QPainter::SmoothPixmapTransform, false);
+            p.drawImage(QPoint(rl.originX(), rl.originY()), tinted.convertToFormat(QImage::Format_ARGB32));
             p.restore();
         }
     };
@@ -541,9 +548,27 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
                    rl.width(), rl.height(),
                    rl.width() * static_cast<int>(sizeof(uint32_t)),
                    QImage::Format_ARGB32_Premultiplied);
+        QImage display = img.convertToFormat(QImage::Format_ARGB32);
         p.setOpacity(layer->opacity());
         p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
-        p.drawImage(QPoint(rl.originX(), rl.originY()), img);
+
+        QTransform wt = p.worldTransform();
+        qreal rx = static_cast<qreal>(rl.originX());
+        qreal ry = static_cast<qreal>(rl.originY());
+        qreal devX = wt.m11() * rx + wt.m21() * ry + wt.dx();
+        qreal devY = wt.m12() * rx + wt.m22() * ry + wt.dy();
+        QTransform snapped(wt.m11(), wt.m12(), wt.m13(),
+                           wt.m21(), wt.m22(), wt.m23(),
+                           wt.dx() + (std::round(devX) - devX),
+                           wt.dy() + (std::round(devY) - devY),
+                           wt.m33());
+        p.setWorldTransform(snapped, false);
+        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        p.drawImage(QPoint(rl.originX(), rl.originY()), display);
+        p.setWorldTransform(wt, false);
+        p.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        p.setRenderHint(QPainter::Antialiasing, true);
     }
 
     if (showGrid_) {
@@ -703,6 +728,7 @@ QImage CanvasWidgetV2::captureRect(const QRect& r)
     int cy = std::max(r.y(), oy);
     int cw = std::min(r.right(), ox + lw) - cx;
     int ch = std::min(r.bottom(), oy + lh) - cy;
+
     if (cw <= 0 || ch <= 0) return snap;
 
     int dstX = cx - r.x();
@@ -773,6 +799,7 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
             return;
         }
         auto* layer = static_cast<RasterLayer*>(active);
+
         layer->ensureUnique();
 
         drawing_ = true;
@@ -1316,7 +1343,7 @@ void CanvasWidgetV2::commitStroke()
         return activeRasterLayer();
     });
 
-    appState_->document().undoManager().pushCommand(std::move(cmd));
+    appState_->document().undoManager().pushApplied(std::move(cmd));
 
     activeDirtyRect_ = QRect();
     beforeSnapshot_ = QImage();
@@ -1385,7 +1412,7 @@ void CanvasWidgetV2::pushFullLayerUndo(RasterLayer* layer, const QImage& beforeS
         return activeRasterLayer();
     });
 
-    appState_->document().undoManager().pushCommand(std::move(cmd));
+    appState_->document().undoManager().pushApplied(std::move(cmd));
     appState_->thumbnailCache().invalidateFrame(currentFrame_);
 }
 
@@ -1538,7 +1565,7 @@ void CanvasWidgetV2::drawShape()
         return activeRasterLayer();
     });
 
-    appState_->document().undoManager().pushCommand(std::move(cmd));
+    appState_->document().undoManager().pushApplied(std::move(cmd));
     appState_->thumbnailCache().invalidateFrame(currentFrame_);
 }
 

@@ -33,6 +33,7 @@ struct RawStroke {
     bool pressureSize = true;
     bool pressureOpacity = false;
     bool eraser = false;
+    float hardness = 0.8f;
 };
 
 class CanvasWidget : public QWidget {
@@ -70,6 +71,7 @@ public:
     void setPlaying(bool p) { playing_ = p; }
     bool playing() const { return playing_; }
     QImage compositeFrame(int frameNum) const;
+    QImage compositeFrameAtNativeResolution(int frame, const GroupLayer& root, bool includeOnionSkin) const;
     QPointF screenToCanvas(QPointF sp) const;
     QPointF canvasToScreen(QPointF cp) const;
     void writeLayerPixels(Layer* layer, const QImage& img);
@@ -223,7 +225,9 @@ private:
     void renderVectorStrokes(QPainter& p, int frame, LayerUid filterUid = 0);
     void renderVectorStroke(QPainter& p, const RawStroke& vs);
 
-    std::map<LayerUid, uint64_t> rasterEpochs_;  // TODO: make private with accessor later
+    std::map<LayerUid, uint64_t> rasterEpochs_;
+    bool buffersSanitized_ = false;
+    static void sanitizeAlphaZero(QImage& img);
 };
 
 } // namespace fap

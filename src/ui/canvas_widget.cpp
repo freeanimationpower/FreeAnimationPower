@@ -21,6 +21,7 @@
 #include <QtGui/QImage>
 #include <QtGui/QPen>
 #include <QtGui/QClipboard>
+#include <QDebug>
 #include <cmath>
 #include <algorithm>
 
@@ -42,6 +43,39 @@ static QPainter::CompositionMode toQtCompositionMode(BlendMode mode) {
     case BlendMode::HardLight:  return QPainter::CompositionMode_HardLight;
     }
     return QPainter::CompositionMode_SourceOver;
+}
+
+static void stampBrushDab(QPainter& painter, QPointF center, float radius,
+                          float hardness, const QColor& color) {
+    if (radius < 0.5f) return;
+    QRadialGradient gradient(center, radius);
+    gradient.setColorAt(0.0, color);
+    float h = std::clamp(hardness, 0.02f, 0.99f);
+    gradient.setColorAt(h, color);
+    gradient.setColorAt(1.0, QColor(color.red(), color.green(), color.blue(), 0));
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(gradient);
+    painter.drawEllipse(center, radius, radius);
+}
+
+void CanvasWidget::sanitizeAlphaZero(QImage& img) {
+    if (img.isNull()) return;
+    for (int y = 0; y < img.height(); ++y) {
+        uint32_t* row = reinterpret_cast<uint32_t*>(img.scanLine(y));
+        if (!row) continue;
+        for (int x = 0; x < img.width(); ++x) {
+            if ((row[x] >> 24) == 0) row[x] = 0;
+        }
+    }
+}
+
+static void sanitizeRasterBuffer(RasterLayer* raster) {
+    if (!raster || !raster->pixelData()) return;
+    uint32_t* data = raster->pixelData();
+    size_t count = raster->pixelCount();
+    for (size_t i = 0; i < count; ++i) {
+        if ((data[i] >> 24) < 16) data[i] = 0;
+    }
 }
 
 CanvasWidget::CanvasWidget(Document* doc, BrushEngine* brush, QWidget* parent)
@@ -89,7 +123,17 @@ GroupLayer& CanvasWidget::currentRootLayer(int frame) const {
 }
 
 void CanvasWidget::resizeEvent(QResizeEvent*) { fit(); }
-void CanvasWidget::showEvent(QShowEvent*) { fit(); }
+void CanvasWidget::showEvent(QShowEvent*) {
+    fit();
+    if (doc_ && !buffersSanitized_) {
+        buffersSanitized_ = true;
+        auto& layers = currentRootLayer().layers();
+        for (auto& l : layers) {
+            if (l->type() == LayerType::Raster)
+                sanitizeRasterBuffer(static_cast<RasterLayer*>(l.get()));
+        }
+    }
+}
 
 void CanvasWidget::fit() {
     if (width() == 0 || height() == 0 || !doc_) return;
@@ -205,10 +249,12 @@ void CanvasWidget::paintEvent(QPaintEvent*) {
             RasterLayer* rasterLayer = static_cast<RasterLayer*>(layer);
             QImage layerImage = wrapRasterLayer(rasterLayer);
             if (!layerImage.isNull()) {
+                QImage displayImg = layerImage.convertToFormat(QImage::Format_ARGB32);
+                sanitizeAlphaZero(displayImg);
                 qreal rx = std::round(static_cast<qreal>(rasterLayer->originX()));
                 qreal ry = std::round(static_cast<qreal>(rasterLayer->originY()));
-                QRectF targetRect(rx, ry, layerImage.width(), layerImage.height());
-                QRectF sourceRect(0, 0, layerImage.width(), layerImage.height());
+                QRectF targetRect(rx, ry, displayImg.width(), displayImg.height());
+                QRectF sourceRect(0, 0, displayImg.width(), displayImg.height());
                 bool needsSmoothing = (zoom_ != 1.0);
                 if (needsSmoothing) {
                     QTransform wt = p.worldTransform();
@@ -222,14 +268,13 @@ void CanvasWidget::paintEvent(QPaintEvent*) {
                     p.setWorldTransform(snapped, false);
                     p.setRenderHint(QPainter::Antialiasing, false);
                     p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-                    p.drawImage(targetRect, layerImage, sourceRect);
+                    p.drawImage(targetRect, displayImg, sourceRect);
                     p.setWorldTransform(wt, false);
                     p.setRenderHint(QPainter::SmoothPixmapTransform, false);
                     p.setRenderHint(QPainter::Antialiasing, true);
                 } else {
-                    p.drawImage(targetRect, layerImage, sourceRect);
+                    p.drawImage(targetRect, displayImg, sourceRect);
                 }
-            }
             }
         } else if (layer->type() == LayerType::Vector) {
             renderVectorStrokes(p, currentFrame_, layer->uid());
@@ -370,6 +415,14 @@ void CanvasWidget::paintEvent(QPaintEvent*) {
         p.drawEllipse(sc, s * zoom_ / 2, s * zoom_ / 2);
     }
     paintInfoOverlay(p);
+
+    {
+        static int debugPaintCounter = 0;
+        ++debugPaintCounter;
+        QImage ss = grab().toImage();
+        ss.save(QString("debug_%1_widget_screenshot.png").arg(debugPaintCounter));
+    }
+
     p.end();
 
     if (tool_ == 9 && floatingActive_)
@@ -427,7 +480,7 @@ void CanvasWidget::renderTintedFrame(QPainter& p, int frameIdx, QColor tint) {
     if (!doc_) return;
     const GroupLayer* root = doc_->peekRootLayerForFrame(frameIdx);
     if (!root) return;
-    QImage combined(doc_->width(), doc_->height(), QImage::Format_ARGB32_Premultiplied);
+    QImage combined(doc_->width(), doc_->height(), QImage::Format_ARGB32);
     combined.fill(Qt::transparent);
     QPainter cp(&combined);
     auto& layers = root->layers();
@@ -437,7 +490,14 @@ void CanvasWidget::renderTintedFrame(QPainter& p, int frameIdx, QColor tint) {
         if (layer->type() != LayerType::Raster) continue;
         RasterLayer* rasterLayer = static_cast<RasterLayer*>(layer);
         QImage img = wrapRasterLayer(rasterLayer);
-        if (!img.isNull()) { cp.setOpacity(layer->opacity()); cp.drawImage(rasterLayer->originX(), rasterLayer->originY(), img); }
+        if (!img.isNull()) {
+            cp.save();
+            cp.setOpacity(layer->opacity());
+            QImage display = img.convertToFormat(QImage::Format_ARGB32);
+            sanitizeAlphaZero(display);
+            cp.drawImage(rasterLayer->originX(), rasterLayer->originY(), display);
+            cp.restore();
+        }
     }
     cp.end();
     QImage tinted(combined.size(), QImage::Format_ARGB32_Premultiplied);
@@ -446,12 +506,14 @@ void CanvasWidget::renderTintedFrame(QPainter& p, int frameIdx, QColor tint) {
     tp.setCompositionMode(QPainter::CompositionMode_DestinationIn);
     tp.drawImage(0, 0, combined);
     tp.end();
-    p.drawImage(0, 0, tinted);
+    p.drawImage(0, 0, tinted.convertToFormat(QImage::Format_ARGB32));
 }
 
 void CanvasWidget::paintLiveStroke(QPainter& p) {
     if (strokePoints_.empty()) return;
     float sz = brush_ ? brush_->preset().size : 10.0f;
+    float hardness = brush_ ? brush_->preset().tip.hardness : 0.8f;
+    float opacity = brush_ ? brush_->preset().opacity : 1.0f;
 
     if (tool_ == 1) {
         p.setPen(Qt::NoPen);
@@ -465,18 +527,17 @@ void CanvasWidget::paintLiveStroke(QPainter& p) {
         float r = sz * 0.5f;
         float pad = r + 2.0f;
         int s = static_cast<int>(std::ceil(pad * 2));
-        QImage stamp(s, s, QImage::Format_ARGB32_Premultiplied);
+        QImage stamp(s, s, QImage::Format_ARGB32);
         stamp.fill(Qt::transparent);
         {
             QPainter sp(&stamp);
             sp.setRenderHint(QPainter::Antialiasing);
-            float opacity = brush_ ? brush_->preset().opacity : 1.0f;
+            sp.setCompositionMode(QPainter::CompositionMode_SourceOver);
             QColor c(color_);
             c.setAlphaF(c.alphaF() * opacity);
-            sp.setPen(Qt::NoPen);
-            sp.setBrush(c);
-            sp.drawEllipse(QPointF(pad, pad), r, r);
+            stampBrushDab(sp, QPointF(pad, pad), r, hardness, c);
         }
+        sanitizeAlphaZero(stamp);
         p.save();
         p.setRenderHint(QPainter::Antialiasing, false);
         p.setRenderHint(QPainter::SmoothPixmapTransform, true);
@@ -503,26 +564,32 @@ void CanvasWidget::paintLiveStroke(QPainter& p) {
     int ih = static_cast<int>(std::ceil(maxY - minY + padding * 2));
     if (iw < 2 || ih < 2) return;
 
-    QImage offscreen(iw, ih, QImage::Format_ARGB32_Premultiplied);
+    QImage offscreen(iw, ih, QImage::Format_ARGB32);
     offscreen.fill(Qt::transparent);
-
     {
         QPainter op(&offscreen);
         op.setRenderHint(QPainter::Antialiasing);
+        op.setCompositionMode(QPainter::CompositionMode_SourceOver);
         op.translate(-ix, -iy);
 
-        float opacity = brush_ ? brush_->preset().opacity : 1.0f;
         QColor c(color_);
         c.setAlphaF(c.alphaF() * opacity);
+        float spacing = sz * 0.15f;
 
-        QPainterPath path;
-        path.moveTo(strokePoints_[0].position.x, strokePoints_[0].position.y);
-        for (size_t i = 1; i < strokePoints_.size(); ++i)
-            path.lineTo(strokePoints_[i].position.x, strokePoints_[i].position.y);
-        QPen pen(c, sz, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        op.setPen(pen);
-        op.drawPath(path);
+        for (size_t i = 1; i < strokePoints_.size(); ++i) {
+            Vec2 p0 = strokePoints_[i-1].position;
+            Vec2 p1 = strokePoints_[i].position;
+            float dist = std::hypot(p1.x - p0.x, p1.y - p0.y);
+            int numDabs = std::max(1, static_cast<int>(std::ceil(dist / spacing)));
+            for (int j = 0; j <= numDabs; ++j) {
+                float t = static_cast<float>(j) / static_cast<float>(numDabs);
+                float x = p0.x + (p1.x - p0.x) * t;
+                float y = p0.y + (p1.y - p0.y) * t;
+                stampBrushDab(op, QPointF(x, y), sz * 0.5f, hardness, c);
+            }
+        }
     }
+    sanitizeAlphaZero(offscreen);
 
     p.save();
     p.setRenderHint(QPainter::Antialiasing, false);
@@ -639,7 +706,7 @@ void CanvasWidget::writeRasterRect(RasterLayer* raster, const QRect& rect, const
         if (srcRow && dstRow) {
             std::copy(srcRow + srcStart, srcRow + srcStart + copyW, dstRow);
             for (int x = 0; x < copyW; ++x) {
-                if ((dstRow[x] >> 24) == 0) dstRow[x] = 0;
+                if ((dstRow[x] >> 24) < 16) dstRow[x] = 0;
             }
         }
     }
@@ -670,7 +737,7 @@ void CanvasWidget::writeLayerPixels(Layer* layer, const QImage& img) {
             if (!dst) continue;
             uint32_t* row = dst + (dstY + y) * raster->width() + dstX;
             for (int x = 0; x < w; ++x) {
-                if ((row[x] >> 24) == 0) row[x] = 0;
+                if ((row[x] >> 24) < 16) row[x] = 0;
             }
         }
         raster->bufferEpochTick();
@@ -679,7 +746,7 @@ void CanvasWidget::writeLayerPixels(Layer* layer, const QImage& img) {
 
 void CanvasWidget::blendStrokeToLayer(RasterLayer* raster, const QImage& stroke) {
     if (!raster || stroke.isNull()) return;
-    QImage src = stroke.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QImage src = stroke.convertToFormat(QImage::Format_ARGB32);
     int ox = raster->originX();
     int oy = raster->originY();
     raster->ensureContains(ox, oy, src.width(), src.height());
@@ -696,22 +763,41 @@ void CanvasWidget::blendStrokeToLayer(RasterLayer* raster, const QImage& stroke)
         for (int x = 0; x < w; ++x) {
             uint32_t s = srcRow[x];
             uint32_t sa = (s >> 24) & 0xFF;
-            if (sa < 4) continue;
-            if (sa == 255) { dstRow[x] = s; continue; }
-            uint32_t d = dstRow[x];
-            uint32_t invA = 255 - sa;
+            if (sa == 0) continue;
             uint32_t sr = (s >> 16) & 0xFF;
             uint32_t sg = (s >> 8) & 0xFF;
             uint32_t sb = s & 0xFF;
-            uint32_t dr = (d >> 16) & 0xFF;
-            uint32_t dg = (d >> 8) & 0xFF;
-            uint32_t db = d & 0xFF;
+            uint32_t d = dstRow[x];
             uint32_t da = (d >> 24) & 0xFF;
-            uint32_t outA = sa + (da * invA) / 255;
-            uint32_t outR = sr + (dr * invA) / 255;
-            uint32_t outG = sg + (dg * invA) / 255;
-            uint32_t outB = sb + (db * invA) / 255;
-            dstRow[x] = (outA << 24) | (outR << 16) | (outG << 8) | outB;
+            if (da == 0) {
+                uint32_t premulR = (sr * sa + 127) / 255;
+                uint32_t premulG = (sg * sa + 127) / 255;
+                uint32_t premulB = (sb * sa + 127) / 255;
+                dstRow[x] = (sa << 24) | (premulR << 16) | (premulG << 8) | premulB;
+                continue;
+            }
+            uint32_t dr = (((d >> 16) & 0xFF) * 255 + da / 2) / da;
+            uint32_t dg = (((d >> 8) & 0xFF) * 255 + da / 2) / da;
+            uint32_t db = ((d & 0xFF) * 255 + da / 2) / da;
+            uint32_t invA = 255 - sa;
+            uint32_t outA = sa + (da * invA + 127) / 255;
+            if (outA == 0) { dstRow[x] = 0; continue; }
+            uint32_t outR = (sr * sa * 255 + dr * da * invA) / (outA * 255);
+            uint32_t outG = (sg * sa * 255 + dg * da * invA) / (outA * 255);
+            uint32_t outB = (sb * sa * 255 + db * da * invA) / (outA * 255);
+            outR = std::min(outR, 255u); outG = std::min(outG, 255u); outB = std::min(outB, 255u);
+            uint32_t premulR = (outR * outA + 127) / 255;
+            uint32_t premulG = (outG * outA + 127) / 255;
+            uint32_t premulB = (outB * outA + 127) / 255;
+            dstRow[x] = (outA << 24) | (premulR << 16) | (premulG << 8) | premulB;
+        }
+    }
+    for (int y = 0; y < h; ++y) {
+        uint32_t* row = raster->pixelData();
+        if (!row) continue;
+        row += (dstY + y) * raster->width() + dstX;
+        for (int x = 0; x < w; ++x) {
+            if ((row[x] >> 24) < 16) row[x] = 0;
         }
     }
     raster->bufferEpochTick();
@@ -719,7 +805,7 @@ void CanvasWidget::blendStrokeToLayer(RasterLayer* raster, const QImage& stroke)
 
 void CanvasWidget::blendStrokeToLayerAt(RasterLayer* raster, const QImage& stroke, int canvasX, int canvasY) {
     if (!raster || stroke.isNull()) return;
-    QImage src = stroke.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QImage src = stroke.convertToFormat(QImage::Format_ARGB32);
     int ox = raster->originX();
     int oy = raster->originY();
     raster->ensureContains(canvasX, canvasY, src.width(), src.height());
@@ -736,22 +822,41 @@ void CanvasWidget::blendStrokeToLayerAt(RasterLayer* raster, const QImage& strok
         for (int x = 0; x < w; ++x) {
             uint32_t s = srcRow[x];
             uint32_t sa = (s >> 24) & 0xFF;
-            if (sa < 4) continue;
-            if (sa == 255) { dstRow[x] = s; continue; }
-            uint32_t d = dstRow[x];
-            uint32_t invA = 255 - sa;
+            if (sa == 0) continue;
             uint32_t sr = (s >> 16) & 0xFF;
             uint32_t sg = (s >> 8) & 0xFF;
             uint32_t sb = s & 0xFF;
-            uint32_t dr = (d >> 16) & 0xFF;
-            uint32_t dg = (d >> 8) & 0xFF;
-            uint32_t db = d & 0xFF;
+            uint32_t d = dstRow[x];
             uint32_t da = (d >> 24) & 0xFF;
-            uint32_t outA = sa + (da * invA) / 255;
-            uint32_t outR = sr + (dr * invA) / 255;
-            uint32_t outG = sg + (dg * invA) / 255;
-            uint32_t outB = sb + (db * invA) / 255;
-            dstRow[x] = (outA << 24) | (outR << 16) | (outG << 8) | outB;
+            if (da == 0) {
+                uint32_t premulR = (sr * sa + 127) / 255;
+                uint32_t premulG = (sg * sa + 127) / 255;
+                uint32_t premulB = (sb * sa + 127) / 255;
+                dstRow[x] = (sa << 24) | (premulR << 16) | (premulG << 8) | premulB;
+                continue;
+            }
+            uint32_t dr = (((d >> 16) & 0xFF) * 255 + da / 2) / da;
+            uint32_t dg = (((d >> 8) & 0xFF) * 255 + da / 2) / da;
+            uint32_t db = ((d & 0xFF) * 255 + da / 2) / da;
+            uint32_t invA = 255 - sa;
+            uint32_t outA = sa + (da * invA + 127) / 255;
+            if (outA == 0) { dstRow[x] = 0; continue; }
+            uint32_t outR = (sr * sa * 255 + dr * da * invA) / (outA * 255);
+            uint32_t outG = (sg * sa * 255 + dg * da * invA) / (outA * 255);
+            uint32_t outB = (sb * sa * 255 + db * da * invA) / (outA * 255);
+            outR = std::min(outR, 255u); outG = std::min(outG, 255u); outB = std::min(outB, 255u);
+            uint32_t premulR = (outR * outA + 127) / 255;
+            uint32_t premulG = (outG * outA + 127) / 255;
+            uint32_t premulB = (outB * outA + 127) / 255;
+            dstRow[x] = (outA << 24) | (premulR << 16) | (premulG << 8) | premulB;
+        }
+    }
+    for (int y = 0; y < h; ++y) {
+        uint32_t* row = raster->pixelData();
+        if (!row) continue;
+        row += (dstY + y) * raster->width() + dstX;
+        for (int x = 0; x < w; ++x) {
+            if ((row[x] >> 24) < 16) row[x] = 0;
         }
     }
     raster->bufferEpochTick();
@@ -793,6 +898,51 @@ void CanvasWidget::pushFullLayerUndo(Layer* layer, const QImage& beforeSnap,
 
 void CanvasWidget::removeFrameData(int frameIdx) {
     vectorStrokes_.erase(frameIdx);
+}
+
+QImage CanvasWidget::compositeFrameAtNativeResolution(int frame, const GroupLayer& root, bool includeOnionSkin) const {
+    if (!doc_) return {};
+    QImage result(doc_->width(), doc_->height(), QImage::Format_ARGB32);
+    result.fill(Qt::white);
+    QPainter p(&result);
+    auto& layers = root.layers();
+    for (auto it = layers.begin(); it != layers.end(); ++it) {
+        Layer* layer = it->get();
+        if (!layer->visible()) continue;
+        p.save();
+        p.setOpacity(layer->opacity());
+        p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
+        if (layer->type() == LayerType::Raster) {
+            RasterLayer* rasterLayer = static_cast<RasterLayer*>(layer);
+            QImage layerImage = const_cast<CanvasWidget*>(this)->wrapRasterLayer(rasterLayer);
+            if (!layerImage.isNull()) {
+                QImage displayImg = layerImage.convertToFormat(QImage::Format_ARGB32);
+                sanitizeAlphaZero(displayImg);
+                p.drawImage(rasterLayer->originX(), rasterLayer->originY(), displayImg);
+            }
+        } else if (layer->type() == LayerType::Vector) {
+            const_cast<CanvasWidget*>(this)->renderVectorStrokes(p, frame, layer->uid());
+        }
+        p.restore();
+    }
+    if (includeOnionSkin && onionEnabled_) {
+        int cur = currentFrame_;
+        int totalFrames = doc_->totalFrames();
+        for (int i = 1; i <= onionPrev_; ++i) {
+            int fi = cur - i; if (fi < 0) break;
+            if (!doc_->peekRootLayerForFrame(fi)) continue;
+            int alpha = static_cast<int>(255 * onionOpacity_ * (1.0 - i / (onionPrev_ + 1.5)));
+            renderTintedFrame(p, fi, QColor(255, 60, 60, alpha));
+        }
+        for (int i = 1; i <= onionNext_; ++i) {
+            int fi = cur + i; if (fi >= totalFrames) break;
+            if (!doc_->peekRootLayerForFrame(fi)) continue;
+            int alpha = static_cast<int>(255 * onionOpacity_ * (1.0 - i / (onionNext_ + 1.5)));
+            renderTintedFrame(p, fi, QColor(60, 100, 255, alpha));
+        }
+    }
+    p.end();
+    return result;
 }
 
 QImage CanvasWidget::compositeFrame(int frameNum) const {
@@ -1226,15 +1376,19 @@ void CanvasWidget::commitStroke() {
         static_cast<int>(std::ceil(maxX - minX + padding * 2)),
         static_cast<int>(std::ceil(maxY - minY + padding * 2)));
 
-    QImage beforePixels;
     if (layer->type() == LayerType::Raster) {
         auto* r = static_cast<RasterLayer*>(layer);
-        beforePixels = readRasterRect(r, dirtyRect);
         for (const auto& pt : strokePoints_)
             r->ensureContains(static_cast<int>(pt.position.x - sz),
                               static_cast<int>(pt.position.y - sz),
                               static_cast<int>(sz * 2),
                               static_cast<int>(sz * 2));
+    }
+
+    QImage beforePixels;
+    if (layer->type() == LayerType::Raster) {
+        auto* r = static_cast<RasterLayer*>(layer);
+        beforePixels = readRasterRect(r, dirtyRect);
     }
 
     float opacity = brush_ ? brush_->preset().opacity : 1.0f;
@@ -1250,19 +1404,50 @@ void CanvasWidget::commitStroke() {
     vs.pressureSize = pSize;
     vs.pressureOpacity = pOpacity;
     vs.eraser = false;
+    vs.hardness = brush_ ? brush_->preset().tip.hardness : 0.8f;
     vectorStrokes_[currentFrame_].push_back(vs);
 
     if (layer->type() == LayerType::Raster) {
         auto* r = static_cast<RasterLayer*>(layer);
         constexpr int kStampPad = 2;
         QRect stampRect = dirtyRect.adjusted(-kStampPad, -kStampPad, kStampPad, kStampPad);
-        QImage img(stampRect.width(), stampRect.height(), QImage::Format_ARGB32_Premultiplied);
-        img.fill(Qt::transparent);
-        QPainter p(&img); p.setRenderHint(QPainter::Antialiasing);
-        p.translate(-stampRect.x(), -stampRect.y());
-        renderVectorStroke(p, vs);
-        p.end();
-        blendStrokeToLayerAt(r, img, stampRect.x(), stampRect.y());
+
+        // Step 1: Render brush dabs onto straight-alpha stamp (accumulation)
+        QImage stamp(stampRect.width(), stampRect.height(), QImage::Format_ARGB32);
+        stamp.fill(Qt::transparent);
+        {
+            QPainter sp(&stamp);
+            sp.setRenderHint(QPainter::Antialiasing);
+            sp.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            sp.translate(-stampRect.x(), -stampRect.y());
+            renderVectorStroke(sp, vs);
+        }
+
+        // Step 2: Build premultiplied "app" = brush_color × stamp_alpha
+        // (OpenToonz BluredBrush::updateDrawing method - no round-trip loss)
+        QImage app(stampRect.width(), stampRect.height(), QImage::Format_ARGB32_Premultiplied);
+        {
+            QPainter ap(&app);
+            ap.setBrush(color_);
+            ap.drawRect(app.rect().adjusted(-1, -1, 0, 0));
+            ap.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+            ap.drawImage(QPoint(0, 0), stamp);
+        }
+
+        // Step 3: Composite premultiplied app onto premultiplied layer via QPainter
+        // (QPainter SourceOver on Format_ARGB32_Premultiplied = direct, zero-loss)
+        {
+            QImage layerImg = wrapRasterLayer(r);
+            int ox = r->originX();
+            int oy = r->originY();
+            QPainter lp(&layerImg);
+            lp.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            lp.setOpacity(opacity);
+            lp.drawImage(stampRect.x() - ox, stampRect.y() - oy, app);
+        }
+        r->bufferEpochTick();
+
+        vectorStrokes_[currentFrame_].pop_back();
     }
 
     QImage afterPixels;
@@ -1845,12 +2030,12 @@ void CanvasWidget::renderVectorStroke(QPainter& p, const RawStroke& vs) {
     }
     if (vs.points.size() < 2) { p.restore(); return; }
 
-    bool usePerPointOpacity = vs.pressureOpacity;
     float minW = vs.pressureSize ? vs.baseWidth * 0.2f : vs.baseWidth;
     float maxW = vs.pressureSize ? vs.baseWidth * 1.5f : vs.baseWidth;
     float padding = maxW + 4.0f;
+    float spacing = vs.baseWidth * 0.15f;
 
-    if (!usePerPointOpacity && vs.opacity < 0.99f && !vs.eraser) {
+    if (!vs.pressureOpacity && vs.opacity < 0.99f) {
         float minX = vs.points[0].position.x, maxX = minX;
         float minY = vs.points[0].position.y, maxY = minY;
         for (const auto& pt : vs.points) {
@@ -1860,39 +2045,60 @@ void CanvasWidget::renderVectorStroke(QPainter& p, const RawStroke& vs) {
         int iw = static_cast<int>(std::ceil(maxX - minX + padding * 2));
         int ih = static_cast<int>(std::ceil(maxY - minY + padding * 2));
         if (iw < 2 || ih < 2) { p.restore(); return; }
-        QImage layer(iw, ih, QImage::Format_ARGB32_Premultiplied);
+        QImage layer(iw, ih, QImage::Format_ARGB32);
         layer.fill(Qt::transparent);
-        QPainter lp(&layer);
-        lp.setRenderHint(QPainter::Antialiasing);
-        lp.translate(-minX + padding, -minY + padding);
-        for (size_t i = 1; i < vs.points.size(); ++i) {
-            float pr1 = vs.pressureSize ? vs.points[i-1].pressure : 1.0f;
-            float pr2 = vs.pressureSize ? vs.points[i].pressure : 1.0f;
-            float midW = (minW + (maxW - minW) * pr1 + minW + (maxW - minW) * pr2) * 0.5f;
-            lp.setPen(QPen(vs.color, midW, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-            lp.drawLine(
-                QPointF(vs.points[i-1].position.x, vs.points[i-1].position.y),
-                QPointF(vs.points[i].position.x, vs.points[i].position.y));
+        {
+            QPainter lp(&layer);
+            lp.setRenderHint(QPainter::Antialiasing);
+            lp.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            lp.translate(-minX + padding, -minY + padding);
+            QColor c = vs.color;
+            c.setAlphaF(c.alphaF() * vs.opacity);
+            for (size_t i = 1; i < vs.points.size(); ++i) {
+                float pr0 = vs.pressureSize ? vs.points[i-1].pressure : 1.0f;
+                float pr1 = vs.pressureSize ? vs.points[i].pressure : 1.0f;
+                float w0 = minW + (maxW - minW) * pr0;
+                float w1 = minW + (maxW - minW) * pr1;
+                Vec2 p0 = vs.points[i-1].position;
+                Vec2 p1 = vs.points[i].position;
+                float dist = std::hypot(p1.x - p0.x, p1.y - p0.y);
+                int numDabs = std::max(1, static_cast<int>(std::ceil(dist / spacing)));
+                for (int j = 0; j <= numDabs; ++j) {
+                    float t = static_cast<float>(j) / static_cast<float>(numDabs);
+                    float x = p0.x + (p1.x - p0.x) * t;
+                    float y = p0.y + (p1.y - p0.y) * t;
+                    float w = w0 + (w1 - w0) * t;
+                    stampBrushDab(lp, QPointF(x, y), w * 0.5f, vs.hardness, c);
+                }
+            }
         }
-        lp.end();
+        sanitizeAlphaZero(layer);
         p.setOpacity(vs.opacity);
         p.drawImage(QPointF(minX - padding, minY - padding), layer);
     } else {
         for (size_t i = 1; i < vs.points.size(); ++i) {
-            float pr1 = vs.pressureSize ? vs.points[i-1].pressure : 1.0f;
-            float pr2 = vs.pressureSize ? vs.points[i].pressure : 1.0f;
-            float midW = (minW + (maxW - minW) * pr1 + minW + (maxW - minW) * pr2) * 0.5f;
+            float pr0 = vs.pressureSize ? vs.points[i-1].pressure : 1.0f;
+            float pr1 = vs.pressureSize ? vs.points[i].pressure : 1.0f;
+            float w0 = minW + (maxW - minW) * pr0;
+            float w1 = minW + (maxW - minW) * pr1;
             QColor c = vs.color;
             float alpha = vs.opacity;
             if (vs.pressureOpacity) {
-                float midPr = (pr1 + pr2) * 0.5f;
+                float midPr = (pr0 + pr1) * 0.5f;
                 alpha *= midPr;
             }
             c.setAlphaF(c.alphaF() * alpha);
-            p.setPen(QPen(c, midW, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-            p.drawLine(
-                QPointF(vs.points[i-1].position.x, vs.points[i-1].position.y),
-                QPointF(vs.points[i].position.x, vs.points[i].position.y));
+            Vec2 p0 = vs.points[i-1].position;
+            Vec2 p1 = vs.points[i].position;
+            float dist = std::hypot(p1.x - p0.x, p1.y - p0.y);
+            int numDabs = std::max(1, static_cast<int>(std::ceil(dist / spacing)));
+            for (int j = 0; j <= numDabs; ++j) {
+                float t = static_cast<float>(j) / static_cast<float>(numDabs);
+                float x = p0.x + (p1.x - p0.x) * t;
+                float y = p0.y + (p1.y - p0.y) * t;
+                float w = w0 + (w1 - w0) * t;
+                stampBrushDab(p, QPointF(x, y), w * 0.5f, vs.hardness, c);
+            }
         }
     }
     p.restore();

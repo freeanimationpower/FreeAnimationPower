@@ -76,10 +76,13 @@ void PencilRetouchEngine::adjustPixelThickness(uint32_t& pixel, float intensity)
 
     float alpha = a / 255.0f;
     float factor = 1.0f + (intensity * 2.0f - intensity) * 0.5f;
-    alpha = std::clamp(alpha * factor, 0.0f, 1.0f);
-
-    int newA = static_cast<int>(alpha * 255.0f);
-    pixel = (pixel & 0x00FFFFFF) | (newA << 24);
+    float newAlpha = std::clamp(alpha * factor, 0.0f, 1.0f);
+    int newA = static_cast<int>(newAlpha * 255.0f);
+    float scale = newAlpha / alpha;
+    int newR = static_cast<int>(std::clamp(((pixel >> 16) & 0xFF) * scale, 0.0f, 255.0f));
+    int newG = static_cast<int>(std::clamp(((pixel >> 8) & 0xFF) * scale, 0.0f, 255.0f));
+    int newB = static_cast<int>(std::clamp((pixel & 0xFF) * scale, 0.0f, 255.0f));
+    pixel = (newA << 24) | (newR << 16) | (newG << 8) | newB;
 }
 
 void PencilRetouchEngine::adjustPixelOpacity(uint32_t& pixel, float intensity) const
@@ -89,10 +92,13 @@ void PencilRetouchEngine::adjustPixelOpacity(uint32_t& pixel, float intensity) c
 
     float alpha = a / 255.0f;
     float factor = 1.0f + (intensity - 0.5f) * 0.3f;
-    alpha = std::clamp(alpha * factor, 0.0f, 1.0f);
-
-    int newA = static_cast<int>(alpha * 255.0f);
-    pixel = (pixel & 0x00FFFFFF) | (newA << 24);
+    float newAlpha = std::clamp(alpha * factor, 0.0f, 1.0f);
+    int newA = static_cast<int>(newAlpha * 255.0f);
+    float scale = newAlpha / alpha;
+    int newR = static_cast<int>(std::clamp(((pixel >> 16) & 0xFF) * scale, 0.0f, 255.0f));
+    int newG = static_cast<int>(std::clamp(((pixel >> 8) & 0xFF) * scale, 0.0f, 255.0f));
+    int newB = static_cast<int>(std::clamp((pixel & 0xFF) * scale, 0.0f, 255.0f));
+    pixel = (newA << 24) | (newR << 16) | (newG << 8) | newB;
 }
 
 void PencilRetouchEngine::smoothPixel(RasterLayer& layer, int x, int y) const
@@ -140,14 +146,14 @@ void PencilRetouchEngine::repaintPixel(uint32_t& pixel, float intensity) const
     if (a == 0) return;
 
     auto pc = brush_.color.premultiplied();
-    int r = static_cast<int>(lerpf(pixel & 0xFF, pc.r * 255.0f, intensity));
+    int r = static_cast<int>(lerpf((pixel >> 16) & 0xFF, pc.r * 255.0f, intensity));
     int g = static_cast<int>(lerpf((pixel >> 8) & 0xFF, pc.g * 255.0f, intensity));
-    int b = static_cast<int>(lerpf((pixel >> 16) & 0xFF, pc.b * 255.0f, intensity));
+    int b = static_cast<int>(lerpf(pixel & 0xFF, pc.b * 255.0f, intensity));
 
     pixel = (std::clamp(a, 0, 255) << 24)
-          | (std::clamp(b, 0, 255) << 16)
+          | (std::clamp(r, 0, 255) << 16)
           | (std::clamp(g, 0, 255) << 8)
-          |  std::clamp(r, 0, 255);
+          |  std::clamp(b, 0, 255);
 }
 
 } // namespace fap

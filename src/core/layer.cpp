@@ -1,4 +1,5 @@
 #include "core/layer.hpp"
+#include <QDebug>
 #include <atomic>
 #include <algorithm>
 #include <cstring>
@@ -53,26 +54,28 @@ Color RasterLayer::pixelAt(int x, int y) const {
     size_t idx = indexAt(x, y);
     if (idx == static_cast<size_t>(-1)) return {};
     uint32_t p = pixelBuffer_->pixels[idx];
-    return Color::fromRGBA(
-        static_cast<uint8_t>((p >> 16) & 0xFF),
-        static_cast<uint8_t>((p >> 8) & 0xFF),
-        static_cast<uint8_t>(p & 0xFF),
-        static_cast<uint8_t>((p >> 24) & 0xFF)
-    );
+    uint8_t a = static_cast<uint8_t>((p >> 24) & 0xFF);
+    if (a == 0) return Color::fromRGBA(0, 0, 0, 0);
+    float invA = 255.0f / static_cast<float>(a);
+    uint8_t r = static_cast<uint8_t>(std::min(255.0f, static_cast<float>((p >> 16) & 0xFF) * invA + 0.5f));
+    uint8_t g = static_cast<uint8_t>(std::min(255.0f, static_cast<float>((p >> 8) & 0xFF) * invA + 0.5f));
+    uint8_t b = static_cast<uint8_t>(std::min(255.0f, static_cast<float>(p & 0xFF) * invA + 0.5f));
+    return Color::fromRGBA(r, g, b, a);
 }
 
 void RasterLayer::setPixel(int x, int y, const Color& color) {
     ensureUnique();
     size_t idx = indexAt(x, y);
     if (idx == static_cast<size_t>(-1)) return;
-    uint8_t r = static_cast<uint8_t>(std::clamp(color.r, 0.0f, 1.0f) * 255.0f);
-    uint8_t g = static_cast<uint8_t>(std::clamp(color.g, 0.0f, 1.0f) * 255.0f);
-    uint8_t b = static_cast<uint8_t>(std::clamp(color.b, 0.0f, 1.0f) * 255.0f);
-    uint8_t a = static_cast<uint8_t>(std::clamp(color.a, 0.0f, 1.0f) * 255.0f);
+    float a = std::clamp(color.a, 0.0f, 1.0f);
+    uint8_t r = static_cast<uint8_t>(std::clamp(color.r * a, 0.0f, 1.0f) * 255.0f);
+    uint8_t g = static_cast<uint8_t>(std::clamp(color.g * a, 0.0f, 1.0f) * 255.0f);
+    uint8_t b = static_cast<uint8_t>(std::clamp(color.b * a, 0.0f, 1.0f) * 255.0f);
+    uint8_t alpha = static_cast<uint8_t>(a * 255.0f);
     pixelBuffer_->pixels[idx] = (static_cast<uint32_t>(b))
                               | (static_cast<uint32_t>(g) << 8)
                               | (static_cast<uint32_t>(r) << 16)
-                              | (static_cast<uint32_t>(a) << 24);
+                              | (static_cast<uint32_t>(alpha) << 24);
     ++buffer_epoch_;
 }
 
@@ -86,19 +89,19 @@ void RasterLayer::blendPixel(int x, int y, const Color& color) {
     uint8_t sb = static_cast<uint8_t>(std::clamp(color.b, 0.0f, 1.0f) * 255.0f);
     uint8_t sa = static_cast<uint8_t>(std::clamp(color.a, 0.0f, 1.0f) * 255.0f);
 
+    float srcA = static_cast<float>(sa) / 255.0f;
+    float invSrcA = 1.0f - srcA;
+
     uint32_t dst = pixelBuffer_->pixels[idx];
     uint8_t db = static_cast<uint8_t>(dst & 0xFF);
     uint8_t dg = static_cast<uint8_t>((dst >> 8) & 0xFF);
     uint8_t dr = static_cast<uint8_t>((dst >> 16) & 0xFF);
     uint8_t da = static_cast<uint8_t>((dst >> 24) & 0xFF);
 
-    float srcA = static_cast<float>(sa) / 255.0f;
-    float oneMinusSrcA = 1.0f - srcA;
-
-    uint8_t outB = static_cast<uint8_t>(sb * srcA + db * oneMinusSrcA);
-    uint8_t outG = static_cast<uint8_t>(sg * srcA + dg * oneMinusSrcA);
-    uint8_t outR = static_cast<uint8_t>(sr * srcA + dr * oneMinusSrcA);
-    uint8_t outA = static_cast<uint8_t>(sa + da * oneMinusSrcA);
+    uint8_t outB = static_cast<uint8_t>(static_cast<float>(sb) * srcA + static_cast<float>(db) * invSrcA + 0.5f);
+    uint8_t outG = static_cast<uint8_t>(static_cast<float>(sg) * srcA + static_cast<float>(dg) * invSrcA + 0.5f);
+    uint8_t outR = static_cast<uint8_t>(static_cast<float>(sr) * srcA + static_cast<float>(dr) * invSrcA + 0.5f);
+    uint8_t outA = static_cast<uint8_t>(static_cast<float>(sa) + static_cast<float>(da) * invSrcA + 0.5f);
 
     pixelBuffer_->pixels[idx] = (static_cast<uint32_t>(outB))
                               | (static_cast<uint32_t>(outG) << 8)
@@ -109,14 +112,15 @@ void RasterLayer::blendPixel(int x, int y, const Color& color) {
 
 void RasterLayer::clear(const Color& color) {
     ensureUnique();
-    uint8_t r = static_cast<uint8_t>(std::clamp(color.r, 0.0f, 1.0f) * 255.0f);
-    uint8_t g = static_cast<uint8_t>(std::clamp(color.g, 0.0f, 1.0f) * 255.0f);
-    uint8_t b = static_cast<uint8_t>(std::clamp(color.b, 0.0f, 1.0f) * 255.0f);
-    uint8_t a = static_cast<uint8_t>(std::clamp(color.a, 0.0f, 1.0f) * 255.0f);
+    float a = std::clamp(color.a, 0.0f, 1.0f);
+    uint8_t r = static_cast<uint8_t>(std::clamp(color.r * a, 0.0f, 1.0f) * 255.0f);
+    uint8_t g = static_cast<uint8_t>(std::clamp(color.g * a, 0.0f, 1.0f) * 255.0f);
+    uint8_t b = static_cast<uint8_t>(std::clamp(color.b * a, 0.0f, 1.0f) * 255.0f);
+    uint8_t alpha = static_cast<uint8_t>(a * 255.0f);
     uint32_t val = (static_cast<uint32_t>(b))
                  | (static_cast<uint32_t>(g) << 8)
                  | (static_cast<uint32_t>(r) << 16)
-                 | (static_cast<uint32_t>(a) << 24);
+                 | (static_cast<uint32_t>(alpha) << 24);
     std::fill(pixelBuffer_->pixels.begin(), pixelBuffer_->pixels.end(), val);
     ++buffer_epoch_;
 }
@@ -216,6 +220,13 @@ void RasterLayer::ensureContains(int x, int y, int w, int h) {
 
     if (newOriginX == originX_ && newOriginY == originY_ &&
         newWidth == width_ && newHeight == height_) return;
+
+    qDebug() << "[DEBUG] ensureContains EXPANDED"
+             << "old origin:" << originX_ << originY_
+             << "old size:" << width_ << height_
+             << "new origin:" << newOriginX << newOriginY
+             << "new size:" << newWidth << newHeight
+             << "requested:" << x << y << w << h;
 
     size_t newPixels = static_cast<size_t>(newWidth) * static_cast<size_t>(newHeight);
     constexpr size_t kMaxPixels = static_cast<size_t>(kMaxDim) * static_cast<size_t>(kMaxDim);

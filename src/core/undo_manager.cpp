@@ -12,6 +12,15 @@ void UndoManager::pushCommand(std::unique_ptr<UndoCommand> cmd) {
     redoStack_.clear();
 }
 
+void UndoManager::pushApplied(std::unique_ptr<UndoCommand> cmd) {
+    if (!cmd) return;
+    undoStack_.push_back(std::move(cmd));
+    if (undoStack_.size() > kMaxEntries) {
+        undoStack_.erase(undoStack_.begin());
+    }
+    redoStack_.clear();
+}
+
 void UndoManager::undo() {
     if (undoStack_.empty()) return;
     auto cmd = std::move(undoStack_.back());

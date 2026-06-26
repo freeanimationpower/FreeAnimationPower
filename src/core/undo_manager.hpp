@@ -18,6 +18,7 @@ public:
     static constexpr size_t kMaxEntries = 128;
 
     void pushCommand(std::unique_ptr<UndoCommand> cmd);
+    void pushApplied(std::unique_ptr<UndoCommand> cmd);
     void undo();
     void redo();
     void clear();
