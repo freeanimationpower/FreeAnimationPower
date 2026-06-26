@@ -173,6 +173,11 @@ void RasterLayer::relocatePixels(std::vector<uint32_t> oldPixels,
 void RasterLayer::ensureContains(int x, int y, int w, int h) {
     if (w <= 0 || h <= 0) return;
 
+    x -= kGuardBand;
+    y -= kGuardBand;
+    w += kGuardBand * 2;
+    h += kGuardBand * 2;
+
     int reqLeft = x;
     int reqTop = y;
     int reqRight = x + w;

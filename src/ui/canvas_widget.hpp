@@ -214,12 +214,11 @@ private:
     QImage wrapRasterLayer(RasterLayer* rasterLayer);
     QImage readRasterRect(RasterLayer* raster, const QRect& rect) const;
     void writeRasterRect(RasterLayer* raster, const QRect& rect, const QImage& pixels);
+    void blendStrokeToLayer(RasterLayer* raster, const QImage& stroke);
+    void blendStrokeToLayerAt(RasterLayer* raster, const QImage& stroke, int canvasX, int canvasY);
     Layer* resolveCurrentLayer() const;
-    QImage buildPaddedImage(const QImage& src) const;
 
     std::map<int, std::vector<RawStroke>> vectorStrokes_;
-    std::map<LayerUid, QImage> paddedLayerCaches_;
-    std::map<LayerUid, uint64_t> paddedCacheEpochs_;
     void flattenVectorStrokes(int frame);
     void renderVectorStrokes(QPainter& p, int frame, LayerUid filterUid = 0);
     void renderVectorStroke(QPainter& p, const RawStroke& vs);

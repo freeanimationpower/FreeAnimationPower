@@ -84,6 +84,7 @@ public:
 
     static constexpr int kMaxDim = 10'000;
     static constexpr int kGrowthPad = 512;
+    static constexpr int kGuardBand = 2;
 
 private:
     int width_;

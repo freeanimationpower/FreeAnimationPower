@@ -222,19 +222,7 @@ void CanvasWidget::paintEvent(QPaintEvent*) {
                     p.setWorldTransform(snapped, false);
                     p.setRenderHint(QPainter::Antialiasing, false);
                     p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-
-                    uint64_t epoch = rasterLayer->bufferEpoch();
-                    LayerUid uid = rasterLayer->uid();
-                    auto cacheIt = paddedCacheEpochs_.find(uid);
-                    if (cacheIt == paddedCacheEpochs_.end() || cacheIt->second != epoch) {
-                        paddedLayerCaches_[uid] = buildPaddedImage(layerImage);
-                        paddedCacheEpochs_[uid] = epoch;
-                    }
-                    const QImage& padded = paddedLayerCaches_.find(uid)->second;
-                    QRectF paddedTarget(rx - 1.0, ry - 1.0, static_cast<qreal>(padded.width()), static_cast<qreal>(padded.height()));
-                    QRectF paddedSource(0, 0, static_cast<qreal>(padded.width()), static_cast<qreal>(padded.height()));
-                    p.drawImage(paddedTarget, padded, paddedSource);
-
+                    p.drawImage(targetRect, layerImage, sourceRect);
                     p.setWorldTransform(wt, false);
                     p.setRenderHint(QPainter::SmoothPixmapTransform, false);
                     p.setRenderHint(QPainter::Antialiasing, true);
@@ -463,7 +451,6 @@ void CanvasWidget::renderTintedFrame(QPainter& p, int frameIdx, QColor tint) {
 
 void CanvasWidget::paintLiveStroke(QPainter& p) {
     if (strokePoints_.empty()) return;
-    p.save();
     float sz = brush_ ? brush_->preset().size : 10.0f;
 
     if (tool_ == 1) {
@@ -471,20 +458,77 @@ void CanvasWidget::paintLiveStroke(QPainter& p) {
         p.setBrush(QColor(255, 255, 255, 180));
         for (const auto& pt : strokePoints_)
             p.drawEllipse(QPointF(pt.position.x, pt.position.y), sz * 0.5, sz * 0.5);
+        return;
+    }
+
+    if (strokePoints_.size() < 2) {
+        float r = sz * 0.5f;
+        float pad = r + 2.0f;
+        int s = static_cast<int>(std::ceil(pad * 2));
+        QImage stamp(s, s, QImage::Format_ARGB32_Premultiplied);
+        stamp.fill(Qt::transparent);
+        {
+            QPainter sp(&stamp);
+            sp.setRenderHint(QPainter::Antialiasing);
+            float opacity = brush_ ? brush_->preset().opacity : 1.0f;
+            QColor c(color_);
+            c.setAlphaF(c.alphaF() * opacity);
+            sp.setPen(Qt::NoPen);
+            sp.setBrush(c);
+            sp.drawEllipse(QPointF(pad, pad), r, r);
+        }
+        p.save();
+        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        p.drawImage(QRectF(strokePoints_[0].position.x - pad,
+                           strokePoints_[0].position.y - pad,
+                           s, s), stamp);
         p.restore();
         return;
     }
 
-    if (strokePoints_.size() < 2) { p.restore(); return; }
-    QPainterPath path;
-    path.moveTo(strokePoints_[0].position.x, strokePoints_[0].position.y);
-    for (size_t i = 1; i < strokePoints_.size(); ++i)
-        path.lineTo(strokePoints_[i].position.x, strokePoints_[i].position.y);
-    float opacity = brush_ ? brush_->preset().opacity : 1.0f;
-    QColor c(color_);
-    c.setAlphaF(c.alphaF() * opacity);
-    QPen pen(c, sz, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    p.setPen(pen); p.drawPath(path); p.restore();
+    float minX = strokePoints_[0].position.x, maxX = minX;
+    float minY = strokePoints_[0].position.y, maxY = minY;
+    for (const auto& pt : strokePoints_) {
+        minX = std::min(minX, pt.position.x);
+        maxX = std::max(maxX, pt.position.x);
+        minY = std::min(minY, pt.position.y);
+        maxY = std::max(maxY, pt.position.y);
+    }
+
+    float padding = sz * 1.5f;
+    int ix = static_cast<int>(std::floor(minX - padding));
+    int iy = static_cast<int>(std::floor(minY - padding));
+    int iw = static_cast<int>(std::ceil(maxX - minX + padding * 2));
+    int ih = static_cast<int>(std::ceil(maxY - minY + padding * 2));
+    if (iw < 2 || ih < 2) return;
+
+    QImage offscreen(iw, ih, QImage::Format_ARGB32_Premultiplied);
+    offscreen.fill(Qt::transparent);
+
+    {
+        QPainter op(&offscreen);
+        op.setRenderHint(QPainter::Antialiasing);
+        op.translate(-ix, -iy);
+
+        float opacity = brush_ ? brush_->preset().opacity : 1.0f;
+        QColor c(color_);
+        c.setAlphaF(c.alphaF() * opacity);
+
+        QPainterPath path;
+        path.moveTo(strokePoints_[0].position.x, strokePoints_[0].position.y);
+        for (size_t i = 1; i < strokePoints_.size(); ++i)
+            path.lineTo(strokePoints_[i].position.x, strokePoints_[i].position.y);
+        QPen pen(c, sz, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        op.setPen(pen);
+        op.drawPath(path);
+    }
+
+    p.save();
+    p.setRenderHint(QPainter::Antialiasing, false);
+    p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    p.drawImage(ix, iy, offscreen);
+    p.restore();
 }
 
 void CanvasWidget::paintShapePreview(QPainter& p) {
@@ -592,8 +636,12 @@ void CanvasWidget::writeRasterRect(RasterLayer* raster, const QRect& rect, const
         if (copyW <= 0) continue;
         const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(src.constScanLine(y));
         uint32_t* dstRow = raster->pixelData() + dstY * rw + dstStart;
-        if (srcRow && dstRow)
+        if (srcRow && dstRow) {
             std::copy(srcRow + srcStart, srcRow + srcStart + copyW, dstRow);
+            for (int x = 0; x < copyW; ++x) {
+                if ((dstRow[x] >> 24) == 0) dstRow[x] = 0;
+            }
+        }
     }
 }
 
@@ -617,8 +665,96 @@ void CanvasWidget::writeLayerPixels(Layer* layer, const QImage& img) {
             if (!dst) continue;
             std::copy(src, src + w, dst + (dstY + y) * raster->width() + dstX);
         }
+        for (int y = 0; y < h; ++y) {
+            uint32_t* dst = raster->pixelData();
+            if (!dst) continue;
+            uint32_t* row = dst + (dstY + y) * raster->width() + dstX;
+            for (int x = 0; x < w; ++x) {
+                if ((row[x] >> 24) == 0) row[x] = 0;
+            }
+        }
         raster->bufferEpochTick();
     }
+}
+
+void CanvasWidget::blendStrokeToLayer(RasterLayer* raster, const QImage& stroke) {
+    if (!raster || stroke.isNull()) return;
+    QImage src = stroke.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    int ox = raster->originX();
+    int oy = raster->originY();
+    raster->ensureContains(ox, oy, src.width(), src.height());
+    int dstX = ox - raster->originX();
+    int dstY = oy - raster->originY();
+    int w = std::min(src.width(), raster->width() - dstX);
+    int h = std::min(src.height(), raster->height() - dstY);
+    for (int y = 0; y < h; ++y) {
+        const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(src.constScanLine(y));
+        if (!srcRow) continue;
+        uint32_t* dstRow = raster->pixelData();
+        if (!dstRow) continue;
+        dstRow += (dstY + y) * raster->width() + dstX;
+        for (int x = 0; x < w; ++x) {
+            uint32_t s = srcRow[x];
+            uint32_t sa = (s >> 24) & 0xFF;
+            if (sa < 4) continue;
+            if (sa == 255) { dstRow[x] = s; continue; }
+            uint32_t d = dstRow[x];
+            uint32_t invA = 255 - sa;
+            uint32_t sr = (s >> 16) & 0xFF;
+            uint32_t sg = (s >> 8) & 0xFF;
+            uint32_t sb = s & 0xFF;
+            uint32_t dr = (d >> 16) & 0xFF;
+            uint32_t dg = (d >> 8) & 0xFF;
+            uint32_t db = d & 0xFF;
+            uint32_t da = (d >> 24) & 0xFF;
+            uint32_t outA = sa + (da * invA) / 255;
+            uint32_t outR = sr + (dr * invA) / 255;
+            uint32_t outG = sg + (dg * invA) / 255;
+            uint32_t outB = sb + (db * invA) / 255;
+            dstRow[x] = (outA << 24) | (outR << 16) | (outG << 8) | outB;
+        }
+    }
+    raster->bufferEpochTick();
+}
+
+void CanvasWidget::blendStrokeToLayerAt(RasterLayer* raster, const QImage& stroke, int canvasX, int canvasY) {
+    if (!raster || stroke.isNull()) return;
+    QImage src = stroke.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    int ox = raster->originX();
+    int oy = raster->originY();
+    raster->ensureContains(canvasX, canvasY, src.width(), src.height());
+    int dstX = canvasX - raster->originX();
+    int dstY = canvasY - raster->originY();
+    int w = std::min(src.width(), raster->width() - dstX);
+    int h = std::min(src.height(), raster->height() - dstY);
+    for (int y = 0; y < h; ++y) {
+        const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(src.constScanLine(y));
+        if (!srcRow) continue;
+        uint32_t* dstRow = raster->pixelData();
+        if (!dstRow) continue;
+        dstRow += (dstY + y) * raster->width() + dstX;
+        for (int x = 0; x < w; ++x) {
+            uint32_t s = srcRow[x];
+            uint32_t sa = (s >> 24) & 0xFF;
+            if (sa < 4) continue;
+            if (sa == 255) { dstRow[x] = s; continue; }
+            uint32_t d = dstRow[x];
+            uint32_t invA = 255 - sa;
+            uint32_t sr = (s >> 16) & 0xFF;
+            uint32_t sg = (s >> 8) & 0xFF;
+            uint32_t sb = s & 0xFF;
+            uint32_t dr = (d >> 16) & 0xFF;
+            uint32_t dg = (d >> 8) & 0xFF;
+            uint32_t db = d & 0xFF;
+            uint32_t da = (d >> 24) & 0xFF;
+            uint32_t outA = sa + (da * invA) / 255;
+            uint32_t outR = sr + (dr * invA) / 255;
+            uint32_t outG = sg + (dg * invA) / 255;
+            uint32_t outB = sb + (db * invA) / 255;
+            dstRow[x] = (outA << 24) | (outR << 16) | (outG << 8) | outB;
+        }
+    }
+    raster->bufferEpochTick();
 }
 
 void CanvasWidget::shiftFrameData(int fromFrame, int delta) {
@@ -1116,15 +1252,18 @@ void CanvasWidget::commitStroke() {
     vs.eraser = false;
     vectorStrokes_[currentFrame_].push_back(vs);
 
-    QImage img = readLayerPixels(layer);
-    QPainter p(&img); p.setRenderHint(QPainter::Antialiasing);
     if (layer->type() == LayerType::Raster) {
         auto* r = static_cast<RasterLayer*>(layer);
-        p.translate(-r->originX(), -r->originY());
+        constexpr int kStampPad = 2;
+        QRect stampRect = dirtyRect.adjusted(-kStampPad, -kStampPad, kStampPad, kStampPad);
+        QImage img(stampRect.width(), stampRect.height(), QImage::Format_ARGB32_Premultiplied);
+        img.fill(Qt::transparent);
+        QPainter p(&img); p.setRenderHint(QPainter::Antialiasing);
+        p.translate(-stampRect.x(), -stampRect.y());
+        renderVectorStroke(p, vs);
+        p.end();
+        blendStrokeToLayerAt(r, img, stampRect.x(), stampRect.y());
     }
-    renderVectorStroke(p, vs);
-    p.end();
-    writeLayerPixels(layer, img);
 
     QImage afterPixels;
     if (layer->type() == LayerType::Raster) {
@@ -1868,8 +2007,6 @@ void CanvasWidget::redo() {
 void CanvasWidget::purgeMemory() {
     undoStack_.clear();
     rasterEpochs_.clear();
-    paddedLayerCaches_.clear();
-    paddedCacheEpochs_.clear();
     stabilizerBuffer_.clear();
     strokePoints_.clear();
     beforeImage_ = QImage();
@@ -1878,40 +2015,6 @@ void CanvasWidget::purgeMemory() {
     selImage_ = QImage();
     moveImage_ = QImage();
     update();
-}
-
-QImage CanvasWidget::buildPaddedImage(const QImage& src) const {
-    int w = src.width(), h = src.height();
-    int pw = w + 2, ph = h + 2;
-    QImage padded(pw, ph, QImage::Format_ARGB32_Premultiplied);
-
-    for (int y = 0; y < h; ++y) {
-        memcpy(padded.scanLine(y + 1) + 4, src.scanLine(y), w * 4);
-    }
-
-    {
-        const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(src.scanLine(0));
-        uint32_t* dst = reinterpret_cast<uint32_t*>(padded.scanLine(0));
-        dst[0] = srcRow[0];
-        memcpy(dst + 1, srcRow, w * 4);
-        dst[pw - 1] = srcRow[w - 1];
-    }
-
-    {
-        const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(src.scanLine(h - 1));
-        uint32_t* dst = reinterpret_cast<uint32_t*>(padded.scanLine(ph - 1));
-        dst[0] = srcRow[0];
-        memcpy(dst + 1, srcRow, w * 4);
-        dst[pw - 1] = srcRow[w - 1];
-    }
-
-    for (int y = 0; y < h; ++y) {
-        uint32_t* dst = reinterpret_cast<uint32_t*>(padded.scanLine(y + 1));
-        dst[0] = dst[1];
-        dst[pw - 1] = dst[pw - 2];
-    }
-
-    return padded;
 }
 
 void CanvasWidget::pushUndo(QUndoCommand* cmd) {
