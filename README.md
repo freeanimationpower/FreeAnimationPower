@@ -1,68 +1,320 @@
 # Free Animation Power
 
-2D Animation Software — Hybrid Vector + Raster Engine
+2D Animation Software — Hybrid Vector + Raster Engine. Built with C++20 and Qt 6.
 
 ## Overview
 
-Free Animation Power is a professional 2D animation tool combining bitmap (raster) and vector drawing capabilities in a single application. Built with C++20 and Qt 6, it targets animators who need both traditional frame-by-frame and modern cut-out workflows.
+Free Animation Power is a professional 2D animation tool combining bitmap (raster) and vector drawing capabilities in a single application. It targets animators who need both traditional frame-by-frame (like TVPaint) and modern cut-out workflows (like Harmony).
 
-## Features
+**Key philosophy**: Every brush stroke can be rendered as pixels (raster), as a vector path, or as both simultaneously — allowing artists to use the strengths of each pipeline without switching tools.
 
-- **Hybrid Engine**: Raster brush engine (like TVPaint) + Vector Bezier engine (like Harmony)
-- **Professional Brush System**: Pressure-sensitive brushes with paper texture simulation
-- **Multi-layer Timeline**: Exposure sheet, keyframes, onion skinning, light table
-- **Wacom/Tablet Support**: Full pressure, tilt, and rotation support
-- **Onion Skinning**: Configurable previous/next frames with color tints
-- **Open File Format**: ZIP-based `.fap` format (PNG frames + JSON metadata)
-- **Video Export**: FFmpeg integration for MP4, GIF, PNG sequence export
-
-## Requirements
-
-- **OS**: Windows 10/11, macOS 11+, Ubuntu 22.04+
-- **Compiler**: GCC 12+, Clang 15+, or MSVC 2022+
-- **CMake**: 3.20+
-- **Qt**: 6.5+ (Core, Gui, Widgets, OpenGL, Multimedia)
-- **FFmpeg**: 5.0+ (for video export)
-- **GoogleTest**: 1.14+ (for tests)
-
-## Build
-
-```bash
-# Configure
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-# Build
-cmake --build build --config Release
-
-# Run
-./build/free-animation-power
-
-# Run tests
-cmake --build build --target fap-tests
-```
+---
 
 ## Architecture
 
 ```
-src/
-├── core/       Data model (Document, Layer, Timeline, Types)
-├── engine/
-│   ├── raster/     Bitmap pixel engine (tile cache, stroke rendering)
-│   ├── vector/     Bezier path engine
-│   ├── brush/      Brush engine with paper texture
-│   └── animation/  Timeline playback, onion skinning
-├── ui/         Qt widgets (Canvas, Panels, MainWindow)
-├── io/         File format (.fap), video export
-└── platform/   Input handling, tablet support
+┌──────────────────────────────────────────────────────────────────┐
+│                        UI Layer (Qt 6)                           │
+│  MainWindowV2  CanvasWidgetV2  TimelinePanelV2  ToolboxPanelV2  │
+│  ColorPanelV2  LayerPanelV2    PropertyEditorV2                 │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────────┐
+│                      Engine Layer                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
+│  │ brush/        │  │ raster/       │  │ vector/              │   │
+│  │ BrushEngine   │  │ RasterEngine  │  │ VectorEngine         │   │
+│  │ BrushPreset   │  │ RasterStroke  │  │ BezierPath           │   │
+│  │ PaperTexture  │  │               │  │ VectorStroke         │   │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ animation/  TimelineEngine  OnionSkin  Playback  Tween   │   │
+│  │ compositor/ NodeGraph  Compositor                         │   │
+│  │ deformation/ DeformationMesh  DeformationEngine           │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────────┐
+│                     Core Data Model                               │
+│  Document  Timeline  Layer (Raster/Vector/Group)  Canvas         │
+│  Project  Stroke  UndoManager  ToolState  AppState               │
+│  Types (Vec2, Color, Rect, StrokePoint, BlendMode, LayerUid)     │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+┌────────────────────────────▼─────────────────────────────────────┐
+│                       Platform Layer                              │
+│  IO: document_io  video_export  file_format (.fap)               │
+│  Input: tablet_handler  input_manager                            │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+### Directory Map
+
+| Directory | Purpose |
+|-----------|---------|
+| `src/core/` | Data model — Document, Layer, Timeline, Stroke, Canvas, Undo, ToolState |
+| `src/engine/raster/` | Bitmap pixel engine — stamp blitting, alpha compositing |
+| `src/engine/vector/` | Bezier path engine — curve evaluation, flattening, path construction |
+| `src/engine/brush/` | Brush engine — presets, dynamics, paper texture, ABR import |
+| `src/engine/animation/` | Timeline playback, onion skinning, audio, tween |
+| `src/engine/compositor/` | Layer compositing with blend modes, node graph |
+| `src/engine/deformation/` | Mesh deformation for puppet animation |
+| `src/ui_v2/` | Qt 6 widgets — Canvas, panels, MainWindow (active version) |
+| `src/ui/` | Legacy V1 UI (not compiled in current build) |
+| `src/io/` | File format (.fap), video export, document I/O |
+| `src/platform/` | Input handling, tablet (Wacom) support |
+| `docs/` | Architecture docs, build instructions, handoffs |
+| `tests/` | GoogleTest suite (139 tests) |
+
+### Layer Types
+
+- **RasterLayer**: Pixel buffer with per-frame PNG storage
+- **VectorLayer**: Bezier stroke collection
+- **GroupLayer**: Recursive layer composition with blend modes
+- **AudioLayer**: Audio clip timeline
+
+### File Format (.fap)
+
+Directory-based format:
+```
+project.fap/
+├── document.json    # Metadata + layer tree (JSON)
+└── frames/
+    ├── L0_0000.png  # Layer 0, frame 0
+    ├── L0_0001.png  # Layer 0, frame 1
+    └── ...
+```
+
+Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, color_burn, color_dodge, soft_light, hard_light.
+
+---
+
+## Current State (v2.0.0)
+
+### What Works
+- All 11 tools: Brush, Eraser, Pick Color, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand
+- Pressure-sensitive brushes with tablet support (Wacom)
+- Multi-layer document with blend modes and opacity
+- Timeline with frame navigation, playback, onion skinning
+- Undo/Redo with full pixel restoration
+- Color picker with RGBA/Hex, recent colors palette
+- Canvas view: zoom, pan, fit, flip horizontal, rotate, grid
+- Video export (MP4 via FFmpeg), GIF export
+- File save/open (.fap format)
+- 139 unit tests, all passing
+- Keyboard shortcuts for all tools and operations
+
+### UI Layout
+```
+┌────────────────────────┬──────────────────────┬──────────────────┐
+│ TopBar                 │                      │  Layers Panel    │
+│ [New][Open][Save] |    │    CanvasWidget      │  - Layer list    │
+│ [Export] | [View] |    │    (central widget)   │  - Visibility    │
+│ [Undo][Redo] |         │                      │  - Opacity       │
+│ 🧅[Onion Skin] |       │    Drawing canvas    │  - Blend modes   │
+│ 📐[Canvas Size] | [?]  │                      │  - Add/Dup/Del   │
+├────────────────────────┤                      ├──────────────────┤
+│  ToolboxPanel          │                      │  Color Panel     │
+│  - 11 tool buttons     │                      │  - RGBA spinners │
+│  - Color swatch        │                      │  - Hex input     │
+│  - Brush settings      │                      │  - Recent colors │
+│  - Onion Skin          │                      │                  │
+│  - Canvas Size         │                      │                  │
+├────────────────────────┴──────────────────────┴──────────────────┤
+│  Timeline Panel  [◀][▶][■]  Frame: 1/24  24fps  [+][++][−]    │
+│  [thumb][thumb][thumb][thumb][thumb]...                          │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Problems Solved — Engineering History
+
+### 1. Brush Undo Ghost Outlines (commit `b1f0af1` → `0f92cf1`)
+
+**Problem**: After Ctrl+Z on a brush stroke, a ghost outline of the stroke remained visible. The undo didn't fully restore pre-stroke pixels.
+
+**Root cause**: The "before" snapshot was captured from the live layer buffer *after* adjacent stamps had already been blended, contaminating the undo image with partial stroke data.
+
+**Solution**:
+1. Added `cleanLayerCopy_` — a clean copy of the layer captured at stroke start, before any painting.
+2. `growBeforeSnapshot()` now reads from `cleanLayerCopy_` instead of the live layer.
+3. This prevents adjacent stamp paint from leaking into the undo "before" image.
+
+**Files**: `canvas_widget_v2.cpp`, `undo_manager.cpp`
+
+---
+
+### 2. Ghost Rectangle Artifact on Brush Strokes (commit `8ab7b21`)
+
+**Problem**: A visible rectangular artifact appeared at the `dirtyRect` boundary after committing a brush stroke. The artifact showed as a faint rectangle on the canvas.
+
+**Root cause**: `UndoManager::pushCommand()` called `cmd->redo()` immediately after storing the command. `PaintCommandV2::applySnapshot()` (called by redo) wrote the after-snapshot back to the layer buffer, introducing a visible seam at the dirty rectangle boundary.
+
+**Solution**:
+1. Added `UndoManager::pushApplied()` — stores the command without calling `redo()`, for actions already applied to the buffer.
+2. Updated `commitStroke()`, `commitFloatingSelection()`, and `commitTransform()` to use `pushApplied()`.
+
+**Additional fixes in this commit**:
+- `layer.cpp`: Store premultiplied alpha, un-premultiply on read (matching `Format_ARGB32_Premultiplied` display).
+- `pencil_retouch.cpp`: Fixed R/B channel swap in `repaintPixel`, scale RGB with alpha.
+- `canvas_widget_v2.cpp`: Convert layer QImage to straight ARGB32 before `drawImage`, match V1 pixel-snapping.
+
+**Files**: `undo_manager.cpp`, `canvas_widget_v2.cpp`, `layer.cpp`, `pencil_retouch.cpp`
+
+---
+
+### 3. Aggressive Buffer Expansion (commit `0aa9e07`)
+
+**Problem**: After a few move operations, the layer buffer ballooned to 10000×10000 pixels due to `ensureContains()` always adding a growth pad (512px) and guard band (2px).
+
+**Root cause**: `ensureContains()` unconditionally added `kGrowthPad` (512) and `kGuardBand` (2) to every buffer resize, causing geometric growth on repeated moves.
+
+**Solution**: Added optional `pad` parameter to `ensureContains()`. When `pad=false`, skips the growth expansions for exact-fit resizes. Used in `commitMove()` for precise expansion. All other callers keep default `pad=true`.
+
+**Files**: `layer.cpp`, `canvas_widget_v2.cpp`
+
+---
+
+### 4. Content Clipping on Move (commit `c72a85a`)
+
+**Problem**: Content was silently clipped when moved beyond the original canvas boundary.
+
+**Solution**: `commitMove()` now calls `ensureContains()` to expand the layer buffer before shifting pixels, preserving content moved beyond canvas bounds. Matches Synfig's auto-expansion pattern.
+
+**Files**: `canvas_widget_v2.cpp`, `layer.cpp`
+
+---
+
+### 5. Qt Raster Tile Seams (commit `cced79d`)
+
+**Problem**: Visible seams appeared between Qt raster tiles when rendering the canvas, especially at certain zoom levels.
+
+**Root cause**: Qt's internal tile-based rendering of QImage in `drawImage` introduced 1px seams due to antialiasing on tile boundaries and sub-pixel matrix offsets.
+
+**Solution**:
+1. Disabled antialiasing on `drawImage` calls.
+2. Snapped matrix translation to integer device pixels.
+3. Added 1px padded/clamped image cache per layer (epoch-invalidated).
+4. Zero-copy `QImage` with `shared_ptr` lifetime for `PixelBuffer` via `wrapRasterLayer()`.
+
+**Additional fixes**: Brush stamp rounding (`std::round`), paper texture bilinear wrap fix, memory purge menu, frame thumbnail off-by-one fix.
+
+**Files**: `canvas_widget_v2.cpp`, `layer.cpp`, `raster_stroke.cpp`, `paper_texture.cpp`
+
+---
+
+### 6. Undo Capture Rect Mismatch (commit `06ceb10`)
+
+**Problem**: `captureRect()` / `captureLayerRect()` clamped to layer bounds, returning smaller images than requested. The undo command stored the unclamped rect, causing pixel offset mismatches on restore — leaving ghost outlines after undo.
+
+**Solution**: Now returns exact requested rect with zero-fill for out-of-bounds pixels, matching Photoshop/Illustrator snapshot semantics.
+
+**Files**: `canvas_widget_v2.cpp`
+
+---
+
+### 7. Guard Band & Alpha Compositing (commit `d98eb53`)
+
+**Problem**: Brush strokes had visible artifacts at edges due to missing transparency padding and incorrect alpha blending.
+
+**Solution**:
+1. `ensureContains()` adds `kGuardBand=2` transparent padding around strokes.
+2. `paintLiveStroke()` renders to offscreen transparent QImage before blitting (single-click draws padded circle stamp).
+3. `commitStroke()` uses small QImage stamp with `kStampPad=2` and manual premultiplied alpha compositing via `blendStrokeToLayerAt()`.
+4. `blendStrokeToLayerAt()`: premultiplied alpha compositing (src OVER dst) with `sa<4` threshold to skip near-transparent pixels.
+5. `writeLayerPixels()` / `writeRasterRect()`: sanitize alpha=0 pixels to `0x00000000`.
+
+**Files**: `layer.cpp`, `canvas_widget_v2.cpp`
+
+---
+
+### 8. Keyboard Shortcuts & Selection Ops (commit `3cc22e2`)
+
+**Problem**: Ctrl+Z/Y keyboard shortcuts for undo/redo not working. Selection tools missing copy/cut/paste/delete operations.
+
+**Solution**: Fixed all keyboard shortcuts in `keyPressEvent`, added selection clipboard operations (Copy Ctrl+C, Cut Ctrl+X, Paste Ctrl+V, Delete, Select All Ctrl+A, Deselect Ctrl+D).
+
+**Files**: `canvas_widget_v2.cpp`
+
+---
+
+### 9. Tool Implementation in V2 Canvas (commit `d010f63`)
+
+**Problem**: V2 canvas only had brush tool. All other tools were declared but empty stubs.
+
+**Solution**: Implemented all 11 tools in V2 canvas: Eraser, Pick Color, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand. Added dynamic color palette generation, fixed selection rectangle rendering bugs.
+
+**Files**: `canvas_widget_v2.cpp`, `color_panel_v2.cpp`
+
+---
+
+### 10. Brush Controls Unification (commit `9391248`)
+
+**Problem**: Brush controls (size, opacity, hardness, shape) were scattered across ToolboxPanel and not connected to the canvas.
+
+**Solution**: Unified all brush controls in `PropertyEditorV2`. Connected brush size slider, blend mode, and other settings to the canvas. Timeline thumbnails now render with white background.
+
+**Files**: `property_editor_v2.cpp`, `canvas_widget_v2.cpp`, `timeline_panel_v2.cpp`
+
+---
+
+## Build & Run
+
+### Quick Start (Windows)
+```powershell
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+.\build\Release\free-animation-2d-style.exe
+```
+
+### Run Tests
+```powershell
+ctest --test-dir build
+```
+**Status**: 139/139 tests passing.
+
+### Requirements
+- CMake 3.20+
+- Qt 6.5+ (Core, Gui, Widgets, OpenGL, OpenGLWidgets, Multimedia, Svg)
+- FFmpeg (for video export)
+- C++20 compiler (MSVC 2022+, GCC 11+, Clang 14+)
+- GoogleTest (fetched automatically via CMake FetchContent)
+
+### CMake Options
+| Option | Default | Description |
+|--------|---------|-------------|
+| `FAP_BUILD_TESTS` | ON | Build test suite |
+| `CMAKE_BUILD_TYPE` | Release | Debug, Release, RelWithDebInfo |
+
+For detailed build instructions per platform (Linux, macOS), see `docs/build-instructions.md`.
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Language | C++20 |
+| UI Framework | Qt 6.5+ (Widgets) |
+| Build System | CMake 3.20+ |
+| Rendering | Qt Raster (QPainter) + OpenGL |
+| Testing | GoogleTest (139 tests) |
+| Compression | miniz (zlib) |
+| Video Export | FFmpeg (MP4, GIF) |
+| Platform | Windows (primary), macOS/Linux (target) |
+
+---
 
 ## Documentation
 
-- `docs/architecture.md` — Full architecture overview
-- `docs/build-instructions.md` — Detailed build guide
-- `docs/file-format-spec.md` — .fap file format specification
-- `INVESTIGACION_TECNICA.md` — Technical research (Spanish)
+- `docs/architecture.md` — Full architecture document with data flow diagrams
+- `docs/build-instructions.md` — Detailed build instructions for all platforms
+- `docs/handoff-canvas-state-machine.md` — Canvas state machine handoff notes
+- `AGENTS.md` — AI agent instructions for code navigation
+
+---
 
 ## License
 
-GPL-3.0
+Proprietary. All rights reserved.
