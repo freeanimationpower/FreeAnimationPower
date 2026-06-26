@@ -1,5 +1,4 @@
 #include "core/layer.hpp"
-#include <QDebug>
 #include <atomic>
 #include <algorithm>
 #include <cstring>
@@ -174,13 +173,16 @@ void RasterLayer::relocatePixels(std::vector<uint32_t> oldPixels,
     }
 }
 
-void RasterLayer::ensureContains(int x, int y, int w, int h) {
+void RasterLayer::ensureContains(int x, int y, int w, int h, bool pad) {
     if (w <= 0 || h <= 0) return;
 
-    x -= kGuardBand;
-    y -= kGuardBand;
-    w += kGuardBand * 2;
-    h += kGuardBand * 2;
+    int guard = pad ? kGuardBand : 0;
+    int grow  = pad ? kGrowthPad : 0;
+
+    x -= guard;
+    y -= guard;
+    w += guard * 2;
+    h += guard * 2;
 
     int reqLeft = x;
     int reqTop = y;
@@ -204,10 +206,10 @@ void RasterLayer::ensureContains(int x, int y, int w, int h) {
     bool expandedRight = (newRight > originX_ + width_);
     bool expandedBottom = (newBottom > originY_ + height_);
 
-    if (expandedLeft) newOriginX = std::max(newOriginX - kGrowthPad, originX_ - kMaxDim);
-    if (expandedTop) newOriginY = std::max(newOriginY - kGrowthPad, originY_ - kMaxDim);
-    if (expandedRight) newRight = std::min(newRight + kGrowthPad, originX_ + kMaxDim);
-    if (expandedBottom) newBottom = std::min(newBottom + kGrowthPad, originY_ + kMaxDim);
+    if (expandedLeft) newOriginX = std::max(newOriginX - grow, originX_ - kMaxDim);
+    if (expandedTop) newOriginY = std::max(newOriginY - grow, originY_ - kMaxDim);
+    if (expandedRight) newRight = std::min(newRight + grow, originX_ + kMaxDim);
+    if (expandedBottom) newBottom = std::min(newBottom + grow, originY_ + kMaxDim);
 
     int64_t newW64 = static_cast<int64_t>(newRight) - static_cast<int64_t>(newOriginX);
     int64_t newH64 = static_cast<int64_t>(newBottom) - static_cast<int64_t>(newOriginY);
@@ -220,13 +222,6 @@ void RasterLayer::ensureContains(int x, int y, int w, int h) {
 
     if (newOriginX == originX_ && newOriginY == originY_ &&
         newWidth == width_ && newHeight == height_) return;
-
-    qDebug() << "[DEBUG] ensureContains EXPANDED"
-             << "old origin:" << originX_ << originY_
-             << "old size:" << width_ << height_
-             << "new origin:" << newOriginX << newOriginY
-             << "new size:" << newWidth << newHeight
-             << "requested:" << x << y << w << h;
 
     size_t newPixels = static_cast<size_t>(newWidth) * static_cast<size_t>(newHeight);
     constexpr size_t kMaxPixels = static_cast<size_t>(kMaxDim) * static_cast<size_t>(kMaxDim);

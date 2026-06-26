@@ -1977,7 +1977,7 @@ void CanvasWidgetV2::commitMove()
     int minY = std::min(oy, oy + dy);
     int maxX = std::max(ox + lw, ox + lw + dx);
     int maxY = std::max(oy + lh, oy + lh + dy);
-    layer->ensureContains(minX, minY, maxX - minX, maxY - minY);
+    layer->ensureContains(minX, minY, maxX - minX, maxY - minY, false);
 
     int newOx = layer->originX();
     int newOy = layer->originY();

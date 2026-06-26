@@ -80,7 +80,7 @@ public:
     void blendPixel(int x, int y, const Color& color);
     void clear(const Color& color = Color{0.0f, 0.0f, 0.0f, 0.0f});
     void resize(int width, int height);
-    void ensureContains(int x, int y, int w, int h);
+    void ensureContains(int x, int y, int w, int h, bool pad = true);
 
     static constexpr int kMaxDim = 10'000;
     static constexpr int kGrowthPad = 512;
