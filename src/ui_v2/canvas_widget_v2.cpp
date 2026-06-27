@@ -740,8 +740,8 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
             case 2: break;
             }
             double caretY = textEditPos_.y() + (lines.size() - 1) * leadPx;
-            QPointF caretPos(caretX, caretY - fm.ascent() * 0.2);
-            QPointF caretEnd(caretX, caretY + fm.descent() * 1.1);
+            QPointF caretPos(caretX, caretY - fm.ascent());
+            QPointF caretEnd(caretX, caretY + fm.descent());
             p.setPen(QPen(brushColor_, 1.5f / zoom_));
             p.drawLine(caretPos, caretEnd);
         }
@@ -891,6 +891,12 @@ void CanvasWidgetV2::growBeforeSnapshot(const QRect& oldRect, const QRect& newRe
 
 void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::MiddleButton) {
+        lastMousePos_ = event->pos();
+        middlePanning_ = true;
+        setCursor(Qt::ClosedHandCursor);
+        return;
+    }
     if (event->button() != Qt::LeftButton) return;
 
     auto tool = appState_->toolState().activeTool();
@@ -964,31 +970,20 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         }
 
         auto& entries = textEntries_[currentFrame_];
+        int hitIdx = -1;
         for (size_t i = 0; i < entries.size(); ++i) {
-            double dx = std::abs(cp.x() - entries[i].pos.x());
-            double dy = std::abs(cp.y() - entries[i].pos.y());
-            if (dx < 12.0 && dy < 24.0) {
-                auto& ts = appState_->toolState();
-                ts.setTextString(entries[i].text);
-                ts.setTextFont(entries[i].font);
-                ts.setPrimaryColor(entries[i].color);
-                brushColor_ = entries[i].color;
-                editingText_ = true;
-                textEditPos_ = entries[i].pos;
-                editingEntryIndex_ = static_cast<int>(i);
-                caretVisible_ = true;
-                if (!caretTimer_) {
-                    caretTimer_ = new QTimer(this);
-                    connect(caretTimer_, &QTimer::timeout, [this]() {
-                        caretVisible_ = !caretVisible_;
-                        update();
-                    });
-                }
-                caretTimer_->start(500);
-                setFocus();
-                update();
-                return;
-            }
+            QFontMetrics fm(entries[i].font);
+            QRectF tb(entries[i].pos.x(),
+                      entries[i].pos.y() - fm.ascent(),
+                      static_cast<double>(fm.horizontalAdvance(entries[i].text)),
+                      static_cast<double>(fm.ascent() + fm.descent()));
+            tb.adjust(-10, -8, 10, 8);
+            if (tb.contains(cp)) { hitIdx = static_cast<int>(i); break; }
+        }
+
+        if (hitIdx >= 0) {
+            loadTextEntry(hitIdx);
+            return;
         }
 
         editingText_ = true;
@@ -1052,6 +1047,15 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
 
 void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
 {
+    if (middlePanning_) {
+        QPointF delta = event->pos() - lastMousePos_;
+        offsetX_ += static_cast<float>(delta.x());
+        offsetY_ += static_cast<float>(delta.y());
+        lastMousePos_ = event->pos();
+        update();
+        return;
+    }
+
     auto tool = appState_->toolState().activeTool();
 
     if (drawing_ && (tool == ToolType::Brush || tool == ToolType::Eraser)) {
@@ -1155,6 +1159,11 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
 
 void CanvasWidgetV2::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::MiddleButton) {
+        middlePanning_ = false;
+        setCursor(Qt::ArrowCursor);
+        return;
+    }
     if (event->button() != Qt::LeftButton) return;
 
     if (drawing_) {
@@ -1224,6 +1233,14 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
             ts.setTextString(QString());
             update();
             return;
+        case Qt::Key_Delete: {
+            QString t = ts.textString();
+            if (!t.isEmpty()) {
+                t.chop(1);
+                ts.setTextString(t);
+            }
+            break;
+        }
         case Qt::Key_Backspace: {
             QString t = ts.textString();
             if (!t.isEmpty()) {
@@ -1344,6 +1361,31 @@ void CanvasWidgetV2::focusOutEvent(QFocusEvent* event)
     }
 
     commitTextEdit();
+}
+
+void CanvasWidgetV2::loadTextEntry(int idx)
+{
+    auto& entries = textEntries_[currentFrame_];
+    if (idx < 0 || idx >= static_cast<int>(entries.size())) return;
+    auto& ts = appState_->toolState();
+    ts.setTextString(entries[idx].text);
+    ts.setTextFont(entries[idx].font);
+    ts.setPrimaryColor(entries[idx].color);
+    brushColor_ = entries[idx].color;
+    editingText_ = true;
+    textEditPos_ = entries[idx].pos;
+    editingEntryIndex_ = idx;
+    caretVisible_ = true;
+    if (!caretTimer_) {
+        caretTimer_ = new QTimer(this);
+        connect(caretTimer_, &QTimer::timeout, [this]() {
+            caretVisible_ = !caretVisible_;
+            update();
+        });
+    }
+    caretTimer_->start(500);
+    setFocus();
+    update();
 }
 
 QPointF CanvasWidgetV2::widgetToCanvas(const QPointF& pos) const

@@ -147,8 +147,10 @@ private:
     bool caretVisible_ = true;
     QTimer* caretTimer_ = nullptr;
     void commitTextEdit();
+    void loadTextEntry(int idx);
     std::map<int, std::vector<TextEntry>> textEntries_;
     int editingEntryIndex_ = -1;
+    bool middlePanning_ = false;
 
     // Move tool
     bool moving_ = false;

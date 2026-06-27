@@ -111,24 +111,13 @@ private:
     QPushButton* fontBtn_ = nullptr;
     QComboBox* fontStyleCombo_ = nullptr;
     QSpinBox* fontSizeSpin_ = nullptr;
-    QSpinBox* leadSpin_ = nullptr;
-    QSpinBox* trackSpin_ = nullptr;
     QPushButton* textColorBtn_ = nullptr;
-    QCheckBox* fontBoldCb_ = nullptr;
-    QCheckBox* fontItalicCb_ = nullptr;
-    QCheckBox* fontUnderlineCb_ = nullptr;
-    QCheckBox* fontStrikethroughCb_ = nullptr;
-    QComboBox* antialiasCombo_ = nullptr;
-    QPushButton* alignLeftBtn_ = nullptr;
-    QPushButton* alignCenterBtn_ = nullptr;
-    QPushButton* alignRightBtn_ = nullptr;
 
     QFont currentFont_;
     QStringList cachedFontFamilies_;
     bool fontsLoaded_ = false;
 
     void updateTextFontFromControls();
-    void updateAlignButtons();
     void openFontPicker();
 
     bool updatingFromState_ = false;
