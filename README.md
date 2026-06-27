@@ -329,6 +329,70 @@ Align: [◀][▶◀][▶]                 ← Left, Center, Right
 
 ---
 
+### 12. Text Editing Refinements — Panel Cleanup, Keyboard, Middle-Button Pan (commit `0dbdf86`)
+
+**Problem**: After the text tool overhaul, several refinements were needed:
+- Text editing required double-click (unreliable with Qt event timing)
+- Delete key erased entire entry instead of character-by-character
+- Backspace didn't work after interacting with CHARACTER panel (keyboard focus stolen)
+- No middle-button panning (industry standard in all design software)
+- CHARACTER panel had unused controls (B/I/U/S, Ld, Tr, AA, Align) causing confusion
+
+**Solution**:
+
+**1. Single-click text editing**:
+- Replaced fragile double-click timer with direct single-click detection
+- Click on existing text → loads it for re-editing (font, style, size, color, text)
+- Click on empty space → new text
+- Bounds detection uses `QFontMetrics` to calculate exact text hit area with 10px/8px padding
+
+**2. Character-by-character deletion**:
+- `Delete` and `Backspace` both remove the last character while editing
+- Text is removed from the registry entry when committed with new content
+
+**3. NoFocus on panel controls**:
+- `fontBtn_`, `fontStyleCombo_`, `fontSizeSpin_`, `textColorBtn_` set to `Qt::NoFocus`
+- Prevents keyboard focus theft when adjusting text properties
+- Canvas keeps focus → typing continues uninterrupted while changing font/size/color
+
+**4. Middle-button canvas panning**:
+- Middle mouse click + drag → pan canvas (any tool mode)
+- Cursor changes to `ClosedHandCursor` during pan
+- Works identically to Photoshop/Illustrator/Blender
+
+**5. CHARACTER panel simplified**:
+- Removed visual controls: B, I, U, S toggles, Ld/Tr spinners, AA combo, Align buttons
+- Kept only: Font, Style, Size, Color
+- Underlying properties preserved in ToolState with defaults for future use
+
+**6. Caret rendering fix**:
+- Caret height now spans full `fm.ascent()` to `fm.descent()` (was `* 0.2` / `* 1.1`)
+- Caret X position respects alignment: left (after text), center (center + half-width), right (at origin)
+- Caret resizes in real-time when font size changes
+
+**Files**: `canvas_widget_v2.hpp/cpp`, `property_editor_v2.hpp/cpp`
+
+---
+
+### Complete Bug Fix Summary (Sessions 2026-06-26 / 2026-06-27)
+
+| # | Bug | Solution |
+|---|-----|----------|
+| 1 | Only Arial loaded | Font picker with cache + populate styles before apply |
+| 2 | DirectWrite warnings | Filter bitmap fonts with `isSmoothlyScalable()` |
+| 3 | Text offset by layer origin | Subtract `originX`/`originY` in `doText()` |
+| 4 | Caret misaligned | Full `fm.ascent()`/`descent()`, alignment-aware |
+| 5 | focusOutEvent commits in panels | `window()->isAncestorOf(next)` check |
+| 6 | Text wiped on canvas click | Clear only in `commitTextEdit()` |
+| 7 | Property panel desynced | `textFontChanged` signal connection |
+| 8 | `resetToDefaults()` not called | Added in `AppState` constructor + `resetDocument()` |
+| 9 | tween_engine UB on empty vector | Guard with `defaultSeg` fallback |
+| 10 | Backspace/Delete not working | `Qt::NoFocus` on CHARACTER controls |
+| 11 | Double-click unreliable | Replaced with single-click text detection |
+| 12 | Caret didn't match font size | Removed `* 0.2` / `* 1.1` multipliers |
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)
