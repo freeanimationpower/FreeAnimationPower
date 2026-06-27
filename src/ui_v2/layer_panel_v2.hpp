@@ -47,6 +47,7 @@ private:
     void onRowSelected(int row);
 
     QWidget* createLayerRow(int index, const Layer* layer);
+    void startRename(int index, QWidget* row);
 
     std::shared_ptr<AppState> appState_;
     QListWidget* list_ = nullptr;

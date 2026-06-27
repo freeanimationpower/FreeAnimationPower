@@ -8,6 +8,7 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QListWidgetItem>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QFrame>
 #include <QtCore/QEvent>
 #include <QtCore/QTimer>
@@ -250,6 +251,19 @@ bool LayerPanelV2::eventFilter(QObject* obj, QEvent* event) {
                 }
             }
         }
+    } else if (event->type() == QEvent::MouseButtonDblClick) {
+        auto* w = qobject_cast<QWidget*>(obj);
+        if (w && w != list_) {
+            auto* me = static_cast<QMouseEvent*>(event);
+            QWidget* child = w->childAt(me->pos());
+            if (!qobject_cast<QPushButton*>(child)) {
+                QVariant v = w->property("layerIndex");
+                if (v.isValid()) {
+                    startRename(v.toInt(), w);
+                    return true;
+                }
+            }
+        }
     }
     return QWidget::eventFilter(obj, event);
 }
@@ -406,6 +420,48 @@ void LayerPanelV2::onRowSelected(int row) {
 
     emit layerChanged(row);
     emit layerUidChanged(currentLayerUid());
+}
+
+void LayerPanelV2::startRename(int index, QWidget* row) {
+    auto& doc = appState_->document();
+    GroupLayer& root = doc.rootLayerForFrame(currentFrame_);
+    if (index < 0 || index >= static_cast<int>(root.layerCount())) return;
+    Layer* layer = root.layerAt(index);
+    if (!layer) return;
+
+    auto* hlay = qobject_cast<QHBoxLayout*>(row->layout());
+    if (!hlay) return;
+    if (hlay->count() < 3) return;
+
+    auto* nameLabel = qobject_cast<QLabel*>(hlay->itemAt(1)->widget());
+    if (!nameLabel) return;
+
+    auto* editor = new QLineEdit(row);
+    editor->setText(QString::fromStdString(layer->name()));
+    editor->selectAll();
+    editor->setStyleSheet(QString(
+        "QLineEdit{background:%1;color:%2;border:1px solid %3;border-radius:3px;padding:2px 4px;font-size:11px;}")
+        .arg(kInputBg, kTextColor, kAccentColor));
+
+    hlay->insertWidget(1, editor);
+    nameLabel->hide();
+    editor->setFocus();
+
+    auto commitRename = [hlay, editor, nameLabel, layer, this]() {
+        QString text = editor->text().trimmed();
+        if (!text.isEmpty()) {
+            layer->setName(text.toStdString());
+        }
+        hlay->removeWidget(editor);
+        editor->deleteLater();
+        nameLabel->show();
+        appState_->document().setModified(true);
+        refreshLayerList();
+        emit layerChanged(currentLayerIndex_);
+    };
+
+    QObject::connect(editor, &QLineEdit::returnPressed, this, commitRename);
+    QObject::connect(editor, &QLineEdit::editingFinished, this, commitRename);
 }
 
 void LayerPanelV2::refreshLayerList() {

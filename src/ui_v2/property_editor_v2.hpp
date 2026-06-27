@@ -10,6 +10,8 @@ class QSpinBox;
 class QComboBox;
 class QCheckBox;
 class QPushButton;
+class QFontComboBox;
+class QPlainTextEdit;
 
 namespace fap {
 
@@ -21,6 +23,7 @@ public:
     explicit PropertyEditorV2(std::shared_ptr<AppState> state, QWidget* parent = nullptr);
 
     void refreshFields();
+    void updateColorVariations();
 
 signals:
     void brushSizeChanged(int size);
@@ -49,7 +52,8 @@ private:
     void showPlaceholder();
     void showPickColorControls();
     void showFillControls();
-    void updateColorVariations();
+    void showTextControls();
+    void syncTextFromState();
     void onVariationClicked(int index);
     void onFillTypeComboChanged(int index);
     void onColorVariationTypeChanged(int index);
@@ -103,6 +107,14 @@ private:
     // Line tool controls
     QLabel* lineStyleLabel_ = nullptr;
     QComboBox* lineStyleCombo_ = nullptr;
+
+    // Text tool controls
+    QWidget* textGroup_ = nullptr;
+    QFontComboBox* fontCombo_ = nullptr;
+    QSpinBox* fontSizeSpin_ = nullptr;
+    QCheckBox* fontBoldCb_ = nullptr;
+    QCheckBox* fontItalicCb_ = nullptr;
+    QPlainTextEdit* textEdit_ = nullptr;
 
     bool updatingFromState_ = false;
 };

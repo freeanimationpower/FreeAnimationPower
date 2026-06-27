@@ -27,6 +27,8 @@ QColor ToolState::sampledColor() const { return sampled_color_; }
 int ToolState::colorVariationType() const { return color_variation_type_; }
 int ToolState::colorVariationCount() const { return color_variation_count_; }
 int ToolState::lineStyle() const { return line_style_; }
+QString ToolState::textString() const { return text_string_; }
+QFont ToolState::textFont() const { return text_font_; }
 
 void ToolState::setActiveTool(ToolType tool) {
     if (active_tool_ != tool) {
@@ -174,6 +176,9 @@ void ToolState::resetToDefaults() {
     setColorVariationType(0);
     setColorVariationCount(9);
     setLineStyle(0);
+    setTextString(QString());
+    QFont defaultFont("Arial", 24);
+    setTextFont(defaultFont);
 }
 
 void ToolState::setOnionEnabled(bool enabled) {
@@ -247,6 +252,22 @@ void ToolState::setLineStyle(int style) {
     if (line_style_ != clamped) {
         line_style_ = clamped;
         emit lineStyleChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextString(const QString& text) {
+    if (text_string_ != text) {
+        text_string_ = text;
+        emit textStringChanged(text);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextFont(const QFont& font) {
+    if (text_font_ != font) {
+        text_font_ = font;
+        emit textFontChanged(font);
         emit toolSettingsChanged();
     }
 }

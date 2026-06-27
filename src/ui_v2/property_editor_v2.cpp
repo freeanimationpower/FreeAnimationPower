@@ -10,6 +10,8 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QFontComboBox>
+#include <QtWidgets/QPlainTextEdit>
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
@@ -334,6 +336,108 @@ void PropertyEditorV2::setupUI()
     connect(fillTypeCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &PropertyEditorV2::onFillTypeComboChanged);
 
+    // === Text group ===
+    textGroup_ = new QWidget(this);
+    auto* textLayout = new QVBoxLayout(textGroup_);
+    textLayout->setContentsMargins(0, 0, 0, 0);
+    textLayout->setSpacing(6);
+
+    auto* textTitleLabel = new QLabel("TEXT", textGroup_);
+    textTitleLabel->setStyleSheet(kLabelStyle);
+
+    auto* fontRow = new QHBoxLayout();
+    fontRow->setSpacing(6);
+    auto* fontLabel = new QLabel("Font", textGroup_);
+    fontLabel->setStyleSheet(kLabelStyle);
+    fontLabel->setFixedWidth(32);
+    fontRow->addWidget(fontLabel);
+
+    fontCombo_ = new QFontComboBox(textGroup_);
+    fontCombo_->setStyleSheet(shapeCombo_->styleSheet());
+    fontCombo_->setCurrentFont(QFont("Arial", 24));
+    connect(fontCombo_, &QFontComboBox::currentFontChanged, [this](const QFont& f) {
+        QFont merged = f;
+        merged.setPointSize(fontSizeSpin_->value());
+        merged.setBold(fontBoldCb_->isChecked());
+        merged.setItalic(fontItalicCb_->isChecked());
+        appState_->toolState().setTextFont(merged);
+    });
+    fontRow->addWidget(fontCombo_, 1);
+    textLayout->addLayout(fontRow);
+
+    auto* sizeStyleRow = new QHBoxLayout();
+    sizeStyleRow->setSpacing(8);
+    auto* sizeLabel = new QLabel("Size", textGroup_);
+    sizeLabel->setStyleSheet(kLabelStyle);
+    sizeLabel->setFixedWidth(28);
+    sizeStyleRow->addWidget(sizeLabel);
+
+    fontSizeSpin_ = new QSpinBox(textGroup_);
+    fontSizeSpin_->setRange(8, 200);
+    fontSizeSpin_->setValue(24);
+    fontSizeSpin_->setSuffix(" px");
+    fontSizeSpin_->setFixedWidth(62);
+    fontSizeSpin_->setStyleSheet(kSpinStyle);
+    connect(fontSizeSpin_, QOverload<int>::of(&QSpinBox::valueChanged), [this](int size) {
+        QFont f = fontCombo_->currentFont();
+        f.setPointSize(size);
+        f.setBold(fontBoldCb_->isChecked());
+        f.setItalic(fontItalicCb_->isChecked());
+        appState_->toolState().setTextFont(f);
+    });
+    sizeStyleRow->addWidget(fontSizeSpin_);
+
+    fontBoldCb_ = new QCheckBox("B", textGroup_);
+    fontBoldCb_->setToolTip("Bold");
+    fontBoldCb_->setStyleSheet(
+        "QCheckBox{color:#8B8FA3;font-size:10px;spacing:4px;}"
+        "QCheckBox::indicator{width:14px;height:14px;border:1px solid #3D4150;border-radius:3px;background:#1E2130;}"
+        "QCheckBox::indicator:checked{background:#FF6B4A;border-color:#FF6B4A;}");
+    connect(fontBoldCb_, &QCheckBox::toggled, [this](bool bold) {
+        QFont f = fontCombo_->currentFont();
+        f.setPointSize(fontSizeSpin_->value());
+        f.setBold(bold);
+        f.setItalic(fontItalicCb_->isChecked());
+        appState_->toolState().setTextFont(f);
+    });
+    sizeStyleRow->addWidget(fontBoldCb_);
+
+    fontItalicCb_ = new QCheckBox("I", textGroup_);
+    fontItalicCb_->setToolTip("Italic");
+    fontItalicCb_->setStyleSheet(
+        "QCheckBox{color:#8B8FA3;font-size:10px;spacing:4px;}"
+        "QCheckBox::indicator{width:14px;height:14px;border:1px solid #3D4150;border-radius:3px;background:#1E2130;}"
+        "QCheckBox::indicator:checked{background:#FF6B4A;border-color:#FF6B4A;}");
+    connect(fontItalicCb_, &QCheckBox::toggled, [this](bool italic) {
+        QFont f = fontCombo_->currentFont();
+        f.setPointSize(fontSizeSpin_->value());
+        f.setBold(fontBoldCb_->isChecked());
+        f.setItalic(italic);
+        appState_->toolState().setTextFont(f);
+    });
+    sizeStyleRow->addWidget(fontItalicCb_);
+    sizeStyleRow->addStretch();
+    textLayout->addLayout(sizeStyleRow);
+
+    textEdit_ = new QPlainTextEdit(textGroup_);
+    textEdit_->setPlaceholderText("Type your text here...");
+    textEdit_->setFixedHeight(70);
+    textEdit_->setStyleSheet(QString(
+        "QPlainTextEdit{background:%1;color:%2;border:1px solid #2D3139;border-radius:4px;padding:4px;font-size:10px;}"
+        "QPlainTextEdit:focus{border-color:#FF6B4A;}")
+        .arg("#1E2130", "#C8CCD8"));
+    connect(textEdit_, &QPlainTextEdit::textChanged, [this]() {
+        appState_->toolState().setTextString(textEdit_->toPlainText());
+    });
+    textLayout->addWidget(textEdit_);
+
+    auto* textHintLabel = new QLabel("Click canvas to place text", textGroup_);
+    textHintLabel->setStyleSheet("QLabel{color:#3D4150;font-size:9px;}");
+    textHintLabel->setAlignment(Qt::AlignCenter);
+    textLayout->addWidget(textHintLabel);
+
+    mainLayout->addWidget(textGroup_);
+
     placeholderWidget_ = new QWidget(this);
     auto* placeholderLayout = new QVBoxLayout(placeholderWidget_);
     placeholderLayout->setContentsMargins(0, 0, 0, 0);
@@ -412,7 +516,12 @@ void PropertyEditorV2::refreshFields()
         syncFromToolState();
         break;
     case ToolType::Text:
-        placeholderText = "Click canvas to add text\nFont dialog will open";
+        brushGroup_->hide();
+        pickColorGroup_->hide();
+        fillGroup_->hide();
+        placeholderWidget_->hide();
+        textGroup_->show();
+        syncTextFromState();
         break;
     case ToolType::Move:
         placeholderText = "Drag on canvas to move\nlayer or selection content";
@@ -463,8 +572,9 @@ void PropertyEditorV2::refreshFields()
         syncFromToolState();
     } else if (needsPlaceholder) {
         brushGroup_->hide();
-        pickColorGroup_->hide();
-        fillGroup_->hide();
+    pickColorGroup_->hide();
+    fillGroup_->hide();
+    textGroup_->hide();
         showPlaceholder();
         placeholderLabel_->setText(placeholderText);
     }
@@ -519,6 +629,7 @@ void PropertyEditorV2::showBrushControls()
     placeholderWidget_->hide();
     pickColorGroup_->hide();
     fillGroup_->hide();
+    textGroup_->hide();
 }
 
 void PropertyEditorV2::showAllBrushControls()
@@ -527,6 +638,7 @@ void PropertyEditorV2::showAllBrushControls()
     placeholderWidget_->hide();
     pickColorGroup_->hide();
     fillGroup_->hide();
+    textGroup_->hide();
     shapeCombo_->show();
     shapeLabel_->show();
     hardnessSlider_->show();
@@ -549,6 +661,7 @@ void PropertyEditorV2::showPlaceholder()
     brushGroup_->hide();
     pickColorGroup_->hide();
     fillGroup_->hide();
+    textGroup_->hide();
     placeholderWidget_->show();
 }
 
@@ -674,6 +787,7 @@ void PropertyEditorV2::showPickColorControls()
 {
     brushGroup_->hide();
     fillGroup_->hide();
+    textGroup_->hide();
     placeholderWidget_->hide();
     pickColorGroup_->show();
 }
@@ -683,7 +797,44 @@ void PropertyEditorV2::showFillControls()
     brushGroup_->hide();
     pickColorGroup_->hide();
     placeholderWidget_->hide();
+    textGroup_->hide();
     fillGroup_->show();
+}
+
+void PropertyEditorV2::showTextControls()
+{
+    brushGroup_->hide();
+    pickColorGroup_->hide();
+    fillGroup_->hide();
+    placeholderWidget_->hide();
+    textGroup_->show();
+}
+
+void PropertyEditorV2::syncTextFromState()
+{
+    if (!appState_) return;
+    auto& ts = appState_->toolState();
+    QFont f = ts.textFont();
+
+    fontCombo_->blockSignals(true);
+    fontCombo_->setCurrentFont(f);
+    fontCombo_->blockSignals(false);
+
+    fontSizeSpin_->blockSignals(true);
+    fontSizeSpin_->setValue(f.pointSize());
+    fontSizeSpin_->blockSignals(false);
+
+    fontBoldCb_->blockSignals(true);
+    fontBoldCb_->setChecked(f.bold());
+    fontBoldCb_->blockSignals(false);
+
+    fontItalicCb_->blockSignals(true);
+    fontItalicCb_->setChecked(f.italic());
+    fontItalicCb_->blockSignals(false);
+
+    textEdit_->blockSignals(true);
+    textEdit_->setPlainText(ts.textString());
+    textEdit_->blockSignals(false);
 }
 
 void PropertyEditorV2::updateColorVariations()

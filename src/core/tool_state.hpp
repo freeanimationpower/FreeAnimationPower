@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QColor>
+#include <QFont>
 #include <QString>
 #include "types.hpp"
 
@@ -29,6 +30,8 @@ class ToolState : public QObject {
     Q_PROPERTY(int colorVariationType READ colorVariationType WRITE setColorVariationType NOTIFY colorVariationTypeChanged)
     Q_PROPERTY(int colorVariationCount READ colorVariationCount WRITE setColorVariationCount NOTIFY colorVariationCountChanged)
     Q_PROPERTY(int lineStyle READ lineStyle WRITE setLineStyle NOTIFY lineStyleChanged)
+    Q_PROPERTY(QString textString READ textString WRITE setTextString NOTIFY textStringChanged)
+    Q_PROPERTY(QFont textFont READ textFont WRITE setTextFont NOTIFY textFontChanged)
 
 public:
     explicit ToolState(QObject* parent = nullptr);
@@ -53,6 +56,8 @@ public:
     int colorVariationType() const;
     int colorVariationCount() const;
     int lineStyle() const;
+    QString textString() const;
+    QFont textFont() const;
 
 public slots:
     void setActiveTool(ToolType tool);
@@ -77,6 +82,8 @@ public slots:
     void setColorVariationType(int type);
     void setColorVariationCount(int count);
     void setLineStyle(int style);
+    void setTextString(const QString& text);
+    void setTextFont(const QFont& font);
 
     void resetToDefaults();
 
@@ -102,6 +109,8 @@ signals:
     void colorVariationTypeChanged(int type);
     void colorVariationCountChanged(int count);
     void lineStyleChanged(int style);
+    void textStringChanged(const QString& text);
+    void textFontChanged(const QFont& font);
     void toolSettingsChanged();
 
 private:
@@ -125,6 +134,8 @@ private:
     int color_variation_type_ = 0;
     int color_variation_count_ = 9;
     int line_style_ = 0;
+    QString text_string_;
+    QFont text_font_;
 };
 
 } // namespace fap

@@ -1,14 +1,14 @@
 #include "canvas_widget_v2.hpp"
 
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QInputDialog>
-#include <QtWidgets/QFontDialog>
 #include <QtGui/QPainter>
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QResizeEvent>
+#include <QtGui/QFocusEvent>
+#include <QtCore/QTimer>
 #include <QtGui/QPainterPath>
 #include <QtGui/QClipboard>
 #include <cmath>
@@ -151,6 +151,12 @@ void CanvasWidgetV2::setCurrentLayer(int index)
 void CanvasWidgetV2::setTool(int toolIndex)
 {
     appState_->toolState().setActiveToolByIndex(toolIndex);
+    if (static_cast<ToolType>(toolIndex) == ToolType::ColorPicker) {
+        setCursor(Qt::CrossCursor);
+    } else {
+        setCursor(Qt::ArrowCursor);
+        lastSamplePos_ = {-1, -1};
+    }
 }
 
 void CanvasWidgetV2::setColor(const QColor& color)
@@ -644,6 +650,50 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
         }
     }
 
+    auto currentTool = appState_->toolState().activeTool();
+    if (currentTool == ToolType::ColorPicker && lastSamplePos_.x() >= 0) {
+        p.restore();
+        p.setPen(Qt::NoPen);
+        double r = 9.0;
+        QPointF screenPos = canvasToWidget(lastSamplePos_);
+        QPointF offset(20, -20);
+        QPointF circleCenter = screenPos + offset;
+        p.setBrush(QColor(0, 0, 0, 180));
+        p.drawEllipse(circleCenter, r + 1.5, r + 1.5);
+        p.setBrush(QColor(255, 255, 255, 200));
+        p.drawEllipse(circleCenter, r + 0.5, r + 0.5);
+        p.setBrush(sampledColor_);
+        p.drawEllipse(circleCenter, r - 0.5, r - 0.5);
+        p.save();
+        p.translate(width() / 2.0f + offsetX_, height() / 2.0f + offsetY_);
+        p.rotate(rotationAngle_);
+        float sx = flippedH_ ? -zoom_ : zoom_;
+        p.scale(sx, zoom_);
+        p.translate(-docW / 2.0f, -docH / 2.0f);
+    }
+
+    if (editingText_) {
+        auto& ts = appState_->toolState();
+        QString text = ts.textString();
+        QFont font = ts.textFont();
+        p.setFont(font);
+        p.setPen(brushColor_);
+
+        QFontMetrics fm(font);
+        int caretX = 0;
+        if (!text.isEmpty()) {
+            p.drawText(textEditPos_, text);
+            caretX = fm.horizontalAdvance(text);
+        }
+
+        if (caretVisible_) {
+            QPointF caretPos = textEditPos_ + QPointF(caretX, -fm.ascent() * 0.2);
+            QPointF caretEnd = textEditPos_ + QPointF(caretX, fm.descent() * 1.1);
+            p.setPen(QPen(brushColor_, 1.5f / zoom_));
+            p.drawLine(caretPos, caretEnd);
+        }
+    }
+
     // Selection rectangle and floating selection
     if (selState_ == SelectionState::Creating || (floatingActive_ && selRect_.isValid())) {
         p.setPen(QPen(QColor("#FF6B4A"), 1.5f / zoom_, Qt::SolidLine));
@@ -842,6 +892,9 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
                     appState_->toolState().setPrimaryColor(qc);
                     appState_->toolState().setSampledColor(qc);
                     emit colorPicked(qc);
+                    lastSamplePos_ = cp;
+                    sampledColor_ = qc;
+                    update();
                     return;
                 }
             }
@@ -853,7 +906,23 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         doFill(cp);
     } else if (tool == ToolType::Text) {
         QPointF cp = widgetToCanvas(event->pos());
-        doText(cp);
+        if (editingText_) {
+            commitTextEdit();
+        }
+        editingText_ = true;
+        textEditPos_ = cp;
+        appState_->toolState().setTextString(QString());
+        caretVisible_ = true;
+        if (!caretTimer_) {
+            caretTimer_ = new QTimer(this);
+            connect(caretTimer_, &QTimer::timeout, [this]() {
+                caretVisible_ = !caretVisible_;
+                update();
+            });
+        }
+        caretTimer_->start(500);
+        setFocus();
+        update();
     } else if (tool == ToolType::Move) {
         QPointF cp = widgetToCanvas(event->pos());
         startMove(cp);
@@ -958,6 +1027,9 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
                     appState_->toolState().setPrimaryColor(qc);
                     appState_->toolState().setSampledColor(qc);
                     emit colorPicked(qc);
+                    lastSamplePos_ = cp;
+                    sampledColor_ = qc;
+                    update();
                     break;
                 }
             }
@@ -1056,6 +1128,41 @@ void CanvasWidgetV2::wheelEvent(QWheelEvent* event)
 
 void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
 {
+    if (editingText_) {
+        auto& ts = appState_->toolState();
+        switch (event->key()) {
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+            commitTextEdit();
+            return;
+        case Qt::Key_Escape:
+            editingText_ = false;
+            if (caretTimer_) caretTimer_->stop();
+            ts.setTextString(QString());
+            update();
+            return;
+        case Qt::Key_Backspace: {
+            QString t = ts.textString();
+            if (!t.isEmpty()) {
+                t.chop(1);
+                ts.setTextString(t);
+            }
+            break;
+        }
+        default: {
+            QString text = event->text();
+            if (!text.isEmpty() && text[0].isPrint()) {
+                ts.setTextString(ts.textString() + text);
+            }
+            break;
+        }
+        }
+        caretVisible_ = true;
+        if (caretTimer_) caretTimer_->start(500);
+        update();
+        return;
+    }
+
     bool handled = true;
     bool ctrl = event->modifiers() & Qt::ControlModifier;
 
@@ -1141,6 +1248,14 @@ void CanvasWidgetV2::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     update();
+}
+
+void CanvasWidgetV2::focusOutEvent(QFocusEvent* event)
+{
+    QWidget::focusOutEvent(event);
+    if (editingText_) {
+        commitTextEdit();
+    }
 }
 
 QPointF CanvasWidgetV2::widgetToCanvas(const QPointF& pos) const
@@ -1871,13 +1986,11 @@ void CanvasWidgetV2::doText(QPointF cpos)
     auto* layer = activeRasterLayer();
     if (!layer || layer->locked()) return;
 
-    bool ok = false;
-    QString text = QInputDialog::getMultiLineText(this, "Add Text", "Enter text:", "", &ok);
-    if (!ok || text.isEmpty()) return;
+    auto& ts = appState_->toolState();
+    QString text = ts.textString();
+    if (text.isEmpty()) return;
 
-    bool fontOk = false;
-    QFont chosen = QFontDialog::getFont(&fontOk, textFont_, this, "Choose Font");
-    if (fontOk) textFont_ = chosen;
+    QFont font = ts.textFont();
 
     layer->ensureUnique();
 
@@ -1892,7 +2005,7 @@ void CanvasWidgetV2::doText(QPointF cpos)
     {
         QPainter p(&img);
         p.setRenderHint(QPainter::Antialiasing, true);
-        p.setFont(textFont_);
+        p.setFont(font);
         p.setPen(brushColor_);
         p.drawText(cpos, text);
     }
@@ -1907,6 +2020,18 @@ void CanvasWidgetV2::doText(QPointF cpos)
 
     pushFullLayerUndo(layer, before);
     emit canvasUpdated();
+}
+
+void CanvasWidgetV2::commitTextEdit()
+{
+    if (!editingText_) return;
+    editingText_ = false;
+    if (caretTimer_) caretTimer_->stop();
+    QString text = appState_->toolState().textString();
+    if (!text.isEmpty()) {
+        doText(textEditPos_);
+    }
+    update();
 }
 
 void CanvasWidgetV2::startMove(QPointF cpos)

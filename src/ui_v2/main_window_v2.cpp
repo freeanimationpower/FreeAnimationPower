@@ -405,6 +405,7 @@ void MainWindowV2::setupConnections()
     connect(canvas_, &CanvasWidgetV2::colorPicked, [this](const QColor& color) {
         toolbox_panel_->setColor(color);
         color_panel_->setColor(color);
+        if (property_editor_) property_editor_->updateColorVariations();
     });
 
     connect(canvas_, &CanvasWidgetV2::statusMessage, [this](const QString& msg) {

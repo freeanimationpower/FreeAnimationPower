@@ -69,6 +69,7 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 
 private:
     std::shared_ptr<AppState> appState_;
@@ -94,6 +95,8 @@ private:
     QPointF lastMousePos_;
     QPointF virtualCursorPos_;
     QPointF prevVirtualCursorPos_;
+    QPointF lastSamplePos_{-1, -1};
+    QColor sampledColor_ = Qt::black;
     QRect activeDirtyRect_;
     QImage beforeSnapshot_;
     QImage cleanLayerCopy_;
@@ -131,7 +134,11 @@ private:
 
     // Text tool
     void doText(QPointF cpos);
-    QFont textFont_;
+    bool editingText_ = false;
+    QPointF textEditPos_;
+    bool caretVisible_ = true;
+    QTimer* caretTimer_ = nullptr;
+    void commitTextEdit();
 
     // Move tool
     bool moving_ = false;
