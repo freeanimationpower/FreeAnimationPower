@@ -46,6 +46,8 @@
     </qresource>
     <qresource prefix="/brushes">
     </qresource>
-    <qresource prefix="/palettes">
+    <qresource prefix="/fonts">
+        <file alias="JetBrainsMono-Regular.ttf">fonts/JetBrainsMono-Regular.ttf</file>
+        <file alias="JetBrainsMono-Bold.ttf">fonts/JetBrainsMono-Bold.ttf</file>
     </qresource>
 </RCC>

@@ -4,6 +4,7 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
+#include <QtGui/QFontDatabase>
 #include <QMutex>
 #include "ui_v2/main_window_v2.hpp"
 #include "core/app_state.hpp"
@@ -103,6 +104,13 @@ int main(int argc, char* argv[]) {
     qInstallMessageHandler(globalLogHandler);
 
     QApplication app(argc, argv);
+
+    int jmId = QFontDatabase::addApplicationFont(":/fonts/JetBrainsMono-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/JetBrainsMono-Bold.ttf");
+    if (jmId < 0) {
+        qWarning() << "Failed to load bundled JetBrainsMono font";
+    }
+
     app.setApplicationName("FreeAnimation2dStyle");
     app.setApplicationVersion("2.0.0");
     app.setOrganizationName("FAP");

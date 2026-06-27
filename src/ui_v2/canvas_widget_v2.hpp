@@ -9,10 +9,18 @@
 #include <QtCore/QElapsedTimer>
 #include <memory>
 #include <vector>
+#include <map>
 
 #include "core/app_state.hpp"
 
 namespace fap {
+
+struct TextEntry {
+    QPointF pos;
+    QString text;
+    QFont font;
+    QColor color;
+};
 
 class RasterLayer;
 class Layer;
@@ -139,6 +147,8 @@ private:
     bool caretVisible_ = true;
     QTimer* caretTimer_ = nullptr;
     void commitTextEdit();
+    std::map<int, std::vector<TextEntry>> textEntries_;
+    int editingEntryIndex_ = -1;
 
     // Move tool
     bool moving_ = false;

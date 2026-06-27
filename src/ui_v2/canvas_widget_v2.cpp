@@ -672,23 +672,76 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
         p.translate(-docW / 2.0f, -docH / 2.0f);
     }
 
+    if (currentTool == ToolType::Text && !editingText_) {
+        auto it = textEntries_.find(currentFrame_);
+        if (it != textEntries_.end()) {
+            for (const auto& entry : it->second) {
+                QColor dim = entry.color;
+                dim.setAlpha(80);
+                p.setPen(QPen(dim, 1.0f / zoom_, Qt::DotLine));
+                QFontMetrics fm(entry.font);
+                double w = static_cast<double>(fm.horizontalAdvance(entry.text));
+                double underlineY = entry.pos.y() + fm.descent() + 4.0 / zoom_;
+                p.drawLine(QPointF(entry.pos.x(), underlineY),
+                           QPointF(entry.pos.x() + w, underlineY));
+            }
+        }
+    }
+
     if (editingText_) {
         auto& ts = appState_->toolState();
         QString text = ts.textString();
         QFont font = ts.textFont();
-        p.setFont(font);
+
+        p.setRenderHint(QPainter::Antialiasing, ts.textAntiAliasing());
+        p.setRenderHint(QPainter::TextAntialiasing, ts.textAntiAliasing());
+
+        QFont drawFont = font;
+        if (ts.textTracking() != 0) {
+            drawFont.setLetterSpacing(QFont::PercentageSpacing, ts.textTracking());
+        }
+        p.setFont(drawFont);
         p.setPen(brushColor_);
 
-        QFontMetrics fm(font);
-        int caretX = 0;
-        if (!text.isEmpty()) {
-            p.drawText(textEditPos_, text);
-            caretX = fm.horizontalAdvance(text);
+        QFontMetrics fm(drawFont);
+        double leadPx = static_cast<double>(fm.lineSpacing());
+        int leadPct = ts.textLeading();
+        if (leadPct != 0) {
+            leadPx = leadPx * (1.0 + leadPct / 100.0);
+        }
+
+        QStringList lines = text.split('\n');
+        int lastLineWidth = 0;
+
+        for (int i = 0; i < lines.size(); ++i) {
+            QPointF linePos(textEditPos_.x(), textEditPos_.y() + i * leadPx);
+
+            switch (ts.textAlignment()) {
+            case 1:
+                linePos.setX(textEditPos_.x() - fm.horizontalAdvance(lines[i]) / 2.0);
+                break;
+            case 2:
+                linePos.setX(textEditPos_.x() - fm.horizontalAdvance(lines[i]));
+                break;
+            default: break;
+            }
+
+            p.drawText(linePos, lines[i]);
+            if (i == lines.size() - 1) {
+                lastLineWidth = fm.horizontalAdvance(lines[i]);
+            }
         }
 
         if (caretVisible_) {
-            QPointF caretPos = textEditPos_ + QPointF(caretX, -fm.ascent() * 0.2);
-            QPointF caretEnd = textEditPos_ + QPointF(caretX, fm.descent() * 1.1);
+            double caretX = textEditPos_.x();
+            switch (ts.textAlignment()) {
+            case 0: caretX += static_cast<double>(lastLineWidth); break;
+            case 1: caretX += static_cast<double>(lastLineWidth) / 2.0; break;
+            case 2: break;
+            }
+            double caretY = textEditPos_.y() + (lines.size() - 1) * leadPx;
+            QPointF caretPos(caretX, caretY - fm.ascent() * 0.2);
+            QPointF caretEnd(caretX, caretY + fm.descent() * 1.1);
             p.setPen(QPen(brushColor_, 1.5f / zoom_));
             p.drawLine(caretPos, caretEnd);
         }
@@ -909,9 +962,38 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         if (editingText_) {
             commitTextEdit();
         }
+
+        auto& entries = textEntries_[currentFrame_];
+        for (size_t i = 0; i < entries.size(); ++i) {
+            double dx = std::abs(cp.x() - entries[i].pos.x());
+            double dy = std::abs(cp.y() - entries[i].pos.y());
+            if (dx < 12.0 && dy < 24.0) {
+                auto& ts = appState_->toolState();
+                ts.setTextString(entries[i].text);
+                ts.setTextFont(entries[i].font);
+                ts.setPrimaryColor(entries[i].color);
+                brushColor_ = entries[i].color;
+                editingText_ = true;
+                textEditPos_ = entries[i].pos;
+                editingEntryIndex_ = static_cast<int>(i);
+                caretVisible_ = true;
+                if (!caretTimer_) {
+                    caretTimer_ = new QTimer(this);
+                    connect(caretTimer_, &QTimer::timeout, [this]() {
+                        caretVisible_ = !caretVisible_;
+                        update();
+                    });
+                }
+                caretTimer_->start(500);
+                setFocus();
+                update();
+                return;
+            }
+        }
+
         editingText_ = true;
         textEditPos_ = cp;
-        appState_->toolState().setTextString(QString());
+        editingEntryIndex_ = -1;
         caretVisible_ = true;
         if (!caretTimer_) {
             caretTimer_ = new QTimer(this);
@@ -1137,6 +1219,7 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
             return;
         case Qt::Key_Escape:
             editingText_ = false;
+            editingEntryIndex_ = -1;
             if (caretTimer_) caretTimer_->stop();
             ts.setTextString(QString());
             update();
@@ -1253,9 +1336,14 @@ void CanvasWidgetV2::resizeEvent(QResizeEvent* event)
 void CanvasWidgetV2::focusOutEvent(QFocusEvent* event)
 {
     QWidget::focusOutEvent(event);
-    if (editingText_) {
-        commitTextEdit();
+    if (!editingText_) return;
+
+    QWidget* next = QApplication::focusWidget();
+    if (next && window()->isAncestorOf(next)) {
+        return;
     }
+
+    commitTextEdit();
 }
 
 QPointF CanvasWidgetV2::widgetToCanvas(const QPointF& pos) const
@@ -1991,6 +2079,12 @@ void CanvasWidgetV2::doText(QPointF cpos)
     if (text.isEmpty()) return;
 
     QFont font = ts.textFont();
+    int alignFlags = Qt::AlignTop;
+    switch (ts.textAlignment()) {
+    case 1:  alignFlags |= Qt::AlignHCenter; break;
+    case 2:  alignFlags |= Qt::AlignRight; break;
+    default: alignFlags |= Qt::AlignLeft; break;
+    }
 
     layer->ensureUnique();
 
@@ -2004,10 +2098,40 @@ void CanvasWidgetV2::doText(QPointF cpos)
 
     {
         QPainter p(&img);
-        p.setRenderHint(QPainter::Antialiasing, true);
-        p.setFont(font);
+        p.setRenderHint(QPainter::Antialiasing, ts.textAntiAliasing());
+        p.setRenderHint(QPainter::TextAntialiasing, ts.textAntiAliasing());
+
+        QFont drawFont = font;
+        if (ts.textTracking() != 0) {
+            drawFont.setLetterSpacing(QFont::PercentageSpacing, ts.textTracking());
+        }
+        p.setFont(drawFont);
         p.setPen(brushColor_);
-        p.drawText(cpos, text);
+
+        int ox = layer->originX();
+        int oy = layer->originY();
+        double localX = cpos.x() - ox;
+        double localY = cpos.y() - oy;
+
+        QStringList lines = text.split('\n');
+        QFontMetrics fm(drawFont);
+        double leadPx = static_cast<double>(fm.lineSpacing());
+        int leadPct = ts.textLeading();
+        if (leadPct != 0) {
+            leadPx = leadPx * (1.0 + leadPct / 100.0);
+        }
+
+        for (int i = 0; i < lines.size(); ++i) {
+            QPointF linePos(localX, localY + i * leadPx);
+
+            if (alignFlags & Qt::AlignHCenter) {
+                linePos.setX(localX - fm.horizontalAdvance(lines[i]) / 2.0);
+            } else if (alignFlags & Qt::AlignRight) {
+                linePos.setX(localX - fm.horizontalAdvance(lines[i]));
+            }
+
+            p.drawText(linePos, lines[i]);
+        }
     }
 
     for (int y = 0; y < img.height(); ++y) {
@@ -2019,6 +2143,15 @@ void CanvasWidgetV2::doText(QPointF cpos)
     layer->bufferEpochTick();
 
     pushFullLayerUndo(layer, before);
+
+    auto& ts2 = appState_->toolState();
+    TextEntry entry;
+    entry.pos = cpos;
+    entry.text = text;
+    entry.font = ts2.textFont();
+    entry.color = brushColor_;
+    textEntries_[currentFrame_].push_back(entry);
+
     emit canvasUpdated();
 }
 
@@ -2030,7 +2163,15 @@ void CanvasWidgetV2::commitTextEdit()
     QString text = appState_->toolState().textString();
     if (!text.isEmpty()) {
         doText(textEditPos_);
+        if (editingEntryIndex_ >= 0) {
+            auto& entries = textEntries_[currentFrame_];
+            if (editingEntryIndex_ < static_cast<int>(entries.size())) {
+                entries.erase(entries.begin() + editingEntryIndex_);
+            }
+            editingEntryIndex_ = -1;
+        }
     }
+    appState_->toolState().setTextString(QString());
     update();
 }
 

@@ -32,6 +32,12 @@ class ToolState : public QObject {
     Q_PROPERTY(int lineStyle READ lineStyle WRITE setLineStyle NOTIFY lineStyleChanged)
     Q_PROPERTY(QString textString READ textString WRITE setTextString NOTIFY textStringChanged)
     Q_PROPERTY(QFont textFont READ textFont WRITE setTextFont NOTIFY textFontChanged)
+    Q_PROPERTY(int textLeading READ textLeading WRITE setTextLeading NOTIFY textLeadingChanged)
+    Q_PROPERTY(int textTracking READ textTracking WRITE setTextTracking NOTIFY textTrackingChanged)
+    Q_PROPERTY(int textAlignment READ textAlignment WRITE setTextAlignment NOTIFY textAlignmentChanged)
+    Q_PROPERTY(bool textAntiAliasing READ textAntiAliasing WRITE setTextAntiAliasing NOTIFY textAntiAliasingChanged)
+    Q_PROPERTY(bool textUnderline READ textUnderline WRITE setTextUnderline NOTIFY textUnderlineChanged)
+    Q_PROPERTY(bool textStrikethrough READ textStrikethrough WRITE setTextStrikethrough NOTIFY textStrikethroughChanged)
 
 public:
     explicit ToolState(QObject* parent = nullptr);
@@ -58,6 +64,12 @@ public:
     int lineStyle() const;
     QString textString() const;
     QFont textFont() const;
+    int textLeading() const;
+    int textTracking() const;
+    int textAlignment() const;
+    bool textAntiAliasing() const;
+    bool textUnderline() const;
+    bool textStrikethrough() const;
 
 public slots:
     void setActiveTool(ToolType tool);
@@ -84,6 +96,12 @@ public slots:
     void setLineStyle(int style);
     void setTextString(const QString& text);
     void setTextFont(const QFont& font);
+    void setTextLeading(int leading);
+    void setTextTracking(int tracking);
+    void setTextAlignment(int alignment);
+    void setTextAntiAliasing(bool enabled);
+    void setTextUnderline(bool enabled);
+    void setTextStrikethrough(bool enabled);
 
     void resetToDefaults();
 
@@ -111,6 +129,12 @@ signals:
     void lineStyleChanged(int style);
     void textStringChanged(const QString& text);
     void textFontChanged(const QFont& font);
+    void textLeadingChanged(int leading);
+    void textTrackingChanged(int tracking);
+    void textAlignmentChanged(int alignment);
+    void textAntiAliasingChanged(bool enabled);
+    void textUnderlineChanged(bool enabled);
+    void textStrikethroughChanged(bool enabled);
     void toolSettingsChanged();
 
 private:
@@ -136,6 +160,12 @@ private:
     int line_style_ = 0;
     QString text_string_;
     QFont text_font_;
+    int text_leading_ = 0;
+    int text_tracking_ = 0;
+    int text_alignment_ = 0;
+    bool text_antialiasing_ = true;
+    bool text_underline_ = false;
+    bool text_strikethrough_ = false;
 };
 
 } // namespace fap

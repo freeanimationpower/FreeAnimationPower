@@ -25,6 +25,7 @@ AppState::AppState(QObject* parent)
     , thumbnail_cache_(std::make_unique<FrameThumbnailCache>())
     , frame_viewer_(std::make_unique<FrameViewerData>())
     , pencil_retouch_(std::make_unique<PencilRetouchEngine>()) {
+    tool_state_->resetToDefaults();
     timeline_->setTotalFrames(document_->totalFrames());
     timeline_->setFPS(document_->fps());
     wireSignals();
@@ -125,6 +126,8 @@ void AppState::resetDocument(int width, int height, int fps, int totalFrames) {
     thumbnail_cache_ = std::make_unique<FrameThumbnailCache>();
     frame_viewer_ = std::make_unique<FrameViewerData>();
     pencil_retouch_ = std::make_unique<PencilRetouchEngine>();
+
+    tool_state_->resetToDefaults();
 
     thumbnail_cache_->setDocument(document_.get());
     frame_viewer_->setDocument(document_.get());

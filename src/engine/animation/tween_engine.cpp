@@ -172,11 +172,16 @@ BezierPath TweenEngine::interpolatePaths(const BezierPath& from, const BezierPat
 
     BezierPath result;
     size_t maxSegs = std::max(from.segments().size(), to.segments().size());
+    if (maxSegs == 0) return result;
     result.segments().resize(maxSegs);
 
+    const CubicBezier defaultSeg{};
+
     for (size_t i = 0; i < maxSegs; ++i) {
-        const auto& sf = (i < from.segments().size()) ? from.segments()[i] : from.segments().back();
-        const auto& st = (i < to.segments().size()) ? to.segments()[i] : to.segments().back();
+        const auto& sf = (i < from.segments().size()) ? from.segments()[i]
+            : (from.segments().empty() ? defaultSeg : from.segments().back());
+        const auto& st = (i < to.segments().size()) ? to.segments()[i]
+            : (to.segments().empty() ? defaultSeg : to.segments().back());
 
         result.segments()[i].p0 = Vec2::lerp(sf.p0, st.p0, t);
         result.segments()[i].p1 = Vec2::lerp(sf.p1, st.p1, t);

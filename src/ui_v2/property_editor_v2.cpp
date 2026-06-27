@@ -10,8 +10,11 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QFontComboBox>
-#include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QLineEdit>
+#include <QtWidgets/QListWidget>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QWidgetAction>
+#include <QtGui/QFontDatabase>
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
@@ -60,11 +63,18 @@ PropertyEditorV2::PropertyEditorV2(std::shared_ptr<AppState> state, QWidget* par
     : QWidget(parent)
     , appState_(std::move(state))
 {
+    currentFont_ = QFont("Arial", 24);
     setupUI();
 
     if (appState_) {
         connect(&appState_->toolState(), &ToolState::activeToolChanged,
                 this, &PropertyEditorV2::onToolChanged);
+        connect(&appState_->toolState(), &ToolState::textFontChanged,
+                this, [this]() {
+                    if (appState_->toolState().activeTool() == ToolType::Text) {
+                        syncTextFromState();
+                    }
+                });
     }
 
     refreshFields();
@@ -340,98 +350,225 @@ void PropertyEditorV2::setupUI()
     textGroup_ = new QWidget(this);
     auto* textLayout = new QVBoxLayout(textGroup_);
     textLayout->setContentsMargins(0, 0, 0, 0);
-    textLayout->setSpacing(6);
+    textLayout->setSpacing(5);
 
-    auto* textTitleLabel = new QLabel("TEXT", textGroup_);
+    auto* textTitleLabel = new QLabel("CHARACTER", textGroup_);
     textTitleLabel->setStyleSheet(kLabelStyle);
+    textLayout->addWidget(textTitleLabel);
 
+    // Font family
     auto* fontRow = new QHBoxLayout();
-    fontRow->setSpacing(6);
+    fontRow->setSpacing(4);
     auto* fontLabel = new QLabel("Font", textGroup_);
     fontLabel->setStyleSheet(kLabelStyle);
-    fontLabel->setFixedWidth(32);
+    fontLabel->setFixedWidth(28);
     fontRow->addWidget(fontLabel);
-
-    fontCombo_ = new QFontComboBox(textGroup_);
-    fontCombo_->setStyleSheet(shapeCombo_->styleSheet());
-    fontCombo_->setCurrentFont(QFont("Arial", 24));
-    connect(fontCombo_, &QFontComboBox::currentFontChanged, [this](const QFont& f) {
-        QFont merged = f;
-        merged.setPointSize(fontSizeSpin_->value());
-        merged.setBold(fontBoldCb_->isChecked());
-        merged.setItalic(fontItalicCb_->isChecked());
-        appState_->toolState().setTextFont(merged);
-    });
-    fontRow->addWidget(fontCombo_, 1);
+    fontBtn_ = new QPushButton(textGroup_);
+    fontBtn_->setText("Arial");
+    fontBtn_->setCursor(Qt::PointingHandCursor);
+    fontBtn_->setStyleSheet(
+        "QPushButton{background:#1E2130;color:#C8CCD8;border:1px solid #2D3139;"
+        "border-radius:5px;padding:3px 8px;font-size:12px;text-align:left;}"
+        "QPushButton:hover{border-color:#3D4150;}"
+        "QPushButton:pressed{background:#FF6B4A;color:#fff;border-color:#FF6B4A;}");
+    connect(fontBtn_, &QPushButton::clicked, this, &PropertyEditorV2::openFontPicker);
+    fontRow->addWidget(fontBtn_, 1);
     textLayout->addLayout(fontRow);
 
-    auto* sizeStyleRow = new QHBoxLayout();
-    sizeStyleRow->setSpacing(8);
-    auto* sizeLabel = new QLabel("Size", textGroup_);
-    sizeLabel->setStyleSheet(kLabelStyle);
-    sizeLabel->setFixedWidth(28);
-    sizeStyleRow->addWidget(sizeLabel);
+    // Font style
+    auto* styleRow = new QHBoxLayout();
+    styleRow->setSpacing(4);
+    auto* styleLabel = new QLabel("Style", textGroup_);
+    styleLabel->setStyleSheet(kLabelStyle);
+    styleLabel->setFixedWidth(32);
+    styleRow->addWidget(styleLabel);
+    fontStyleCombo_ = new QComboBox(textGroup_);
+    fontStyleCombo_->setStyleSheet(shapeCombo_->styleSheet());
+    fontStyleCombo_->addItems({"Regular", "Bold", "Italic", "Bold Italic"});
+    connect(fontStyleCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            [this](int) { updateTextFontFromControls(); });
+    styleRow->addWidget(fontStyleCombo_, 1);
+    textLayout->addLayout(styleRow);
 
+    // Size | Leading | Tracking
+    auto* metricsRow = new QHBoxLayout();
+    metricsRow->setSpacing(4);
+
+    auto* sizeLabel2 = new QLabel("Sz", textGroup_);
+    sizeLabel2->setStyleSheet(kLabelStyle);
+    sizeLabel2->setFixedWidth(16);
+    metricsRow->addWidget(sizeLabel2);
     fontSizeSpin_ = new QSpinBox(textGroup_);
     fontSizeSpin_->setRange(8, 200);
     fontSizeSpin_->setValue(24);
-    fontSizeSpin_->setSuffix(" px");
-    fontSizeSpin_->setFixedWidth(62);
+    fontSizeSpin_->setFixedWidth(44);
     fontSizeSpin_->setStyleSheet(kSpinStyle);
-    connect(fontSizeSpin_, QOverload<int>::of(&QSpinBox::valueChanged), [this](int size) {
-        QFont f = fontCombo_->currentFont();
-        f.setPointSize(size);
-        f.setBold(fontBoldCb_->isChecked());
-        f.setItalic(fontItalicCb_->isChecked());
-        appState_->toolState().setTextFont(f);
+    connect(fontSizeSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this](int) { updateTextFontFromControls(); });
+    metricsRow->addWidget(fontSizeSpin_);
+
+    auto* leadLabel = new QLabel("Ld", textGroup_);
+    leadLabel->setStyleSheet(kLabelStyle);
+    leadLabel->setFixedWidth(16);
+    metricsRow->addWidget(leadLabel);
+    leadSpin_ = new QSpinBox(textGroup_);
+    leadSpin_->setRange(-20, 500);
+    leadSpin_->setValue(0);
+    leadSpin_->setSuffix("%");
+    leadSpin_->setFixedWidth(48);
+    leadSpin_->setStyleSheet(kSpinStyle);
+    leadSpin_->setToolTip("Line spacing (0 = auto)");
+    connect(leadSpin_, QOverload<int>::of(&QSpinBox::valueChanged), [this](int v) {
+        appState_->toolState().setTextLeading(v);
     });
-    sizeStyleRow->addWidget(fontSizeSpin_);
+    metricsRow->addWidget(leadSpin_);
+
+    auto* trackLabel = new QLabel("Tr", textGroup_);
+    trackLabel->setStyleSheet(kLabelStyle);
+    trackLabel->setFixedWidth(16);
+    metricsRow->addWidget(trackLabel);
+    trackSpin_ = new QSpinBox(textGroup_);
+    trackSpin_->setRange(-100, 500);
+    trackSpin_->setValue(0);
+    trackSpin_->setSuffix("%");
+    trackSpin_->setFixedWidth(48);
+    trackSpin_->setStyleSheet(kSpinStyle);
+    trackSpin_->setToolTip("Letter spacing");
+    connect(trackSpin_, QOverload<int>::of(&QSpinBox::valueChanged), [this](int v) {
+        appState_->toolState().setTextTracking(v);
+    });
+    metricsRow->addWidget(trackSpin_);
+    metricsRow->addStretch();
+    textLayout->addLayout(metricsRow);
+
+    // Color swatch row
+    auto* colorRow = new QHBoxLayout();
+    colorRow->setSpacing(6);
+    auto* colorLabel = new QLabel("Color", textGroup_);
+    colorLabel->setStyleSheet(kLabelStyle);
+    colorLabel->setFixedWidth(32);
+    colorRow->addWidget(colorLabel);
+    textColorBtn_ = new QPushButton(textGroup_);
+    textColorBtn_->setFixedSize(24, 24);
+    textColorBtn_->setCursor(Qt::PointingHandCursor);
+    textColorBtn_->setToolTip("Text color");
+    connect(textColorBtn_, &QPushButton::clicked, [this]() {
+        if (appState_) {
+            QColor c = appState_->toolState().primaryColor();
+            emit primaryColorChanged(c);
+        }
+    });
+    colorRow->addWidget(textColorBtn_);
+    colorRow->addStretch();
+    textLayout->addLayout(colorRow);
+
+    // Style toggles: B I U S
+    auto* styleToggleRow = new QHBoxLayout();
+    styleToggleRow->setSpacing(2);
+
+    auto makeToggle = [&](const QString& text, const QString& tooltip) {
+        auto* btn = new QPushButton(text, textGroup_);
+        btn->setCheckable(true);
+        btn->setFixedSize(26, 22);
+        btn->setToolTip(tooltip);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setStyleSheet(
+            "QPushButton{color:#8B8FA3;background:#1E2130;border:1px solid #2D3139;"
+            "border-radius:3px;font-size:10px;font-weight:600;padding:0;}"
+            "QPushButton:hover{color:#C8CCD8;border-color:#3D4150;}"
+            "QPushButton:checked{color:#fff;background:#FF6B4A;border-color:#FF6B4A;}");
+        return btn;
+    };
 
     fontBoldCb_ = new QCheckBox("B", textGroup_);
     fontBoldCb_->setToolTip("Bold");
     fontBoldCb_->setStyleSheet(
-        "QCheckBox{color:#8B8FA3;font-size:10px;spacing:4px;}"
+        "QCheckBox{color:#8B8FA3;font-size:10px;spacing:3px;}"
         "QCheckBox::indicator{width:14px;height:14px;border:1px solid #3D4150;border-radius:3px;background:#1E2130;}"
         "QCheckBox::indicator:checked{background:#FF6B4A;border-color:#FF6B4A;}");
-    connect(fontBoldCb_, &QCheckBox::toggled, [this](bool bold) {
-        QFont f = fontCombo_->currentFont();
-        f.setPointSize(fontSizeSpin_->value());
-        f.setBold(bold);
-        f.setItalic(fontItalicCb_->isChecked());
-        appState_->toolState().setTextFont(f);
-    });
-    sizeStyleRow->addWidget(fontBoldCb_);
+    connect(fontBoldCb_, &QCheckBox::toggled, [this](bool) { updateTextFontFromControls(); });
+    styleToggleRow->addWidget(fontBoldCb_);
 
     fontItalicCb_ = new QCheckBox("I", textGroup_);
     fontItalicCb_->setToolTip("Italic");
-    fontItalicCb_->setStyleSheet(
-        "QCheckBox{color:#8B8FA3;font-size:10px;spacing:4px;}"
-        "QCheckBox::indicator{width:14px;height:14px;border:1px solid #3D4150;border-radius:3px;background:#1E2130;}"
-        "QCheckBox::indicator:checked{background:#FF6B4A;border-color:#FF6B4A;}");
-    connect(fontItalicCb_, &QCheckBox::toggled, [this](bool italic) {
-        QFont f = fontCombo_->currentFont();
-        f.setPointSize(fontSizeSpin_->value());
-        f.setBold(fontBoldCb_->isChecked());
-        f.setItalic(italic);
-        appState_->toolState().setTextFont(f);
-    });
-    sizeStyleRow->addWidget(fontItalicCb_);
-    sizeStyleRow->addStretch();
-    textLayout->addLayout(sizeStyleRow);
+    fontItalicCb_->setStyleSheet(fontBoldCb_->styleSheet());
+    connect(fontItalicCb_, &QCheckBox::toggled, [this](bool) { updateTextFontFromControls(); });
+    styleToggleRow->addWidget(fontItalicCb_);
 
-    textEdit_ = new QPlainTextEdit(textGroup_);
-    textEdit_->setPlaceholderText("Type your text here...");
-    textEdit_->setFixedHeight(70);
-    textEdit_->setStyleSheet(QString(
-        "QPlainTextEdit{background:%1;color:%2;border:1px solid #2D3139;border-radius:4px;padding:4px;font-size:10px;}"
-        "QPlainTextEdit:focus{border-color:#FF6B4A;}")
-        .arg("#1E2130", "#C8CCD8"));
-    connect(textEdit_, &QPlainTextEdit::textChanged, [this]() {
-        appState_->toolState().setTextString(textEdit_->toPlainText());
+    fontUnderlineCb_ = new QCheckBox("U", textGroup_);
+    fontUnderlineCb_->setToolTip("Underline");
+    fontUnderlineCb_->setStyleSheet(fontBoldCb_->styleSheet());
+    connect(fontUnderlineCb_, &QCheckBox::toggled, [this](bool v) {
+        appState_->toolState().setTextUnderline(v);
+        updateTextFontFromControls();
     });
-    textLayout->addWidget(textEdit_);
+    styleToggleRow->addWidget(fontUnderlineCb_);
 
-    auto* textHintLabel = new QLabel("Click canvas to place text", textGroup_);
+    fontStrikethroughCb_ = new QCheckBox("S", textGroup_);
+    fontStrikethroughCb_->setToolTip("Strikethrough");
+    fontStrikethroughCb_->setStyleSheet(fontBoldCb_->styleSheet());
+    connect(fontStrikethroughCb_, &QCheckBox::toggled, [this](bool v) {
+        appState_->toolState().setTextStrikethrough(v);
+        updateTextFontFromControls();
+    });
+    styleToggleRow->addWidget(fontStrikethroughCb_);
+    styleToggleRow->addStretch();
+    textLayout->addLayout(styleToggleRow);
+
+    // Anti-aliasing
+    auto* aaRow = new QHBoxLayout();
+    aaRow->setSpacing(4);
+    auto* aaLabel = new QLabel("AA", textGroup_);
+    aaLabel->setStyleSheet(kLabelStyle);
+    aaLabel->setFixedWidth(32);
+    aaRow->addWidget(aaLabel);
+    antialiasCombo_ = new QComboBox(textGroup_);
+    antialiasCombo_->addItems({"Smooth", "Sharp", "None"});
+    antialiasCombo_->setCurrentIndex(0);
+    antialiasCombo_->setStyleSheet(shapeCombo_->styleSheet());
+    connect(antialiasCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int idx) {
+        appState_->toolState().setTextAntiAliasing(idx == 0);
+    });
+    aaRow->addWidget(antialiasCombo_, 1);
+    textLayout->addLayout(aaRow);
+
+    // Alignment
+    auto* alignRow = new QHBoxLayout();
+    alignRow->setSpacing(2);
+    auto* alignLabel = new QLabel("Align", textGroup_);
+    alignLabel->setStyleSheet(kLabelStyle);
+    alignLabel->setFixedWidth(32);
+    alignRow->addWidget(alignLabel);
+
+    auto makeAlignBtn = [&](const QString& symbol, int alignment, const QString& tip) {
+        auto* btn = new QPushButton(symbol, textGroup_);
+        btn->setCheckable(true);
+        btn->setFixedSize(26, 22);
+        btn->setToolTip(tip);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setStyleSheet(
+            "QPushButton{color:#8B8FA3;background:#1E2130;border:1px solid #2D3139;"
+            "border-radius:3px;font-size:12px;padding:0;}"
+            "QPushButton:hover{color:#C8CCD8;border-color:#3D4150;}"
+            "QPushButton:checked{color:#fff;background:#FF6B4A;border-color:#FF6B4A;}");
+        connect(btn, &QPushButton::clicked, [this, alignment]() {
+            appState_->toolState().setTextAlignment(alignment);
+            updateAlignButtons();
+        });
+        return btn;
+    };
+
+    alignLeftBtn_ = makeAlignBtn("\u25C0", 0, "Align Left");
+    alignRow->addWidget(alignLeftBtn_);
+    alignCenterBtn_ = makeAlignBtn("\u25B6\u25C0", 1, "Align Center");
+    alignRow->addWidget(alignCenterBtn_);
+    alignRightBtn_ = makeAlignBtn("\u25B6", 2, "Align Right");
+    alignRow->addWidget(alignRightBtn_);
+    alignRow->addStretch();
+    textLayout->addLayout(alignRow);
+
+    // Multi-line text input — removed, typing on canvas only
+    auto* textHintLabel = new QLabel("Click canvas to type text", textGroup_);
     textHintLabel->setStyleSheet("QLabel{color:#3D4150;font-size:9px;}");
     textHintLabel->setAlignment(Qt::AlignCenter);
     textLayout->addWidget(textHintLabel);
@@ -816,9 +953,30 @@ void PropertyEditorV2::syncTextFromState()
     auto& ts = appState_->toolState();
     QFont f = ts.textFont();
 
-    fontCombo_->blockSignals(true);
-    fontCombo_->setCurrentFont(f);
-    fontCombo_->blockSignals(false);
+    currentFont_ = f;
+    fontBtn_->setText(f.family());
+
+    if (!fontsLoaded_) {
+        QFontDatabase db;
+        cachedFontFamilies_.clear();
+        for (const QString& family : db.families()) {
+            if (db.isSmoothlyScalable(family)) {
+                cachedFontFamilies_.append(family);
+            }
+        }
+        cachedFontFamilies_.sort(Qt::CaseInsensitive);
+        fontsLoaded_ = true;
+    }
+
+    QFontDatabase db;
+    QStringList styles = db.styles(f.family());
+    fontStyleCombo_->blockSignals(true);
+    fontStyleCombo_->clear();
+    fontStyleCombo_->addItems(styles.isEmpty() ? QStringList{"Regular"} : styles);
+    qsizetype sidx = styles.indexOf(db.styleString(f));
+    int styleIdx = (sidx >= 0) ? static_cast<int>(sidx) : 0;
+    if (styleIdx < fontStyleCombo_->count()) fontStyleCombo_->setCurrentIndex(styleIdx);
+    fontStyleCombo_->blockSignals(false);
 
     fontSizeSpin_->blockSignals(true);
     fontSizeSpin_->setValue(f.pointSize());
@@ -832,9 +990,33 @@ void PropertyEditorV2::syncTextFromState()
     fontItalicCb_->setChecked(f.italic());
     fontItalicCb_->blockSignals(false);
 
-    textEdit_->blockSignals(true);
-    textEdit_->setPlainText(ts.textString());
-    textEdit_->blockSignals(false);
+    fontUnderlineCb_->blockSignals(true);
+    fontUnderlineCb_->setChecked(f.underline());
+    fontUnderlineCb_->blockSignals(false);
+
+    fontStrikethroughCb_->blockSignals(true);
+    fontStrikethroughCb_->setChecked(f.strikeOut());
+    fontStrikethroughCb_->blockSignals(false);
+
+    leadSpin_->blockSignals(true);
+    leadSpin_->setValue(ts.textLeading());
+    leadSpin_->blockSignals(false);
+
+    trackSpin_->blockSignals(true);
+    trackSpin_->setValue(ts.textTracking());
+    trackSpin_->blockSignals(false);
+
+    antialiasCombo_->blockSignals(true);
+    antialiasCombo_->setCurrentIndex(ts.textAntiAliasing() ? 0 : 1);
+    antialiasCombo_->blockSignals(false);
+
+    updateAlignButtons();
+
+    QString colorStyle = QString(
+        "QPushButton{background-color:%1;border:2px solid #2D3139;border-radius:12px;}"
+        "QPushButton:hover{border-color:#FF6B4A;}"
+    ).arg(ts.primaryColor().name());
+    textColorBtn_->setStyleSheet(colorStyle);
 }
 
 void PropertyEditorV2::updateColorVariations()
@@ -955,6 +1137,115 @@ void PropertyEditorV2::onLineStyleChanged(int index)
     if (appState_) {
         appState_->toolState().setLineStyle(index);
     }
+}
+
+void PropertyEditorV2::updateTextFontFromControls()
+{
+    if (!appState_) return;
+    QString family = currentFont_.family();
+    QString style = fontStyleCombo_->currentText();
+    int size = fontSizeSpin_->value();
+
+    QFontDatabase db;
+    QFont f = db.font(family, style, size);
+    if (f.family().isEmpty()) {
+        f = currentFont_;
+        f.setPointSize(size);
+    }
+
+    f.setBold(fontBoldCb_->isChecked());
+    f.setItalic(fontItalicCb_->isChecked());
+    f.setUnderline(fontUnderlineCb_->isChecked());
+    f.setStrikeOut(fontStrikethroughCb_->isChecked());
+    appState_->toolState().setTextFont(f);
+}
+
+void PropertyEditorV2::updateAlignButtons()
+{
+    if (!appState_) return;
+    int a = appState_->toolState().textAlignment();
+    alignLeftBtn_->setChecked(a == 0);
+    alignCenterBtn_->setChecked(a == 1);
+    alignRightBtn_->setChecked(a == 2);
+}
+
+void PropertyEditorV2::openFontPicker()
+{
+    if (!appState_) return;
+    QString previewText = appState_->toolState().textString();
+    if (previewText.isEmpty()) previewText = "The quick brown fox";
+    if (previewText.length() > 40) previewText = previewText.left(40) + QString::fromUtf8("\u2026");
+
+    auto* popup = new QMenu(this);
+    popup->setMinimumWidth(fontBtn_->width());
+    popup->setMaximumHeight(420);
+    popup->setStyleSheet(
+        "QMenu{background:#1A1D24;border:1px solid #2D3139;border-radius:6px;padding:4px;}"
+        "QMenu::item{padding:4px 8px;}"
+        "QMenu::item:selected{background:#FF6B4A;color:#fff;border-radius:3px;}");
+
+    auto* search = new QLineEdit();
+    search->setPlaceholderText("Search fonts...");
+    search->setClearButtonEnabled(true);
+    search->setStyleSheet(
+        "QLineEdit{background:#1E2130;color:#C8CCD8;border:1px solid #2D3139;"
+        "border-radius:5px;padding:4px 8px;font-size:11px;margin:2px 4px;}"
+        "QLineEdit:focus{border-color:#FF6B4A;}");
+    auto* searchAct = new QWidgetAction(popup);
+    searchAct->setDefaultWidget(search);
+    popup->addAction(searchAct);
+
+    popup->addSeparator();
+
+    auto* list = new QListWidget();
+    list->setMinimumHeight(300);
+    list->setStyleSheet(
+        "QListWidget{background:transparent;color:#C8CCD8;border:none;outline:none;}"
+        "QListWidget::item{padding:4px 8px;border-radius:3px;}"
+        "QListWidget::item:selected{background:#FF6B4A;color:#fff;}"
+        "QListWidget::item:hover{background:#1E2130;}");
+    list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    QFontDatabase db;
+    for (const QString& family : cachedFontFamilies_) {
+        auto* item = new QListWidgetItem(previewText);
+        QFont itemFont(family, 14);
+        item->setFont(itemFont);
+        item->setToolTip(family);
+        list->addItem(item);
+        if (family == currentFont_.family()) {
+            list->setCurrentItem(item);
+        }
+    }
+
+    connect(search, &QLineEdit::textChanged, [list](const QString& f) {
+        for (int i = 0; i < list->count(); ++i) {
+            auto* item = list->item(i);
+            item->setHidden(!f.isEmpty() && !item->font().family().contains(f, Qt::CaseInsensitive));
+        }
+    });
+
+    connect(list, &QListWidget::itemClicked, [this, popup](QListWidgetItem* item) {
+        currentFont_.setFamily(item->font().family());
+        fontBtn_->setText(currentFont_.family());
+
+        QFontDatabase db2;
+        QStringList styles = db2.styles(currentFont_.family());
+        fontStyleCombo_->blockSignals(true);
+        fontStyleCombo_->clear();
+        fontStyleCombo_->addItems(styles.isEmpty() ? QStringList{"Regular"} : styles);
+        fontStyleCombo_->setCurrentIndex(0);
+        fontStyleCombo_->blockSignals(false);
+
+        updateTextFontFromControls();
+        popup->close();
+    });
+
+    auto* listAct = new QWidgetAction(popup);
+    listAct->setDefaultWidget(list);
+    popup->addAction(listAct);
+
+    popup->exec(fontBtn_->mapToGlobal(QPoint(0, fontBtn_->height())));
 }
 
 } // namespace fap

@@ -29,6 +29,12 @@ int ToolState::colorVariationCount() const { return color_variation_count_; }
 int ToolState::lineStyle() const { return line_style_; }
 QString ToolState::textString() const { return text_string_; }
 QFont ToolState::textFont() const { return text_font_; }
+int ToolState::textLeading() const { return text_leading_; }
+int ToolState::textTracking() const { return text_tracking_; }
+int ToolState::textAlignment() const { return text_alignment_; }
+bool ToolState::textAntiAliasing() const { return text_antialiasing_; }
+bool ToolState::textUnderline() const { return text_underline_; }
+bool ToolState::textStrikethrough() const { return text_strikethrough_; }
 
 void ToolState::setActiveTool(ToolType tool) {
     if (active_tool_ != tool) {
@@ -179,6 +185,12 @@ void ToolState::resetToDefaults() {
     setTextString(QString());
     QFont defaultFont("Arial", 24);
     setTextFont(defaultFont);
+    setTextLeading(0);
+    setTextTracking(0);
+    setTextAlignment(0);
+    setTextAntiAliasing(true);
+    setTextUnderline(false);
+    setTextStrikethrough(false);
 }
 
 void ToolState::setOnionEnabled(bool enabled) {
@@ -268,6 +280,55 @@ void ToolState::setTextFont(const QFont& font) {
     if (text_font_ != font) {
         text_font_ = font;
         emit textFontChanged(font);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextLeading(int leading) {
+    if (text_leading_ != leading) {
+        text_leading_ = leading;
+        emit textLeadingChanged(leading);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextTracking(int tracking) {
+    if (text_tracking_ != tracking) {
+        text_tracking_ = tracking;
+        emit textTrackingChanged(tracking);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextAlignment(int alignment) {
+    int clamped = std::clamp(alignment, 0, 2);
+    if (text_alignment_ != clamped) {
+        text_alignment_ = clamped;
+        emit textAlignmentChanged(clamped);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextAntiAliasing(bool enabled) {
+    if (text_antialiasing_ != enabled) {
+        text_antialiasing_ = enabled;
+        emit textAntiAliasingChanged(enabled);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextUnderline(bool enabled) {
+    if (text_underline_ != enabled) {
+        text_underline_ = enabled;
+        emit textUnderlineChanged(enabled);
+        emit toolSettingsChanged();
+    }
+}
+
+void ToolState::setTextStrikethrough(bool enabled) {
+    if (text_strikethrough_ != enabled) {
+        text_strikethrough_ = enabled;
+        emit textStrikethroughChanged(enabled);
         emit toolSettingsChanged();
     }
 }

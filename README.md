@@ -259,6 +259,76 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 
 ---
 
+### 11. Text Tool Redesign — Font Picker + Character Panel + Editable Text (commit `this`)
+
+**Problem**: The text tool had multiple critical issues:
+- Only Arial loaded; other fonts didn't apply due to style combo populated after font apply
+- Font combo showed bitmap fonts causing DirectWrite warnings ("Terminal", "Terminal Greek")
+- Text position was offset by layer origin on commit
+- Caret position was wrong for centered/right-aligned text
+- Clicking UI panels auto-committed text (focusOutEvent)
+- Text typed in property panel was wiped on canvas click
+- No way to re-edit text after committing
+- `ToolState::resetToDefaults()` never called on startup
+
+**Solution**:
+
+**1. Custom font picker** (replaced QFontComboBox):
+- QPushButton + QMenu popup anchored to the button
+- Search bar with real-time filtering
+- Each item renders the user's **actual text** in that font at 14pt
+- Font cache enumerated once via `QFontDatabase`, filtered by `isSmoothlyScalable()`
+- No DirectWrite warnings, instant opening after first load
+
+**2. Character panel** (Photoshop-inspired):
+```
+CHARACTER
+Font: [Arial                    ▼]  ← click opens inline font picker
+Style:[▼ Regular / Bold / Italic  ]
+Sz:[24] Ld:[0%] Tr:[0%]           ← Size, Leading, Tracking
+Color: [●]                         ← current color swatch
+[B][I][U][S]                       ← Bold, Italic, Underline, Strikethrough
+AA: [▼ Smooth / Sharp / None]     ← Anti-aliasing mode
+Align: [◀][▶◀][▶]                 ← Left, Center, Right
+```
+
+**3. Editable text after commit**:
+- Each committed text stored as `TextEntry {pos, text, font, color}` per frame
+- Click near existing text (12px/24px tolerance) to reload and re-edit
+- Visual indicator: dotted underline under each entry when Text tool is active
+
+**4. Typography controls** added to `ToolState`:
+- `textLeading` (line spacing %), `textTracking` (letter spacing %)
+- `textAlignment` (0=Left, 1=Center, 2=Right)
+- `textAntiAliasing`, `textUnderline`, `textStrikethrough`
+- Multi-line text with configurable alignment, leading, tracking, anti-aliasing
+
+**5. Bugs fixed**:
+- `focusOutEvent`: no longer commits when focus goes to app panels (check `isAncestorOf`)
+- `doText()`: subtracts `layer->originX()/originY()` for correct canvas position
+- Caret aligned per alignment mode (left: after text, center: center+half-width, right: at origin)
+- Text no longer wiped on canvas click; cleared only after commit
+- `ToolState::resetToDefaults()` called in constructor and `resetDocument()`
+- `tween_engine::interpolatePaths()`: guard against `.back()` on empty segments vector
+
+**6. Font loading**:
+- JetBrainsMono bundled in `resources/fonts/` via QRC, loaded at startup
+- `QFontDatabase::addApplicationFont()` in `main.cpp`
+
+**Files**: `tool_state.hpp/cpp`, `app_state.cpp`, `property_editor_v2.hpp/cpp`, `canvas_widget_v2.hpp/cpp`, `main.cpp`, `resources.qrc`, `tween_engine.cpp`, `resources/fonts/`
+
+**UX flow**:
+```
+1. Press T → CHARACTER panel appears
+2. Type directly on canvas (keyboard) — text appears with blinking caret
+3. Adjust font, style, size, color, alignment in panel — applies live
+4. Enter → commits text to raster layer
+5. Escape → cancels
+6. Click near existing text → reloads for re-editing
+```
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)
