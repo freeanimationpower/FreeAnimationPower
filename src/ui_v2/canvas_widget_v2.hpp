@@ -20,6 +20,8 @@ struct TextEntry {
     QString text;
     QFont font;
     QColor color;
+    QImage undoImage;
+    QRect undoRect;
 };
 
 class RasterLayer;
@@ -144,6 +146,8 @@ private:
     void doText(QPointF cpos);
     bool editingText_ = false;
     QPointF textEditPos_;
+    int textCursorPos_ = 0;
+    int textSelectionAnchor_ = -1;
     bool caretVisible_ = true;
     QTimer* caretTimer_ = nullptr;
     void commitTextEdit();

@@ -8,7 +8,7 @@
 
 ## Session Summary
 
-This session focused on refining the text tool with professional-grade typography controls, fixing multiple critical bugs in text rendering and interaction, adding middle-button canvas panning, and cleaning up the CHARACTER panel UI. All changes maintain backward compatibility (139/139 tests passing).
+This session focused on refining the text tool with professional-grade typography controls, fixing multiple critical bugs in text rendering and interaction, adding middle-button canvas panning, and cleaning up the CHARACTER panel UI. The second half of the session addressed the critical "ghost text" bug during text re-editing, added cursor positioning and text selection, and eliminated Qt QPainter composition issues by switching to direct pixel copy for layer restoration. All changes maintain backward compatibility (154/154 tests passing).
 
 ---
 
@@ -207,8 +207,76 @@ Works identically to Photoshop, Illustrator, Blender, and other professional sof
    │ Commit    │  │ Cancel (Esc)  │
    │ doText()  │  │ clear text    │
    │ save entry│  │ return Normal │
-   └───────────┘  └───────────────┘
+    └───────────┘  └───────────────┘
 ```
+
+---
+
+### 7. Ghost Text Elimination + Cursor Positioning + Text Selection
+
+**Problem**: After the initial text tool improvements, three critical issues remained:
+
+1. **Ghost text on re-edit**: When clicking on existing rasterized text, deleting all overlay characters, and committing, the old rasterized pixels remained visible on the layer. The paintEvent renders layer pixels first, then overlay text — so when the overlay was cleared, the layer text shone through as a "phantom" that couldn't be erased.
+
+2. **No cursor positioning**: Delete and Backspace both always removed only the last character (`chop(1)`). There was no cursor concept — typing always appended to the end, and arrow keys did nothing.
+
+3. **No text selection**: Shift+arrow, Ctrl+A, and selection highlighting were entirely absent. Users couldn't select text for bulk deletion.
+
+**Root Cause Analysis**:
+
+The ghost text had a dual nature:
+- **Visual layer**: During editing, the `paintEvent` rendered both the rasterized layer (old pixels) and the overlay (editable text). When the overlay was cleared, the layer pixels remained visible.
+- **Persistence layer**: On commit, `doText()` drew new text on top of existing layer pixels using `QPainter::drawText`. When re-editing committed text, the new (possibly shorter/empty) text was drawn over old pixels — old text remained on the layer.
+
+**Solution**:
+
+**Visual: White overlay background rect** (`paintEvent`, lines 692+):
+- Computes text bounding box from `QFontMetrics` and line positions
+- When re-editing (`editingEntryIndex_ >= 0`), expands rect to cover at least the original `TextEntry`'s text area (computed from stored entry's font metrics)
+- Fills rect with `#FFFFFF` before drawing overlay text — masks rasterized text underneath
+- 10px padding on all sides, minimum 20px width
+
+**Persistence: UndoImage pixel restoration** (`doText` + `commitTextEdit`):
+- `doText()`: Captures clean layer region via `QImage::copy(textUndoRect)` BEFORE drawing text. Stores as `undoImage`/`undoRect` in `TextEntry`
+- `commitTextEdit()` on re-edit: restores `undoImage` pixels to layer using direct `std::copy` from scanlines (byte-for-byte, avoiding `QPainter::drawImage` composition issues with `Format_ARGB32_Premultiplied`)
+- If text empty after re-edit: only erases old pixels and removes `TextEntry` (no `doText` call)
+- If text non-empty: erases old pixels, then `doText()` draws new text on clean layer
+
+**Cursor positioning** (`textCursorPos_` in `CanvasWidgetV2`):
+- ← →: move cursor one character
+- Home/End: jump to text start/end
+- Backspace: delete char before cursor, decrement cursor
+- Delete: delete char at cursor
+- Typing: insert at cursor position via `QString::insert()`
+- Caret rendered at correct x using `fm.horizontalAdvance(beforeCaret)` with alignment-aware positioning
+
+**Text selection** (`textSelectionAnchor_` in `CanvasWidgetV2`):
+- Shift + ← → Home/End: extends selection from anchor point
+- Ctrl+A: selects all (`anchor=0`, `cursor=len`)
+- With active selection: Backspace/Delete removes entire selected range via `QString::remove()`
+- Blue semi-transparent highlight `QColor(42, 130, 218, 100)` drawn behind selected text via `fillRect()`
+- Multi-line selection: iterates lines, computes per-line highlight rects
+- Typing any character clears selection first
+
+**Escape behavior**:
+- Re-edit: Escape cancels editing without touching layer (old rasterized text stays intact, white rect disappears)
+- New text: Escape clears overlay text and exits editing
+
+**Key Architecture Decision**: Instead of using `QPainter::drawImage` for pixel restoration (which applies SourceOver composition on premultiplied alpha, potentially preserving old pixels), the restoration now uses direct `std::copy` from the undoImage's scanlines to the layer's pixel buffer. This guarantees exact byte-for-byte pixel restoration — the undoImage completely replaces the layer region.
+
+**TextEntry struct additions**:
+```cpp
+QImage undoImage;   // Layer pixels before text was rasterized
+QRect undoRect;     // Region coordinates in layer-local space
+```
+
+**New CanvasWidgetV2 members**:
+```cpp
+int textCursorPos_ = 0;
+int textSelectionAnchor_ = -1;  // -1 = no selection
+```
+
+**Files**: `canvas_widget_v2.hpp`, `canvas_widget_v2.cpp`
 
 ---
 
@@ -225,7 +293,7 @@ ctest --test-dir build
 ## Testing Status
 
 - **Test framework**: GoogleTest
-- **Test count**: 139 tests
+- **Test count**: 154 tests (139 from prior work + 15 memory stress tests)
 - **Pass rate**: 100% (0 failures)
 - **Build target**: `free-animation-2d-style` (Release, MSVC 2022)
 

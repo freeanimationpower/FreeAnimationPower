@@ -390,6 +390,89 @@ Align: [◀][▶◀][▶]                 ← Left, Center, Right
 | 10 | Backspace/Delete not working | `Qt::NoFocus` on CHARACTER controls |
 | 11 | Double-click unreliable | Replaced with single-click text detection |
 | 12 | Caret didn't match font size | Removed `* 0.2` / `* 1.1` multipliers |
+| 13 | Ghost text on delete/re-edit | White overlay rect + undoImage pixel restoration (direct copy) |
+| 14 | No cursor positioning | `textCursorPos_` with ← → Home End navigation |
+| 15 | No text selection | `textSelectionAnchor_` with Shift+arrows, Ctrl+A, highlight rendering |
+
+---
+
+### 13. Text Tool: Ghost Text Elimination + Cursor + Selection (commit `this`)
+
+**Problem**: Three critical text tool issues persisted:
+
+1. **Ghost text on re-edit**: When clicking on existing rasterized text and deleting all characters, the old pixels remained visible on the layer. The text overlay showed an empty string, but the rasterized layer text shone through — creating a "ghost" that couldn't be deleted.
+
+2. **No cursor positioning**: Both Delete and Backspace always removed only the last character (`chop(1)`). There was no way to move the insertion point within the text string. Arrow keys, Home, and End did nothing.
+
+3. **No text selection**: Text could not be selected for bulk deletion or replacement. No Shift+arrow, Ctrl+A, or selection highlight.
+
+**Root cause of ghost text**: The paintEvent renders the rasterized layer pixels FIRST, then draws the text overlay on top. During editing, the layer still contained the old committed text pixels. When the user cleared the overlay text, the layer pixels showed through underneath.
+
+**Solution**:
+
+**1. White overlay background rect** (`paintEvent`):
+- During text editing, computes the bounding box of the overlay text (with `QFontMetrics`)
+- When re-editing existing text, expands the rect to cover at least the old `TextEntry`'s text area (so even with empty overlay, the white rect covers the full text region)
+- Fills the rect with white (`#FFFFFF`) before drawing overlay text — completely masks rasterized text underneath
+- 10px padding on all sides, minimum 20px width
+
+**2. UndoImage pixel restoration** (`doText` + `commitTextEdit`):
+- `doText()`: Before drawing text to layer, captures the clean region (`undoImage`, `undoRect`) via `QImage::copy()` and stores it in the `TextEntry`
+- `commitTextEdit()` on re-edit: uses direct `std::copy` from `undoImage` scanlines to layer pixel buffer (byte-for-byte, avoiding `QPainter::drawImage` composition issues with premultiplied alpha)
+- Erases old text pixels from layer, then draws new text on clean pixels
+- If text is empty after re-edit: only erases old pixels and removes `TextEntry`
+
+**3. Cursor positioning** (`textCursorPos_`):
+- `textCursorPos_` tracks insertion point within the text string
+- ← →: move cursor one character
+- Home/End: jump to start/end of text
+- Backspace: deletes character BEFORE cursor, moves cursor back
+- Delete: deletes character AT cursor
+- Typing: inserts characters at cursor position (not just at end)
+- Caret rendered at correct x position using `QFontMetrics::horizontalAdvance()` on substring before cursor, with alignment-aware positioning
+
+**4. Text selection** (`textSelectionAnchor_`):
+- Shift + ← → / Home/End: extends selection from anchor
+- Ctrl+A: select all text (`anchor=0`, `cursor=len`)
+- When selection active: Backspace/Delete removes entire selected range
+- Blue semi-transparent highlight (`QColor(42, 130, 218, 100)`) drawn behind selected text via `fillRect`
+- Typing printable characters clears selection first
+
+**5. Escape behavior**:
+- During re-edit: Escape cancels without modifying layer (old rasterized text remains intact)
+- During new text: Escape clears overlay and exits editing
+
+**Files**: `canvas_widget_v2.hpp`, `canvas_widget_v2.cpp`
+
+**TextEntry struct additions**:
+```cpp
+struct TextEntry {
+    QPointF pos;
+    QString text;
+    QFont font;
+    QColor color;
+    QImage undoImage;   // Layer pixels before text was drawn
+    QRect undoRect;     // Region in layer coordinates
+};
+```
+
+**New members in CanvasWidgetV2**:
+```cpp
+int textCursorPos_ = 0;
+int textSelectionAnchor_ = -1;
+```
+
+### How to Use the Text Tool
+
+1. Press `T` → CHARACTER panel appears
+2. Click on canvas → caret starts blinking at click position
+3. Type text → appears live with blinking caret
+4. Use ← → Home End to move cursor, Backspace/Delete to erase characters
+5. Shift + arrows to select text, Ctrl+A to select all, Delete to remove selection
+6. Enter → commits text to raster layer (with undo support)
+7. Escape → cancels editing (old text restored if re-editing)
+8. Click on existing text → reloads for re-editing (font, size, color preserved)
+9. Dotted blue underline indicates clickable text entries on canvas
 
 ---
 
