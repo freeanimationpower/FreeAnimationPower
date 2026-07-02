@@ -47,11 +47,25 @@ ctest --test-dir build
 - `review` — Code review
 - `setup-pre-commit` — Pre-commit hooks
 
-## Known Architectural Issues (Jul 2026)
+## Display Pipeline Architecture (Jul 2026)
 
-**GPU Rendering Trade-off**: Using `QPainter` on `QOpenGLWidget` with premultiplied alpha images causes white-line artifacts at dab edges. Baking everything into a single opaque image fixes display but corrupts frame data (onion skin + composite layers get baked into active layer). Attempts to separate display from data with dual-image pipelines failed — each fix for one side breaks the other. The root cause is QPainter+QOpenGLWidget premultiplied alpha compositing bugs. Future fix should either: (a) use CPU backbuffer with single QImage blit, (b) raw OpenGL/Vulkan rendering, or (c) extract dabs mathematically from baked composite.
+**Solution implemented** — 4-buffer CPU rendering pipeline with strict DATA/DISPLAY separation:
 
-**Session report**: `docs/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session and rollback to commit `1f5f4dc`.
+| Buffer | Domain | Contents |
+|--------|--------|----------|
+| `RasterLayer::pixelBuffer_` | DATA | Per-layer strokes, transparent bg, source of truth |
+| `strokeBuffer_` | DATA | Isolated current stroke, transparent ARGB32 |
+| `backgroundCache_` | DISPLAY | Pre-composited: white bg + onion skin + all layers |
+| `paintEvent` | DISPLAY | Composes cache + stroke overlay + grid + UI overlays |
+
+Key invariants:
+- `mouseReleaseEvent` NEVER reads from display buffers (only `strokeBuffer_` and `pixelBuffer_`)
+- Dabs written to isolated `strokeBuffer_` during stroke, composited onto `pixelBuffer_` on commit
+- `buildBackgroundCache(rect)` supports both full and partial (offset-aware dirty rect) rebuilds
+- Dynamic padding: `brushSize/2 + 1` to cover dab feathering edges
+- Layers with `originX_`, `originY_` offsets use `rect.translated(-originX, -originY)` — no forced FULL rebuild
+
+**Session report**: `docs/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session, rollback, and final architecture solution.
 
 ## Testing
 

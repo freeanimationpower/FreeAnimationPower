@@ -101,15 +101,34 @@ private:
     float rotationAngle_ = 0.0f;
     bool flippedH_ = false;
 
+    // Stroke state (DATA domain)
     bool drawing_ = false;
     QPointF lastMousePos_;
     QPointF virtualCursorPos_;
     QPointF prevVirtualCursorPos_;
+
+    // Isolated stroke buffer: transparent ARGB32_Premultiplied.
+    // Only contains dabs from the current stroke. Written during
+    // mouseMove, composited onto pixelBuffer_ on commit, discarded on cancel.
+    QImage strokeBuffer_;
+
+    // Accumulated dirty region of strokeBuffer_ during active stroke
+    // (in canvas coordinates).
+    QRect strokeDirtyRect_;
+
+    // Pre-composited display cache (DISPLAY domain):
+    // white background + onion skin + all visible layers blended in order.
+    QImage backgroundCache_;
+
+    // Validity gate for backgroundCache_. Set false on frame change,
+    // layer property change, zoom/pan. Set true after buildBackgroundCache().
+    bool backgroundCacheValid_ = false;
+
+    // Snapshot of pixelBuffer_ BEFORE stroke starts (for undo).
+    QImage beforeSnapshot_;
+
     QPointF lastSamplePos_{-1, -1};
     QColor sampledColor_ = Qt::black;
-    QRect activeDirtyRect_;
-    QImage beforeSnapshot_;
-    QImage cleanLayerCopy_;
     QColor brushColor_ = Qt::black;
     int brushSize_ = 20;
     QString brushShape_ = "Round";
@@ -121,11 +140,14 @@ private:
     void commitStroke();
     QImage captureRect(const QRect& r);
     QImage captureLayerRect(RasterLayer* layer, const QRect& r) const;
-    void growBeforeSnapshot(const QRect& oldRect, const QRect& newRect);
     QPointF widgetToCanvas(const QPointF& pos) const;
     QPointF canvasToWidget(const QPointF& pos) const;
 
     RasterLayer* activeRasterLayer();
+
+    // Background cache management
+    void buildBackgroundCache(const QRect& rect = QRect());
+    void invalidateBackgroundCache();
 
     // Shape drawing (Line, Rectangle, Ellipse)
     QPointF shapeStart_{-1, -1};

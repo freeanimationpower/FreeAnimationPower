@@ -329,150 +329,53 @@ Align: [◀][▶◀][▶]                 ← Left, Center, Right
 
 ---
 
-### 12. Text Editing Refinements — Panel Cleanup, Keyboard, Middle-Button Pan (commit `0dbdf86`)
+### 12. Display Pipeline Refactor — 4-Buffer CPU Architecture (Jul 2026)
 
-**Problem**: After the text tool overhaul, several refinements were needed:
-- Text editing required double-click (unreliable with Qt event timing)
-- Delete key erased entire entry instead of character-by-character
-- Backspace didn't work after interacting with CHARACTER panel (keyboard focus stolen)
-- No middle-button panning (industry standard in all design software)
-- CHARACTER panel had unused controls (B/I/U/S, Ld, Tr, AA, Align) causing confusion
+**Problem**: The previous attempt to fix GPU rendering artifacts (`QPainter` on `QOpenGLWidget`) created an irresolvable trade-off:
+- Separating dabs from background = correct frame data but white-line display artifacts
+- Baking everything into a single opaque image = no artifacts but corrupted frame data (onion skin + composite layers baked into active layer on mouse release)
 
-**Solution**:
+After 41 commits and a full rollback to commit `1f5f4dc`, a different approach was needed.
 
-**1. Single-click text editing**:
-- Replaced fragile double-click timer with direct single-click detection
-- Click on existing text → loads it for re-editing (font, style, size, color, text)
-- Click on empty space → new text
-- Bounds detection uses `QFontMetrics` to calculate exact text hit area with 10px/8px padding
+**Root cause**: `QPainter` on `QOpenGLWidget` has premultiplied alpha compositing bugs. GPU workarounds failed. The CPU `QWidget` path was the correct approach, but needed architectural restructuring.
 
-**2. Character-by-character deletion**:
-- `Delete` and `Backspace` both remove the last character while editing
-- Text is removed from the registry entry when committed with new content
+**Solution**: 4-buffer CPU rendering pipeline with strict **DATA** vs **DISPLAY** separation:
 
-**3. NoFocus on panel controls**:
-- `fontBtn_`, `fontStyleCombo_`, `fontSizeSpin_`, `textColorBtn_` set to `Qt::NoFocus`
-- Prevents keyboard focus theft when adjusting text properties
-- Canvas keeps focus → typing continues uninterrupted while changing font/size/color
-
-**4. Middle-button canvas panning**:
-- Middle mouse click + drag → pan canvas (any tool mode)
-- Cursor changes to `ClosedHandCursor` during pan
-- Works identically to Photoshop/Illustrator/Blender
-
-**5. CHARACTER panel simplified**:
-- Removed visual controls: B, I, U, S toggles, Ld/Tr spinners, AA combo, Align buttons
-- Kept only: Font, Style, Size, Color
-- Underlying properties preserved in ToolState with defaults for future use
-
-**6. Caret rendering fix**:
-- Caret height now spans full `fm.ascent()` to `fm.descent()` (was `* 0.2` / `* 1.1`)
-- Caret X position respects alignment: left (after text), center (center + half-width), right (at origin)
-- Caret resizes in real-time when font size changes
-
-**Files**: `canvas_widget_v2.hpp/cpp`, `property_editor_v2.hpp/cpp`
-
----
-
-### Complete Bug Fix Summary (Sessions 2026-06-26 / 2026-06-27)
-
-| # | Bug | Solution |
-|---|-----|----------|
-| 1 | Only Arial loaded | Font picker with cache + populate styles before apply |
-| 2 | DirectWrite warnings | Filter bitmap fonts with `isSmoothlyScalable()` |
-| 3 | Text offset by layer origin | Subtract `originX`/`originY` in `doText()` |
-| 4 | Caret misaligned | Full `fm.ascent()`/`descent()`, alignment-aware |
-| 5 | focusOutEvent commits in panels | `window()->isAncestorOf(next)` check |
-| 6 | Text wiped on canvas click | Clear only in `commitTextEdit()` |
-| 7 | Property panel desynced | `textFontChanged` signal connection |
-| 8 | `resetToDefaults()` not called | Added in `AppState` constructor + `resetDocument()` |
-| 9 | tween_engine UB on empty vector | Guard with `defaultSeg` fallback |
-| 10 | Backspace/Delete not working | `Qt::NoFocus` on CHARACTER controls |
-| 11 | Double-click unreliable | Replaced with single-click text detection |
-| 12 | Caret didn't match font size | Removed `* 0.2` / `* 1.1` multipliers |
-| 13 | Ghost text on delete/re-edit | White overlay rect + undoImage pixel restoration (direct copy) |
-| 14 | No cursor positioning | `textCursorPos_` with ← → Home End navigation |
-| 15 | No text selection | `textSelectionAnchor_` with Shift+arrows, Ctrl+A, highlight rendering |
-
----
-
-### 13. Text Tool: Ghost Text Elimination + Cursor + Selection (commit `this`)
-
-**Problem**: Three critical text tool issues persisted:
-
-1. **Ghost text on re-edit**: When clicking on existing rasterized text and deleting all characters, the old pixels remained visible on the layer. The text overlay showed an empty string, but the rasterized layer text shone through — creating a "ghost" that couldn't be deleted.
-
-2. **No cursor positioning**: Both Delete and Backspace always removed only the last character (`chop(1)`). There was no way to move the insertion point within the text string. Arrow keys, Home, and End did nothing.
-
-3. **No text selection**: Text could not be selected for bulk deletion or replacement. No Shift+arrow, Ctrl+A, or selection highlight.
-
-**Root cause of ghost text**: The paintEvent renders the rasterized layer pixels FIRST, then draws the text overlay on top. During editing, the layer still contained the old committed text pixels. When the user cleared the overlay text, the layer pixels showed through underneath.
-
-**Solution**:
-
-**1. White overlay background rect** (`paintEvent`):
-- During text editing, computes the bounding box of the overlay text (with `QFontMetrics`)
-- When re-editing existing text, expands the rect to cover at least the old `TextEntry`'s text area (so even with empty overlay, the white rect covers the full text region)
-- Fills the rect with white (`#FFFFFF`) before drawing overlay text — completely masks rasterized text underneath
-- 10px padding on all sides, minimum 20px width
-
-**2. UndoImage pixel restoration** (`doText` + `commitTextEdit`):
-- `doText()`: Before drawing text to layer, captures the clean region (`undoImage`, `undoRect`) via `QImage::copy()` and stores it in the `TextEntry`
-- `commitTextEdit()` on re-edit: uses direct `std::copy` from `undoImage` scanlines to layer pixel buffer (byte-for-byte, avoiding `QPainter::drawImage` composition issues with premultiplied alpha)
-- Erases old text pixels from layer, then draws new text on clean pixels
-- If text is empty after re-edit: only erases old pixels and removes `TextEntry`
-
-**3. Cursor positioning** (`textCursorPos_`):
-- `textCursorPos_` tracks insertion point within the text string
-- ← →: move cursor one character
-- Home/End: jump to start/end of text
-- Backspace: deletes character BEFORE cursor, moves cursor back
-- Delete: deletes character AT cursor
-- Typing: inserts characters at cursor position (not just at end)
-- Caret rendered at correct x position using `QFontMetrics::horizontalAdvance()` on substring before cursor, with alignment-aware positioning
-
-**4. Text selection** (`textSelectionAnchor_`):
-- Shift + ← → / Home/End: extends selection from anchor
-- Ctrl+A: select all text (`anchor=0`, `cursor=len`)
-- When selection active: Backspace/Delete removes entire selected range
-- Blue semi-transparent highlight (`QColor(42, 130, 218, 100)`) drawn behind selected text via `fillRect`
-- Typing printable characters clears selection first
-
-**5. Escape behavior**:
-- During re-edit: Escape cancels without modifying layer (old rasterized text remains intact)
-- During new text: Escape clears overlay and exits editing
-
-**Files**: `canvas_widget_v2.hpp`, `canvas_widget_v2.cpp`
-
-**TextEntry struct additions**:
-```cpp
-struct TextEntry {
-    QPointF pos;
-    QString text;
-    QFont font;
-    QColor color;
-    QImage undoImage;   // Layer pixels before text was drawn
-    QRect undoRect;     // Region in layer coordinates
-};
+```
+                    ┌──────────────────────────┐
+                    │      DATA DOMAIN          │
+                    │  (saved to .fap file)     │
+                    ├──────────────────────────┤
+                    │ pixelBuffer_ (per layer)  │◄── source of truth
+                    │ strokeBuffer_ (isolated)  │◄── current stroke dabs
+                    └──────────┬───────────────┘
+                               │ commitStroke() composites
+                               ▼
+                    ┌──────────────────────────┐
+                    │     DISPLAY DOMAIN        │
+                    │  (what the user sees)     │
+                    ├──────────────────────────┤
+                    │ backgroundCache_          │◄── white + onion + layers
+                    │ paintEvent                │◄── cache + stroke + UI
+                    └──────────────────────────┘
 ```
 
-**New members in CanvasWidgetV2**:
-```cpp
-int textCursorPos_ = 0;
-int textSelectionAnchor_ = -1;
-```
+**Key invariants**:
+| Rule | How |
+|------|-----|
+| `mouseReleaseEvent` never reads from display buffers | Only reads `strokeBuffer_` (transparent) and `pixelBuffer_` (transparent layer data) |
+| Dabs isolated during stroke | `drawBrushStamp()` writes to `strokeBuffer_` only; composited onto `pixelBuffer_` on commit |
+| No full rebuild for offset layers | `buildBackgroundCache(rect)` uses `rect.translated(-originX, -originY)` per layer |
+| Dynamic feathering padding | `brushSize / 2 + 1` pixels — covers entire dab diameter including soft edges |
 
-### How to Use the Text Tool
+**Removed from codebase**: `activeDirtyRect_`, `cleanLayerCopy_`, `growBeforeSnapshot()` — all made obsolete by stroke isolation.
 
-1. Press `T` → CHARACTER panel appears
-2. Click on canvas → caret starts blinking at click position
-3. Type text → appears live with blinking caret
-4. Use ← → Home End to move cursor, Backspace/Delete to erase characters
-5. Shift + arrows to select text, Ctrl+A to select all, Delete to remove selection
-6. Enter → commits text to raster layer (with undo support)
-7. Escape → cancels editing (old text restored if re-editing)
-8. Click on existing text → reloads for re-editing (font, size, color preserved)
-9. Dotted blue underline indicates clickable text entries on canvas
+**New methods**: `buildBackgroundCache(rect)`, `invalidateBackgroundCache()`.
+
+**Performance**: `paintEvent` draws 1 `backgroundCache_` image instead of iterating N layers with N `drawImage` calls. Dirty rect partial rebuilds limit recomposition to the stroke area on commit.
+
+**Files**: `src/ui_v2/canvas_widget_v2.hpp`, `src/ui_v2/canvas_widget_v2.cpp`  
+**Session report**: `docs/session-report-2026-07-02.md`
 
 ---
 

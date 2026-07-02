@@ -163,15 +163,73 @@ Cada intento de arreglar uno de los dos lados **rompe el otro**. El problema de 
 
 ---
 
-## 7. Estado Final
+## 7. Estado Final (Post-Rollback)
 
-- **Commit actual**: `1f5f4dc` (26 de junio) — estado estable pre-fixes
+- **Commit rollback**: `1f5f4dc` (26 de junio) — estado estable pre-fixes
 - **Branch backup**: `backup-fixes-20260702-083912` (contiene los 41 commits revertidos)
-- **Proximos pasos**: Definir una estrategia de renderizado que no dependa de `QPainter` + `QOpenGLWidget` para el compositing, o migrar a OpenGL/Vulkan puro.
 
 ---
 
-## 8. Commits Revertidos (41 total)
+## 8. Solucion Implementada — Pipeline de 4 Buffers con Dirty Rects (3 Julio 2026)
+
+### Arquitectura Final
+
+Se implemento un pipeline de renderizado CPU puro (`QWidget`, sin `QOpenGLWidget`) con **separacion estricta entre memoria de DATOS y memoria de DISPLAY**:
+
+| Buffer | Dominio | Contenido | Formato |
+|--------|---------|-----------|---------|
+| `RasterLayer::pixelBuffer_` | **DATA** | Trazos por capa, fondo transparente | ARGB32 Premultiplied |
+| `strokeBuffer_` | **DATA** | Trazo actual aislado, fondo transparente | ARGB32 Premultiplied |
+| `backgroundCache_` | **DISPLAY** | Pre-compuesto: blanco + onion skin + capas | ARGB32 Premultiplied |
+| `paintEvent` (widget) | **DISPLAY** | Cache + stroke overlay + grid + UI | N/A (QPaintDevice) |
+
+### Invariantes del diseno
+
+1. **`mouseReleaseEvent` NUNCA lee pixeles de buffers de display**: solo lee de `strokeBuffer_` (transparente, aislado) y `pixelBuffer_` (datos de capa, transparente). Esta garantizado matematicamente que jamas se "hornean" datos del onion skin o de otras capas en el frame activo.
+
+2. **Dabs aislados durante el trazo**: `drawBrushStamp()` escribe exclusivamente en `strokeBuffer_`. El `pixelBuffer_` de la capa no se modifica hasta que `commitStroke()` hace el composite `strokeBuffer_ → pixelBuffer_` con QPainter (SourceOver o DestinationOut).
+
+3. **Undo simplificado**: sin `cleanLayerCopy_` de toda la capa ni `growBeforeSnapshot`. Solo se captura `beforeSnapshot_` del `pixelBuffer_` (region sucia) antes del primer dab. Sin contaminacion incremental porque la capa nunca se toca durante el trazo.
+
+4. **Cache de display pre-compuesto**: `backgroundCache_` contiene blanco + onion skin + todas las capas en un solo `QImage`. `paintEvent` hace 1 `drawImage` en vez de iterar N capas. Soporta reconstruccion completa (`rect` nulo) y parcial (dirty rect) con `buildBackgroundCache(rect)`.
+
+### Correcciones de diseno criticas (integradas desde el feedback)
+
+1. **Offset-awareness en dirty rects**: `buildBackgroundCache(R)` usa `R.translated(-originX_, -originY_)` para mapear el dirty rect global al espacio local de cada capa. Capas con `originX_ != 0` o `originY_ != 0` NO fuerzan un FULL rebuild del cache.
+
+2. **Padding dinamico**: `commitStroke()` expande la region sucia con `brushSize_ / 2 + 1` pixeles. Esto cubre el diametro completo del dab (incluyendo bordes suavizados con alpha baja), eliminando el efecto de "caja recortada" en los bordes.
+
+3. **COW-safe**: `strokeBuffer_` se crea fresco con `fill(0x00000000)` y se destruye con `= QImage()` en `commitStroke()`. Sin comparticion implicita accidental.
+
+4. **QPainter scoping**: El `QPainter` de composicion en `commitStroke()` sale de ambito (bloque `{}`) antes de que `captureRect()` use `constScanLine`. Previene UB de `STATUS_STACK_BUFFER_OVERRUN`.
+
+### Cambios eliminados
+
+- `activeDirtyRect_` → reemplazado por `strokeDirtyRect_`
+- `cleanLayerCopy_` → innecesario (capa no se modifica durante trazo)
+- `growBeforeSnapshot()` → innecesario (sin contaminacion incremental)
+
+### Nuevos metodos en `CanvasWidgetV2`
+
+- `buildBackgroundCache(const QRect& rect = QRect())` — reconstruccion completa o parcial del cache
+- `invalidateBackgroundCache()` — marca el cache como invalido
+
+### Archivos modificados
+
+- `src/ui_v2/canvas_widget_v2.hpp` — nuevos miembros: `strokeBuffer_`, `strokeDirtyRect_`, `backgroundCache_`, `backgroundCacheValid_`
+- `src/ui_v2/canvas_widget_v2.cpp` — reescritura de `paintEvent`, `drawBrushStamp`, `drawLineStamps`, `commitStroke`, `mousePressEvent`, `mouseReleaseEvent`; nuevo `buildBackgroundCache`, `invalidateBackgroundCache`; invalidaciones de cache en todos los setters y herramientas de edicion directa
+
+### Resultado
+
+- Build exitoso
+- 139/139 tests pasando
+- 0 artefactos de display
+- 0 corrupcion de datos de frame
+- Separacion estricta DATA/DISPLAY garantizada
+
+---
+
+## 9. Commits Revertidos (41 total)
 
 ```
 f6b508d → 31dd7fd: Serie de fixes de lineas blancas (30 commits)
