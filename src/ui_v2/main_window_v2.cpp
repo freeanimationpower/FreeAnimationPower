@@ -348,6 +348,13 @@ void MainWindowV2::setupConnections()
         statusBar()->showMessage(QString("Layer: %1").arg(index + 1), 2000);
     });
 
+    connect(layer_panel_, &LayerPanelV2::layerDisplayPropertiesChanged, [this]() {
+        if (canvas_) {
+            canvas_->invalidateBackgroundCache();
+            canvas_->update();
+        }
+    });
+
     connect(toolbox_panel_, &ToolboxPanelV2::settingsChanged, [this]() {
         appState_->document().setModified(true);
     });

@@ -63,6 +63,8 @@ public:
     void deleteSelection();
     void resetView();
 
+    void invalidateBackgroundCache();
+
 signals:
     void canvasUpdated();
     void frameChanged(int frame);
@@ -147,7 +149,6 @@ private:
 
     // Background cache management
     void buildBackgroundCache(const QRect& rect = QRect());
-    void invalidateBackgroundCache();
 
     // Shape drawing (Line, Rectangle, Ellipse)
     QPointF shapeStart_{-1, -1};

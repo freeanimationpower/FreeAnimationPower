@@ -293,6 +293,7 @@ void LayerPanelV2::addRasterLayer() {
     int idx = static_cast<int>(root.layerCount()) - 1;
     list_->setCurrentRow(idx);
     appState_->setActiveLayerIndex(idx);
+    emit layerDisplayPropertiesChanged();
     emit layerChanged(idx);
 }
 
@@ -306,6 +307,7 @@ void LayerPanelV2::addVectorLayer() {
     int idx = static_cast<int>(root.layerCount()) - 1;
     list_->setCurrentRow(idx);
     appState_->setActiveLayerIndex(idx);
+    emit layerDisplayPropertiesChanged();
     emit layerChanged(idx);
 }
 
@@ -318,6 +320,7 @@ void LayerPanelV2::duplicateLayer() {
     doc.setModified(true);
     refreshLayerList();
     list_->setCurrentRow(row + 1);
+    emit layerDisplayPropertiesChanged();
     emit layerChanged(row + 1);
 }
 
@@ -330,6 +333,7 @@ void LayerPanelV2::moveLayerUp() {
         doc.setModified(true);
         refreshLayerList();
         list_->setCurrentRow(row - 1);
+        emit layerDisplayPropertiesChanged();
         emit layerChanged(row - 1);
     }
 }
@@ -360,6 +364,7 @@ void LayerPanelV2::deleteLayer() {
     int newRow = std::min(row, static_cast<int>(root.layerCount()) - 1);
     if (newRow >= 0) {
         list_->setCurrentRow(newRow);
+        emit layerDisplayPropertiesChanged();
         emit layerChanged(newRow);
     }
 }
@@ -373,6 +378,7 @@ void LayerPanelV2::toggleLayerVisibility(int index) {
         layer->setVisible(!layer->visible());
         doc.setModified(true);
         refreshLayerList();
+        emit layerDisplayPropertiesChanged();
     }
 }
 
@@ -398,6 +404,7 @@ void LayerPanelV2::onBlendModeChanged(int mode) {
     if (layer && mode >= 0 && mode <= static_cast<int>(BlendMode::HardLight)) {
         layer->setBlendMode(static_cast<BlendMode>(mode));
         doc.setModified(true);
+        emit layerDisplayPropertiesChanged();
         emit layerChanged(row);
     }
 }

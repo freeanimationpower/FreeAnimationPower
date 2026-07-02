@@ -379,6 +379,24 @@ After 41 commits and a full rollback to commit `1f5f4dc`, a different approach w
 
 ---
 
+### 13. Layer Panel Signal Desync Fix (Jul 2026)
+
+**Problem**: After implementing the 4-buffer pipeline, toggling layer visibility (eye icon) or changing blend mode from LayerPanelV2 did not update the canvas. The `backgroundCache_` was never invalidated for these operations.
+
+**Root cause**: `LayerPanelV2` used a single `layerChanged(int index)` signal for all interactions — both layer selection (correctly skipping cache invalidation) and visual property changes (needing cache invalidation). `toggleLayerVisibility()` emitted no signal at all.
+
+**Solution**: Introduced `layerDisplayPropertiesChanged()` signal in `LayerPanelV2`, emitted only for operations that alter visual composition: `toggleLayerVisibility`, `onBlendModeChanged`, `addRasterLayer`, `addVectorLayer`, `duplicateLayer`, `moveLayerUp`, `moveLayerDown`, `deleteLayer`. Connected in `MainWindowV2` to `canvas_->invalidateBackgroundCache()` + `canvas_->update()`.
+
+**Signal separation**:
+| Signal | Purpose | Invalidates cache? |
+|--------|---------|-------------------|
+| `layerChanged(int)` | Active layer index selection | No |
+| `layerDisplayPropertiesChanged()` | Visibility, blend, add/delete/reorder | Yes |
+
+**Files**: `layer_panel_v2.hpp`, `layer_panel_v2.cpp`, `canvas_widget_v2.hpp`, `main_window_v2.cpp`
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)

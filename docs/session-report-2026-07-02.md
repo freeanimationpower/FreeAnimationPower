@@ -229,6 +229,41 @@ Se implemento un pipeline de renderizado CPU puro (`QWidget`, sin `QOpenGLWidget
 
 ---
 
+### 8.1 Bug de Desincronizacion Visual — Layer Panel ↔ Canvas (3 Julio 2026)
+
+**Problema**: Tras implementar el pipeline de 4 buffers, al alternar la visibilidad de una capa (icono del ojo) o cambiar su blend mode desde LayerPanelV2, el lienzo no se actualizaba. El `backgroundCache_` no se invalidaba.
+
+**Diagnostico**: `LayerPanelV2` agrupaba eventos de seleccion y cambios de propiedades visuales bajo una unica señal `layerChanged(int index)`, que MainWindowV2 conectaba a `CanvasWidgetV2::setCurrentLayer(index)`. Esta ruta correctamente NO invalidaba el cache (solo seleccion de capa activa). `toggleLayerVisibility()` ni siquiera emitia señal alguna.
+
+| Metodo | Emitia senal? | Afecta display? |
+|--------|---------------|-----------------|
+| `toggleLayerVisibility` | **NO** (bug) | SI |
+| `onBlendModeChanged` | `layerChanged` (equivocada) | SI |
+| `addRasterLayer` | `layerChanged` (equivocada) | SI |
+| `onRowSelected` | `layerChanged` (correcta) | NO |
+
+**Solucion**:
+
+1. Nueva señal `layerDisplayPropertiesChanged()` en `LayerPanelV2` — emitida exclusivamente en metodos que modifican propiedades visuales: `toggleLayerVisibility`, `onBlendModeChanged`, `addRasterLayer`, `addVectorLayer`, `duplicateLayer`, `moveLayerUp`, `moveLayerDown`, `deleteLayer`. NO en `toggleLayerLock`, `onRowSelected`, `startRename`.
+
+2. `invalidateBackgroundCache()` movido de `private:` a `public:` en `CanvasWidgetV2`.
+
+3. Nuevo `connect` en `MainWindowV2::setupConnections()`:
+```cpp
+connect(layer_panel_, &LayerPanelV2::layerDisplayPropertiesChanged, [this]() {
+    if (canvas_) {
+        canvas_->invalidateBackgroundCache();
+        canvas_->update();
+    }
+});
+```
+
+**Resultado**: Separacion limpia de responsabilidades. `layerChanged(int)` maneja solo el indice de capa activa (sin invalidar cache). `layerDisplayPropertiesChanged()` maneja cambios visuales estructurales (invalida cache). El ojo de visibilidad, blend mode, y operaciones de capa reflejan cambios instantaneamente en el canvas.
+
+**Archivos**: `layer_panel_v2.hpp`, `layer_panel_v2.cpp`, `canvas_widget_v2.hpp`, `main_window_v2.cpp`
+
+---
+
 ## 9. Commits Revertidos (41 total)
 
 ```

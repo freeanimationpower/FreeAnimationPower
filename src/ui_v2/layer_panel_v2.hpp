@@ -30,6 +30,7 @@ public:
 signals:
     void layerChanged(int index);
     void layerUidChanged(LayerUid uid);
+    void layerDisplayPropertiesChanged();
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
