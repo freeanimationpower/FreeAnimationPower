@@ -47,6 +47,12 @@ ctest --test-dir build
 - `review` — Code review
 - `setup-pre-commit` — Pre-commit hooks
 
+## Known Architectural Issues (Jul 2026)
+
+**GPU Rendering Trade-off**: Using `QPainter` on `QOpenGLWidget` with premultiplied alpha images causes white-line artifacts at dab edges. Baking everything into a single opaque image fixes display but corrupts frame data (onion skin + composite layers get baked into active layer). Attempts to separate display from data with dual-image pipelines failed — each fix for one side breaks the other. The root cause is QPainter+QOpenGLWidget premultiplied alpha compositing bugs. Future fix should either: (a) use CPU backbuffer with single QImage blit, (b) raw OpenGL/Vulkan rendering, or (c) extract dabs mathematically from baked composite.
+
+**Session report**: `docs/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session and rollback to commit `1f5f4dc`.
+
 ## Testing
 
 Use `tdd` skill for new features. All tests in `tests/` directory.
