@@ -264,6 +264,26 @@ connect(layer_panel_, &LayerPanelV2::layerDisplayPropertiesChanged, [this]() {
 
 ---
 
+### 8.2 Middle Button Panning (3 Julio 2026)
+
+**Problema**: El botón del medio del ratón no permitía mover (panear) el canvas. Solo la herramienta Mano con clic izquierdo funcionaba. `mousePressEvent` tenía guard `if (event->button() != Qt::LeftButton) return;` que bloqueaba cualquier botón que no fuera izquierdo.
+
+**Solucion**: 4 cambios quirúrgicos:
+
+1. `canvas_widget_v2.hpp`: nuevo miembro `bool panning_ = false` — bandera independiente para paneo con botón medio.
+
+2. `mousePressEvent`: el guard acepta `Qt::MiddleButton`, activa `panning_`, guarda `lastMousePos_`, y cambia el cursor a `ClosedHandCursor`.
+
+3. `mouseMoveEvent`: nuevo bloque `else if (panning_ && event->buttons() & Qt::MiddleButton)` que desplaza `offsetX_/offsetY_` igual que la herramienta Mano.
+
+4. `mouseReleaseEvent`: al soltar `Qt::MiddleButton`, desactiva `panning_` y restaura cursor a `Qt::ArrowCursor`.
+
+**Comportamiento**: paneo con botón medio funciona con cualquier herramienta activa (pincel, borrador, selección, etc.). La herramienta Mano con clic izquierdo sigue funcionando sin cambios. Sin invalidación de cache (pan solo modifica la transformación de vista).
+
+**Archivos**: `canvas_widget_v2.hpp`, `canvas_widget_v2.cpp`
+
+---
+
 ## 9. Commits Revertidos (41 total)
 
 ```

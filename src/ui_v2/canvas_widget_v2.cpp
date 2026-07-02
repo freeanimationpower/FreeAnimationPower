@@ -1149,13 +1149,14 @@ QImage CanvasWidgetV2::captureRect(const QRect& r)
 
 void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::MiddleButton) {
-        lastMousePos_ = event->pos();
-        middlePanning_ = true;
-        setCursor(Qt::ClosedHandCursor);
+    if (event->button() != Qt::LeftButton) {
+        if (event->button() == Qt::MiddleButton) {
+            panning_ = true;
+            lastMousePos_ = event->pos();
+            setCursor(Qt::ClosedHandCursor);
+        }
         return;
     }
-    if (event->button() != Qt::LeftButton) return;
 
     auto tool = appState_->toolState().activeTool();
     if (tool == ToolType::Brush || tool == ToolType::Eraser) {
@@ -1354,6 +1355,12 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
         offsetY_ += static_cast<float>(delta.y());
         lastMousePos_ = event->pos();
         update();
+    } else if (panning_ && event->buttons() & Qt::MiddleButton) {
+        QPointF delta = event->pos() - lastMousePos_;
+        offsetX_ += static_cast<float>(delta.x());
+        offsetY_ += static_cast<float>(delta.y());
+        lastMousePos_ = event->pos();
+        update();
     } else if (tool == ToolType::ColorPicker && event->buttons() & Qt::LeftButton) {
         QPointF cp = widgetToCanvas(event->pos());
         auto& doc = appState_->document();
@@ -1422,12 +1429,13 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
 
 void CanvasWidgetV2::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::MiddleButton) {
-        middlePanning_ = false;
-        setCursor(Qt::ArrowCursor);
+    if (event->button() != Qt::LeftButton) {
+        if (event->button() == Qt::MiddleButton) {
+            panning_ = false;
+            setCursor(Qt::ArrowCursor);
+        }
         return;
     }
-    if (event->button() != Qt::LeftButton) return;
 
     if (drawing_) {
         auto tool = appState_->toolState().activeTool();

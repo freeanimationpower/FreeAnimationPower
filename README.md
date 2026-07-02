@@ -397,6 +397,16 @@ After 41 commits and a full rollback to commit `1f5f4dc`, a different approach w
 
 ---
 
+### 14. Middle Button Canvas Panning (Jul 2026)
+
+**Problem**: Middle mouse button did not pan the canvas. Only the Hand tool with left-click worked. The `mousePressEvent` guard `if (event->button() != Qt::LeftButton) return;` blocked all non-left button events.
+
+**Solution**: Added `panning_` flag and independent MiddleButton handling in all three mouse event handlers. Middle-button panning works with any active tool (brush, eraser, select, etc.). Cursor changes to `ClosedHandCursor` during drag, restores to arrow on release. No cache invalidation needed — panning only modifies view transform.
+
+**Files**: `canvas_widget_v2.hpp`, `canvas_widget_v2.cpp`
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)

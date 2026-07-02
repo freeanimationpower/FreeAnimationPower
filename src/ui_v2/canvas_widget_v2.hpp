@@ -103,6 +103,9 @@ private:
     float rotationAngle_ = 0.0f;
     bool flippedH_ = false;
 
+    // Middle-button panning (works regardless of active tool)
+    bool panning_ = false;
+
     // Stroke state (DATA domain)
     bool drawing_ = false;
     QPointF lastMousePos_;
