@@ -407,6 +407,40 @@ After 41 commits and a full rollback to commit `1f5f4dc`, a different approach w
 
 ---
 
+### 15. Text Tool Bugfix Triad — Hit-Test, Delete, Caret Misalignment (Jul 2026)
+
+**Problem**: Three critical bugs in the inline text tool made it nearly unusable for production work:
+
+1. **Hit-test blind to text body** (`canvas_widget_v2.cpp:1141-1143`): The click-to-re-edit zone used `std::abs(cp - entry.pos) < (12, 24)` — only the first 12px of text were clickable. For a 130px-wide "Hello World" in Arial 24, clicking on the "W" at x≈80 produced `dx=80 > 12` → miss. Users could only re-edit by clicking near the very first character.
+
+2. **Immortal text entries**: No delete mechanism existed. `commitTextEdit()` guarded the `entries.erase()` inside `if (!text.isEmpty())`, making it unreachable when emptying text. The Delete key fell through to `deleteSelection()` (selection tool), ignoring text entries. Clearing all characters and pressing Enter left the old raster pixels AND metadata permanently stuck in the layer.
+
+3. **Caret drawn too low** (`canvas_widget_v2.cpp:940-941`): The caret used `caretY - fm.ascent() * 0.2` for its top instead of `caretY - fm.ascent()`. With Arial 72 (ascent ≈ 69), the caret started 55px below the text top — a visible ~80% gap above the blinking line.
+
+**Solution**:
+
+**1. Bounding-box hit-test** — Added `TextEntry::boundingRect()` helper using `QFontMetrics(font).horizontalAdvance(text)` + `ascent/descent`. In `mousePressEvent`, replaced `dx<12 && dy<24` with `bbox.adjusted(-4,-4,4,4).contains(cp)`. Covers the full text body with 4px tolerance, for any text length or font size.
+
+**2. Delete mechanisms**:
+- `commitTextEdit()`: Moved the `entries.erase()` and a new `clearTextRaster()` call OUTSIDE the `if (!text.isEmpty())` guard. Emptying text + Enter now properly clears both raster and metadata before committing.
+- `keyPressEvent`: Added `Qt::Key_Delete` / `Qt::Key_Backspace` handler for when text tool is active but NOT editing (`!editingText_`). Finds the entry closest to the last click point via `boundingRect()` hit-test or Manhattan-distance fallback, then deletes raster + metadata.
+- `clearTextRaster()`: Maps `entry.pos` (canvas coords) to layer-local via `originX/Y`, computes the text bounding box with `QFontMetrics`, and zero-fills that rectangle in `pixelBuffer_` with undo snapshot protection (`snapFullLayer` + `pushFullLayerUndo`).
+
+**3. Caret fix**:
+```
+Before:  caretPos(caretX, caretY - fm.ascent() * 0.2)   → 55px gap at 72pt
+         caretEnd(caretX, caretY + fm.descent() * 1.1)
+
+After:   caretPos(caretX, caretY - fm.ascent())          → tip-to-tail coverage
+         caretEnd(caretX, caretY + fm.descent())
+```
+
+**New members**: `QPointF lastTextClickPos_` (tracks last click for Delete targeting), `deleteLastClickedTextEntry()`, `clearTextRaster()`. Added `#include <limits>` for `std::numeric_limits<double>::max()`.
+
+**Files**: `canvas_widget_v2.hpp` (struct TextEntry + 3 members), `canvas_widget_v2.cpp` (6 code sections modified, 2 new helper functions)
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)

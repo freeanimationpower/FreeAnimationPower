@@ -13,6 +13,7 @@
 #include <QtGui/QClipboard>
 #include <cmath>
 #include <algorithm>
+#include <limits>
 #include <functional>
 #include <cstring>
 #include <deque>
@@ -1036,6 +1037,11 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
                 p.setPen(QPen(brushColor_, 1.5f / zoom_));
                 p.drawLine(caretTop, caretBtm);
             }
+            double caretY = textEditPos_.y() + (lines.size() - 1) * leadPx;
+            QPointF caretPos(caretX, caretY - static_cast<double>(fm.ascent()));
+            QPointF caretEnd(caretX, caretY + static_cast<double>(fm.descent()));
+            p.setPen(QPen(brushColor_, 1.5f / zoom_));
+            p.drawLine(caretPos, caretEnd);
         }
     }
 
@@ -1228,6 +1234,8 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         doFill(cp);
     } else if (tool == ToolType::Text) {
         QPointF cp = widgetToCanvas(event->pos());
+        lastTextClickPos_ = cp;
+
         if (editingText_) {
             commitTextEdit();
         }
@@ -1235,18 +1243,29 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         auto& entries = textEntries_[currentFrame_];
         int hitIdx = -1;
         for (size_t i = 0; i < entries.size(); ++i) {
-            QFontMetrics fm(entries[i].font);
-            QRectF tb(entries[i].pos.x(),
-                      entries[i].pos.y() - fm.ascent(),
-                      static_cast<double>(fm.horizontalAdvance(entries[i].text)),
-                      static_cast<double>(fm.ascent() + fm.descent()));
-            tb.adjust(-10, -8, 10, 8);
-            if (tb.contains(cp)) { hitIdx = static_cast<int>(i); break; }
-        }
-
-        if (hitIdx >= 0) {
-            loadTextEntry(hitIdx);
-            return;
+            QRectF bbox = entries[i].boundingRect().adjusted(-4, -4, 4, 4);
+            if (bbox.contains(cp)) {
+                auto& ts = appState_->toolState();
+                ts.setTextString(entries[i].text);
+                ts.setTextFont(entries[i].font);
+                ts.setPrimaryColor(entries[i].color);
+                brushColor_ = entries[i].color;
+                editingText_ = true;
+                textEditPos_ = entries[i].pos;
+                editingEntryIndex_ = static_cast<int>(i);
+                caretVisible_ = true;
+                if (!caretTimer_) {
+                    caretTimer_ = new QTimer(this);
+                    connect(caretTimer_, &QTimer::timeout, [this]() {
+                        caretVisible_ = !caretVisible_;
+                        update();
+                    });
+                }
+                caretTimer_->start(500);
+                setFocus();
+                update();
+                return;
+            }
         }
 
         editingText_ = true;
@@ -1503,6 +1522,17 @@ void CanvasWidgetV2::wheelEvent(QWheelEvent* event)
 
 void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
 {
+    if (!editingText_
+        && appState_->toolState().activeTool() == ToolType::Text) {
+        if (event->key() == Qt::Key_Delete
+            || event->key() == Qt::Key_Backspace) {
+            deleteLastClickedTextEntry();
+            update();
+            emit canvasUpdated();
+            return;
+        }
+    }
+
     if (editingText_) {
         auto& ts = appState_->toolState();
         bool shift = event->modifiers() & Qt::ShiftModifier;
@@ -2693,43 +2723,90 @@ void CanvasWidgetV2::commitTextEdit()
     if (!editingText_) return;
     editingText_ = false;
     if (caretTimer_) caretTimer_->stop();
-    QString text = appState_->toolState().textString();
 
     if (editingEntryIndex_ >= 0) {
         auto& entries = textEntries_[currentFrame_];
         if (editingEntryIndex_ < static_cast<int>(entries.size())) {
-            auto* layer = activeRasterLayer();
-            if (layer && !layer->locked()) {
-                const TextEntry& oldEntry = entries[editingEntryIndex_];
-                if (!oldEntry.undoImage.isNull() && oldEntry.undoRect.isValid()
-                    && oldEntry.undoRect.width() > 0 && oldEntry.undoRect.height() > 0) {
-                    layer->ensureUnique();
-                    for (int y = 0; y < oldEntry.undoRect.height(); ++y) {
-                        int ly = oldEntry.undoRect.y() + y;
-                        if (ly < 0 || ly >= layer->height()) continue;
-                        const uint32_t* srcLine = reinterpret_cast<const uint32_t*>(oldEntry.undoImage.constScanLine(y));
-                        uint32_t* dstLine = layer->pixelData() + static_cast<size_t>(ly) * static_cast<size_t>(layer->width()) + oldEntry.undoRect.x();
-                        int cnt = std::min(oldEntry.undoRect.width(), layer->width() - oldEntry.undoRect.x());
-                        if (cnt > 0) std::copy(srcLine, srcLine + cnt, dstLine);
-                    }
-                    layer->bufferEpochTick();
-                }
-            }
-        }
-        if (!text.isEmpty()) {
-            doText(textEditPos_);
-        }
-        if (editingEntryIndex_ < static_cast<int>(entries.size())) {
+            TextEntry oldEntry = entries[editingEntryIndex_];
+            clearTextRaster(oldEntry);
             entries.erase(entries.begin() + editingEntryIndex_);
         }
         editingEntryIndex_ = -1;
-    } else {
-        if (!text.isEmpty()) {
-            doText(textEditPos_);
-        }
     }
+
+    QString text = appState_->toolState().textString();
+    if (!text.isEmpty()) {
+        doText(textEditPos_);
+    }
+
     appState_->toolState().setTextString(QString());
     update();
+}
+
+void CanvasWidgetV2::deleteLastClickedTextEntry()
+{
+    auto& entries = textEntries_[currentFrame_];
+    if (entries.empty()) return;
+
+    int bestIdx = -1;
+    double bestDist = std::numeric_limits<double>::max();
+
+    for (size_t i = 0; i < entries.size(); ++i) {
+        QRectF bbox = entries[i].boundingRect().adjusted(-4, -4, 4, 4);
+        if (bbox.contains(lastTextClickPos_)) {
+            bestIdx = static_cast<int>(i);
+            break;
+        }
+        QPointF center = bbox.center();
+        double dist = (center - lastTextClickPos_).manhattanLength();
+        if (dist < bestDist) {
+            bestDist = dist;
+            bestIdx = static_cast<int>(i);
+        }
+    }
+
+    if (bestIdx >= 0) {
+        TextEntry entry = entries[static_cast<size_t>(bestIdx)];
+        clearTextRaster(entry);
+        entries.erase(entries.begin() + bestIdx);
+    }
+}
+
+void CanvasWidgetV2::clearTextRaster(const TextEntry& entry)
+{
+    auto* layer = activeRasterLayer();
+    if (!layer || layer->locked()) return;
+
+    QFontMetrics fm(entry.font);
+    const double tw = static_cast<double>(fm.horizontalAdvance(entry.text));
+    const double th = static_cast<double>(fm.ascent() + fm.descent());
+
+    const int ox = layer->originX();
+    const int oy = layer->originY();
+    int lx = static_cast<int>(entry.pos.x() - ox) - 1;
+    int ly = static_cast<int>(entry.pos.y() - oy - fm.ascent()) - 1;
+    int lw = static_cast<int>(tw) + 2;
+    int lh = static_cast<int>(th) + 2;
+
+    lx = std::max(0, lx);
+    ly = std::max(0, ly);
+    lw = std::min(lw, layer->width() - lx);
+    lh = std::min(lh, layer->height() - ly);
+    if (lw <= 0 || lh <= 0) return;
+
+    QImage before = snapFullLayer(layer);
+
+    layer->ensureUnique();
+    for (int y = 0; y < lh; ++y) {
+        uint32_t* row = layer->pixelData()
+            + static_cast<size_t>(ly + y) * static_cast<size_t>(layer->width())
+            + static_cast<size_t>(lx);
+        std::fill(row, row + lw, 0);
+    }
+
+    layer->bufferEpochTick();
+    pushFullLayerUndo(layer, before);
+    invalidateBackgroundCache();
 }
 
 // ============================================================================

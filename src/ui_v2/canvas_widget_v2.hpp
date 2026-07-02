@@ -20,8 +20,16 @@ struct TextEntry {
     QString text;
     QFont font;
     QColor color;
-    QImage undoImage;
-    QRect undoRect;
+
+    QRectF boundingRect() const {
+        QFontMetrics fm(font);
+        return QRectF(
+            pos.x(),
+            pos.y() - static_cast<double>(fm.ascent()),
+            static_cast<double>(fm.horizontalAdvance(text)),
+            static_cast<double>(fm.ascent() + fm.descent())
+        );
+    }
 };
 
 class RasterLayer;
@@ -180,7 +188,9 @@ private:
     void loadTextEntry(int idx);
     std::map<int, std::vector<TextEntry>> textEntries_;
     int editingEntryIndex_ = -1;
-    bool middlePanning_ = false;
+    QPointF lastTextClickPos_;
+    void deleteLastClickedTextEntry();
+    void clearTextRaster(const TextEntry& entry);
 
     // Move tool
     bool moving_ = false;
