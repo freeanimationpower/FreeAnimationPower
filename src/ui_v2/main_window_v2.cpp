@@ -313,7 +313,6 @@ void MainWindowV2::setupDocks()
     timelineDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
     timeline_panel_ = new TimelinePanelV2(appState_, timelineDock);
     timelineDock->setWidget(timeline_panel_);
-    timelineDock->setMaximumHeight(150);
     addDockWidget(Qt::BottomDockWidgetArea, timelineDock);
 }
 
@@ -397,6 +396,10 @@ void MainWindowV2::setupConnections()
         appState_->document().setFPS(fps);
     });
 
+    connect(timeline_panel_, &TimelinePanelV2::sequenceChanged, [this](int) {
+        updateUIState();
+    });
+
     connect(canvas_, &CanvasWidgetV2::frameChanged, [this](int frame) {
         if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
         if (layer_panel_) layer_panel_->setCurrentFrame(frame);
@@ -477,6 +480,7 @@ void MainWindowV2::newProject()
         timeline_panel_->setTotalFrames(appState_->document().totalFrames());
         timeline_panel_->setCurrentFrame(0);
         timeline_panel_->setFPS(appState_->document().fps());
+        timeline_panel_->rebuildTracks();
     }
     updateUIState();
     statusBar()->showMessage("New project created", 3000);
@@ -519,6 +523,7 @@ void MainWindowV2::openProject(const QString& path)
             timeline_panel_->setTotalFrames(appState_->document().totalFrames());
             timeline_panel_->setCurrentFrame(0);
             timeline_panel_->setFPS(appState_->document().fps());
+            timeline_panel_->rebuildTracks();
         }
         updateUIState();
         statusBar()->showMessage("Project opened: " + path, 3000);

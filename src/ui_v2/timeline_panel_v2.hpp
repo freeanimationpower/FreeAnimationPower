@@ -2,17 +2,21 @@
 
 #include <QtWidgets/QWidget>
 #include <QtCore/QTimer>
-#include <QtWidgets/QScrollBar>
 #include <memory>
+#include <vector>
 
 class QPushButton;
 class QSpinBox;
 class QLabel;
+class QScrollArea;
+class QScrollBar;
+class QVBoxLayout;
 
 namespace fap {
 
 class AppState;
-class FrameThumbnailCache;
+class SequenceTrackWidget;
+class RulerWidget;
 
 class TimelinePanelV2 : public QWidget {
     Q_OBJECT
@@ -25,24 +29,34 @@ public:
 
     int currentFrame() const { return currentFrame_; }
     int totalFrames() const { return totalFrames_; }
+    int sharedScrollOffset() const { return scrollOffset_; }
 
     void togglePlayback();
     void invalidateFrameThumbnail(int frame);
+    void rebuildTracks();
+
+    void onActivateTrack(int seqIndex);
+    void onRenameTrack(int seqIndex, const QString& name);
+    void onDupTrack(int seqIndex);
+    void onDelTrack(int seqIndex);
+    void onTrackFrameClicked(int frame);
+
+    static constexpr int kHeaderWidth = 120;
+    static constexpr int kCellWidth = 32;
+    static constexpr int kCellSpacing = 1;
+    static constexpr int kCellTotal = kCellWidth + kCellSpacing;
+    static constexpr int kTrackHeight = 28;
+    static constexpr int kRulerHeight = 18;
 
 signals:
     void frameChanged(int frame);
     void frameCountChanged(int count);
     void fpsChanged(int fps);
     void playbackToggled(bool playing);
+    void sequenceChanged(int index);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
-    void wheelEvent(QWheelEvent* event) override;
-    void contextMenuEvent(QContextMenuEvent* event) override;
 
 private:
     void setupUI();
@@ -57,10 +71,8 @@ private:
     void addFrame();
     void duplicateFrame();
     void deleteFrame();
-
-    int frameToX(int frame) const;
-    int frameAtPos(int x) const;
-    int visibleFrameCount() const;
+    void onNewSequence();
+    void updateScrollBarRange();
 
     std::shared_ptr<AppState> appState_;
 
@@ -68,10 +80,17 @@ private:
     QPushButton* stopBtn_ = nullptr;
     QPushButton* prevBtn_ = nullptr;
     QPushButton* nextBtn_ = nullptr;
-    QPushButton* addFrameBtn_ = nullptr;
     QSpinBox* fpsSpin_ = nullptr;
     QLabel* frameLabel_ = nullptr;
-    QScrollBar* scrollBar_ = nullptr;
+    QPushButton* newSeqBtn_ = nullptr;
+
+    RulerWidget* rulerWidget_ = nullptr;
+    QScrollArea* scrollArea_ = nullptr;
+    QWidget* tracksContainer_ = nullptr;
+    QVBoxLayout* tracksLayout_ = nullptr;
+    QScrollBar* hScrollBar_ = nullptr;
+
+    std::vector<SequenceTrackWidget*> trackWidgets_;
 
     QTimer* playbackTimer_ = nullptr;
 
@@ -81,20 +100,5 @@ private:
     bool playing_ = false;
 
     int scrollOffset_ = 0;
-    int cellWidth_ = 58;
-    int cellHeight_ = 78;
-    int cellSpacing_ = 4;
-    int thumbPad_ = 2;
-    int trackTop_ = 0;
-    int trackHeight_ = 0;
-
-    bool scrubbing_ = false;
-    int hoveredFrame_ = -1;
-
-    int txPort_ = 0;
-
-    static constexpr int kTransportWidth = 48;
-    static constexpr int kFpsWidth = 56;
-    static constexpr int kLabelWidth = 72;
 };
 } // namespace fap

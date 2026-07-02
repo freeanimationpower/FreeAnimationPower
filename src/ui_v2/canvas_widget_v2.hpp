@@ -20,6 +20,8 @@ struct TextEntry {
     QString text;
     QFont font;
     QColor color;
+    QImage undoImage;
+    QRect undoRect;
 
     QRectF boundingRect() const {
         QFontMetrics fm(font);

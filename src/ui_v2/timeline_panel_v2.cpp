@@ -1,53 +1,416 @@
 #include "timeline_panel_v2.hpp"
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QScrollArea>
 #include <QtWidgets/QScrollBar>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMenu>
 #include <QtGui/QPainter>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
 #include <QtGui/QResizeEvent>
-#include <QtGui/QContextMenuEvent>
+#include <QtGui/QEnterEvent>
 #include <QtGui/QFont>
-#include <QtGui/QImage>
 #include <QtGui/QIcon>
+#include <QtCore/QTimer>
 #include <algorithm>
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
+#include "core/sequence.hpp"
 #include "engine/animation/frame_thumbnail.hpp"
 
 namespace fap {
 
+// ========================================================================
+// Colors
+// ========================================================================
+
 static const QColor kBgColor("#14161C");
-static const QColor kCellBg("#1A1D24");
-static const QColor kCellBorder("#2A2D38");
+static const QColor kTrackBg("#121418");
+static const QColor kTrackActiveBg("#191D26");
+static const QColor kTrackHoverBg("#161A22");
+static const QColor kHeaderBg("#0D1014");
+static const QColor kHeaderActiveBg("#11131B");
+static const QColor kCellEmpty("#161920");
+static const QColor kCellFilled("#2E333D");
+static const QColor kCellBorder("#1E2128");
 static const QColor kCellActiveBorder("#FF6B4A");
-static const QColor kCellActiveBg("#1F2230");
-static const QColor kCellHoverBg("#222538");
-static const QColor kFrameNumColor("#6B7088");
+static const QColor kBorderColor("#1E2128");
+static const QColor kAccentColor("#FF6B4A");
+static const QColor kAccentDim("#3A2018");
 static const QColor kPlayheadColor("#FF6B4A");
 static const QColor kBtnBg("#1E2130");
 static const QColor kBtnHover("#252838");
 static const QColor kBtnPressed("#FF6B4A");
 static const QColor kBtnText("#C8CCD8");
-static const QColor kTransportBg("#0F1115");
+static const QColor kFrameNumColor("#4A4E60");
+static const QColor kRulerBg("#0F1115");
+static const QColor kRulerTick("#3A3E48");
+static const QColor kRulerText("#5A5E68");
 static const QColor kScrollBg("#14161C");
 static const QColor kScrollHandle("#2A2D38");
-static const QColor kAddBtnBg("#1A2D20");
-static const QColor kAddBtnHover("#1F3A28");
+static const QColor kTrackNameText("#8B8FA3");
+static const QColor kTrackNameActiveText("#FF6B4A");
+static const QColor kAddBtnColor("#3A5A40");
+
+// ========================================================================
+// RulerWidget
+// ========================================================================
+
+class RulerWidget : public QWidget {
+public:
+    explicit RulerWidget(TimelinePanelV2* panel, QWidget* parent = nullptr)
+        : QWidget(parent), panel_(panel) {
+        setFixedHeight(TimelinePanelV2::kRulerHeight);
+        setMouseTracking(true);
+    }
+
+    TimelinePanelV2* panel() const { return panel_; }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter p(this);
+        p.fillRect(rect(), kRulerBg);
+
+        const int offset = panel_->sharedScrollOffset();
+        const int cellTotal = TimelinePanelV2::kCellTotal;
+        const int cellW = TimelinePanelV2::kCellWidth;
+        const int hdrW = TimelinePanelV2::kHeaderWidth;
+        const int totalFrames = panel_->totalFrames();
+        const int curFrame = panel_->currentFrame();
+        const int w = width();
+        const int h = height();
+
+        int firstVisible = std::max(0, offset / cellTotal);
+        int lastVisible = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
+
+        QFont tickFont("JetBrains Mono", 7);
+        p.setFont(tickFont);
+
+        for (int f = firstVisible; f <= lastVisible; ++f) {
+            int x = hdrW + f * cellTotal - offset + cellW / 2;
+
+            bool isMajor = (f % 5 == 0);
+            int tickH = isMajor ? 12 : 6;
+            QColor tickColor = isMajor ? kRulerText : kRulerTick;
+
+            p.setPen(QPen(tickColor, 1));
+            p.drawLine(x, h - tickH, x, h);
+
+            if (isMajor) {
+                p.setPen(kRulerText);
+                p.drawText(QRect(x - 16, 0, 32, h - tickH - 1),
+                           Qt::AlignHCenter | Qt::AlignBottom,
+                           QString::number(f + 1));
+            }
+        }
+
+        // Playhead triangle
+        int px = hdrW + curFrame * cellTotal - offset + cellW / 2;
+        QPolygon tri;
+        tri << QPoint(px, 2)
+            << QPoint(px - 4, h - 2)
+            << QPoint(px + 4, h - 2);
+        p.setPen(Qt::NoPen);
+        p.setBrush(kPlayheadColor);
+        p.drawPolygon(tri);
+    }
+
+    void mousePressEvent(QMouseEvent* event) override {
+        if (event->button() == Qt::LeftButton) {
+            int frame = hitFrame(event->pos().x());
+            if (frame >= 0) {
+                panel_->setCurrentFrame(frame);
+                panel_->update();
+                emit panel_->frameChanged(frame);
+            }
+        }
+    }
+
+private:
+    int hitFrame(int x) const {
+        int hdrW = TimelinePanelV2::kHeaderWidth;
+        int rel = x - hdrW + panel_->sharedScrollOffset();
+        if (rel < 0) return -1;
+        int cellTotal = TimelinePanelV2::kCellTotal;
+        int frame = rel / cellTotal;
+        if (frame >= panel_->totalFrames()) return -1;
+        return frame;
+    }
+
+    TimelinePanelV2* panel_;
+};
+
+// ========================================================================
+// SequenceTrackWidget
+// ========================================================================
+
+class SequenceTrackWidget : public QWidget {
+public:
+    SequenceTrackWidget(int seqIndex, const QString& name, bool isActive,
+                         std::shared_ptr<AppState> appState,
+                         TimelinePanelV2* panel,
+                         QWidget* parent = nullptr)
+        : QWidget(parent)
+        , seqIndex_(seqIndex)
+        , name_(name)
+        , isActive_(isActive)
+        , appState_(std::move(appState))
+        , panel_(panel) {
+        setFixedHeight(TimelinePanelV2::kTrackHeight);
+        setMouseTracking(true);
+
+        nameEdit_ = new QLineEdit(name_, this);
+        nameEdit_->setStyleSheet(QString(
+            "QLineEdit { background:transparent; color:%1; border:none; "
+            "font-size:8px; font-family:'Inter'; padding:0px 6px; }"
+            "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
+            .arg(isActive_ ? kTrackNameActiveText.name() : kTrackNameText.name()));
+        nameEdit_->setCursorPosition(0);
+        connect(nameEdit_, &QLineEdit::editingFinished, this, [this]() {
+            QString txt = nameEdit_->text().trimmed();
+            if (!txt.isEmpty() && txt != name_) {
+                name_ = txt;
+                panel_->onRenameTrack(seqIndex_, name_);
+            }
+            nameEdit_->setText(name_);
+            nameEdit_->setCursorPosition(0);
+        });
+    }
+
+    void setName(const QString& name) { name_ = name; nameEdit_->setText(name); update(); }
+    void setActive(bool active) {
+        isActive_ = active;
+        nameEdit_->setStyleSheet(QString(
+            "QLineEdit { background:transparent; color:%1; border:none; "
+            "font-size:8px; font-family:'Inter'; padding:0px 6px; }"
+            "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
+            .arg(isActive_ ? kTrackNameActiveText.name() : kTrackNameText.name()));
+        update();
+    }
+    int seqIndex() const { return seqIndex_; }
+    const QString& name() const { return name_; }
+    bool isActive() const { return isActive_; }
+
+    void positionNameEdit() {
+        nameEdit_->setGeometry(8, 2, TimelinePanelV2::kHeaderWidth - 46, height() - 4);
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+
+        const int w = width();
+        const int h = height();
+        const int hdrW = TimelinePanelV2::kHeaderWidth;
+        const int cellW = TimelinePanelV2::kCellWidth;
+        const int cellTotal = TimelinePanelV2::kCellTotal;
+        const int cellH = TimelinePanelV2::kTrackHeight - 4;
+        const int offset = panel_->sharedScrollOffset();
+        const int totalFrames = panel_->totalFrames();
+        const int curFrame = panel_->currentFrame();
+
+        QColor trackBg = isActive_ ? kTrackActiveBg
+                        : (isHovered_ ? kTrackHoverBg : kTrackBg);
+        QColor headerBg = isActive_ ? kHeaderActiveBg : kHeaderBg;
+
+        // Header
+        p.fillRect(0, 0, hdrW, h, headerBg);
+
+        // Active bar
+        if (isActive_) {
+            p.fillRect(0, 0, 2, h, kAccentColor);
+        }
+
+        // Dup/Del buttons (hover visible)
+        if (isHovered_ || isActive_) {
+            int btnY = 5;
+            int btnH = h - 10;
+            int btnX = hdrW - 32;
+
+            QRect dupRect(btnX, btnY, 10, btnH);
+            p.setPen(QPen(kBtnText, 1));
+            QFont btnFont("Inter", 8);
+            p.setFont(btnFont);
+            p.drawText(dupRect, Qt::AlignCenter, QString::fromUtf8("\u26CC"));
+
+            QRect delRect(btnX + 14, btnY, 10, btnH);
+            p.drawText(delRect, Qt::AlignCenter, QString::fromUtf8("\u2715"));
+        }
+
+        // Separator
+        p.setPen(QPen(kBorderColor, 1));
+        p.drawLine(hdrW, 0, hdrW, h);
+
+        // Body background + bottom border
+        p.fillRect(hdrW, 0, w - hdrW, h, trackBg);
+        p.setPen(QPen(kBorderColor, 1));
+        p.drawLine(0, h - 1, w, h - 1);
+
+        // Cells
+        int cellY = 3;
+        int firstVisible = std::max(0, offset / cellTotal);
+        int lastVisible = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
+
+        for (int f = firstVisible; f <= lastVisible; ++f) {
+            int cx = hdrW + f * cellTotal - offset;
+            QRect cellRect(cx, cellY, cellW, cellH);
+
+            bool isCurFrame = (f == curFrame) && isActive_;
+            bool hasContent = appState_ && frameHasContent(f);
+
+            QColor fillColor = hasContent ? kCellFilled : kCellEmpty;
+            QColor borderColor = isCurFrame ? kCellActiveBorder : kCellBorder;
+            if (isCurFrame && isActive_) {
+                fillColor = kAccentDim;
+            }
+
+            p.setPen(Qt::NoPen);
+            p.setBrush(fillColor);
+            p.drawRoundedRect(cellRect, 2, 2);
+
+            p.setPen(QPen(borderColor, isCurFrame ? 1.5 : 1.0));
+            p.setBrush(Qt::NoBrush);
+            p.drawRoundedRect(cellRect.adjusted(0, 0, -1, -1), 2, 2);
+
+            if (f % 5 == 0) {
+                p.setPen(kFrameNumColor);
+                QFont numFont("JetBrains Mono", 5);
+                p.setFont(numFont);
+                p.drawText(cellRect, Qt::AlignCenter, QString::number(f + 1));
+            }
+        }
+
+        // "+" button
+        int addX = hdrW + totalFrames * cellTotal - offset;
+        if (addX < w) {
+            QRect addRect(addX + 1, cellY, cellW, cellH);
+            p.setPen(Qt::NoPen);
+            p.setBrush(QColor("#141A18"));
+            p.drawRoundedRect(addRect, 2, 2);
+            p.setPen(QPen(QColor("#2A4030"), 1));
+            p.setBrush(Qt::NoBrush);
+            p.drawRoundedRect(addRect.adjusted(0, 0, -1, -1), 2, 2);
+
+            int cx = addRect.center().x();
+            int cy = addRect.center().y();
+            p.setPen(QPen(kAddBtnColor, 1.5));
+            p.drawLine(cx - 5, cy, cx + 5, cy);
+            p.drawLine(cx, cy - 5, cx, cy + 5);
+        }
+
+        // Playhead
+        if (isActive_) {
+            int px = hdrW + curFrame * cellTotal - offset + cellW / 2;
+            if (px >= hdrW && px < w) {
+                p.setPen(QPen(kPlayheadColor, 1));
+                p.drawLine(px, 0, px, h);
+            }
+        }
+    }
+
+    void mousePressEvent(QMouseEvent* event) override {
+        if (event->button() != Qt::LeftButton) return;
+
+        const int hdrW = TimelinePanelV2::kHeaderWidth;
+        const int cellTotal = TimelinePanelV2::kCellTotal;
+        const int totalFrames = panel_->totalFrames();
+        int x = event->pos().x();
+
+        if (x < hdrW) {
+            int h = height();
+            int btnY = 5;
+            int btnH = h - 10;
+            // Del button
+            if (x >= hdrW - 18 && x <= hdrW - 4 &&
+                event->pos().y() >= btnY && event->pos().y() <= btnY + btnH) {
+                panel_->onDelTrack(seqIndex_);
+                return;
+            }
+            // Dup button
+            if (x >= hdrW - 32 && x <= hdrW - 18 &&
+                event->pos().y() >= btnY && event->pos().y() <= btnY + btnH) {
+                panel_->onDupTrack(seqIndex_);
+                return;
+            }
+            // Activate
+            if (!isActive_) {
+                panel_->onActivateTrack(seqIndex_);
+            }
+            return;
+        }
+
+        int addX = hdrW + totalFrames * cellTotal - panel_->sharedScrollOffset();
+        if (x >= addX && event->pos().y() >= 3 && event->pos().y() < 3 + (TimelinePanelV2::kTrackHeight - 4)) {
+            panel_->onTrackFrameClicked(-1);
+            return;
+        }
+
+        int frame = hitFrame(x);
+        if (frame >= 0 && !isActive_) {
+            panel_->onActivateTrack(seqIndex_);
+        }
+        if (frame >= 0) {
+            panel_->onTrackFrameClicked(frame);
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override {
+        int frame = hitFrame(event->pos().x());
+        if (frame != hoveredFrame_) {
+            hoveredFrame_ = frame;
+            update();
+        }
+    }
+
+    void enterEvent(QEnterEvent*) override { isHovered_ = true; update(); }
+    void leaveEvent(QEvent*) override { isHovered_ = false; update(); }
+
+    void resizeEvent(QResizeEvent*) override { positionNameEdit(); }
+
+private:
+    int hitFrame(int x) const {
+        int rel = x - TimelinePanelV2::kHeaderWidth + panel_->sharedScrollOffset();
+        if (rel < 0) return -1;
+        int frame = rel / TimelinePanelV2::kCellTotal;
+        if (frame >= panel_->totalFrames()) return -1;
+        return frame;
+    }
+
+    bool frameHasContent(int frame) const {
+        if (!appState_) return false;
+        const auto* seq = &appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+        const GroupLayer* root = seq->peekRootLayerForFrame(frame);
+        return root && root->layerCount() > 0;
+    }
+
+    int seqIndex_;
+    QString name_;
+    bool isActive_ = false;
+    bool isHovered_ = false;
+    int hoveredFrame_ = -1;
+    std::shared_ptr<AppState> appState_;
+    TimelinePanelV2* panel_;
+    QLineEdit* nameEdit_ = nullptr;
+};
+
+// ========================================================================
+// TimelinePanelV2 Implementation
+// ========================================================================
 
 TimelinePanelV2::TimelinePanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     : QWidget(parent)
     , appState_(std::move(state))
 {
     setMouseTracking(true);
-    setMinimumHeight(120);
-    setMaximumHeight(140);
+    setMinimumHeight(80);
 
     if (appState_) {
         auto& doc = appState_->document();
@@ -65,10 +428,12 @@ TimelinePanelV2::TimelinePanelV2(std::shared_ptr<AppState> state, QWidget* paren
 void TimelinePanelV2::setupUI()
 {
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(4, 2, 4, 2);
-    mainLayout->setSpacing(2);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
 
+    // ---- Top bar (transport) ----
     auto* topBar = new QHBoxLayout();
+    topBar->setContentsMargins(4, 2, 4, 2);
     topBar->setSpacing(4);
 
     auto makeBtn = [&](const QString& iconPath, const QString& tip, int w = 26, int h = 22) -> QPushButton* {
@@ -88,13 +453,10 @@ void TimelinePanelV2::setupUI()
 
     prevBtn_ = makeBtn(":/icons/timeline/prev_frame.png", "Previous Frame (,)");
     topBar->addWidget(prevBtn_);
-
     playBtn_ = makeBtn(":/icons/timeline/play_pause.png", "Play / Pause (Space)");
     topBar->addWidget(playBtn_);
-
     stopBtn_ = makeBtn(":/icons/timeline/stop.png", "Stop");
     topBar->addWidget(stopBtn_);
-
     nextBtn_ = makeBtn(":/icons/timeline/next_frame.png", "Next Frame (.)");
     topBar->addWidget(nextBtn_);
 
@@ -124,47 +486,160 @@ void TimelinePanelV2::setupUI()
 
     topBar->addStretch();
 
+    newSeqBtn_ = new QPushButton("+ Track", this);
+    newSeqBtn_->setFixedSize(60, 22);
+    newSeqBtn_->setToolTip("New Sequence");
+    newSeqBtn_->setStyleSheet(QString(
+        "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
+        "font-size:9px; font-weight:bold; }"
+        "QPushButton:hover { background:%4; border-color:%5; color:#E8ECF0; }")
+        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
+             kBtnHover.name(), kPlayheadColor.name()));
+    topBar->addWidget(newSeqBtn_);
+
     mainLayout->addLayout(topBar);
 
-    mainLayout->addStretch();
+    // ---- Ruler ----
+    rulerWidget_ = new RulerWidget(this, this);
+    mainLayout->addWidget(rulerWidget_);
 
+    // ---- Scroll area with tracks ----
+    scrollArea_ = new QScrollArea(this);
+    scrollArea_->setWidgetResizable(true);
+    scrollArea_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea_->setFrameShape(QFrame::NoFrame);
+    scrollArea_->setStyleSheet(QString(
+        "QScrollArea { background:%1; border:none; }"
+        "QScrollBar:vertical { background:%1; width:6px; margin:0; }"
+        "QScrollBar::handle:vertical { background:%2; border-radius:3px; min-height:20px; }"
+        "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical { height:0; }")
+        .arg(kScrollBg.name(), kScrollHandle.name()));
+
+    tracksContainer_ = new QWidget();
+    tracksLayout_ = new QVBoxLayout(tracksContainer_);
+    tracksLayout_->setContentsMargins(0, 0, 0, 0);
+    tracksLayout_->setSpacing(0);
+    scrollArea_->setWidget(tracksContainer_);
+
+    mainLayout->addWidget(scrollArea_, 1);
+
+    // ---- Horizontal scrollbar ----
+    hScrollBar_ = new QScrollBar(Qt::Horizontal, this);
+    hScrollBar_->setFixedHeight(8);
+    hScrollBar_->setMinimum(0);
+    hScrollBar_->setStyleSheet(QString(
+        "QScrollBar:horizontal { background:%1; height:8px; border:none; }"
+        "QScrollBar::handle:horizontal { background:%2; border-radius:4px; min-width:30px; }"
+        "QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width:0; }")
+        .arg(kScrollBg.name(), kScrollHandle.name()));
+    mainLayout->addWidget(hScrollBar_);
+
+    // Connections
     connect(prevBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onPrevFrame);
     connect(nextBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onNextFrame);
     connect(playBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onPlayPause);
     connect(stopBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onStop);
     connect(fpsSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &TimelinePanelV2::onFPSChanged);
+    connect(newSeqBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onNewSequence);
+    connect(hScrollBar_, &QScrollBar::valueChanged, this, &TimelinePanelV2::onScrollChanged);
+
+    rebuildTracks();
 }
+
+void TimelinePanelV2::rebuildTracks()
+{
+    // Clear focus from any child before deletion (prevents editingFinished on deleted widget)
+    QWidget* focused = QApplication::focusWidget();
+    if (focused && tracksContainer_->isAncestorOf(focused)) {
+        focused->clearFocus();
+    }
+
+    QLayoutItem* item;
+    while ((item = tracksLayout_->takeAt(0)) != nullptr) {
+        delete item->widget();
+        delete item;
+    }
+    trackWidgets_.clear();
+
+    if (!appState_) return;
+
+    int count = appState_->sequenceCount();
+    if (count == 0) {
+        appState_->addSequence("Sequence 1");
+        count = 1;
+    }
+    int activeIdx = appState_->activeSequenceIndex();
+
+    for (int i = 0; i < count; ++i) {
+        auto& seq = appState_->document().sequenceAt(static_cast<size_t>(i));
+        auto* track = new SequenceTrackWidget(
+            i,
+            QString::fromStdString(seq.name()),
+            (i == activeIdx),
+            appState_,
+            this,
+            tracksContainer_);
+
+        tracksLayout_->addWidget(track);
+        trackWidgets_.push_back(track);
+        track->positionNameEdit();
+    }
+
+    tracksLayout_->addStretch();
+    updateScrollBarRange();
+    rulerWidget_->update();
+}
+
+void TimelinePanelV2::updateScrollBarRange()
+{
+    int contentWidth = (totalFrames_ + 1) * kCellTotal + kHeaderWidth + 20;
+    int viewWidth = scrollArea_->viewport()->width();
+    int maxScroll = std::max(0, contentWidth - viewWidth);
+    hScrollBar_->setRange(0, maxScroll);
+    hScrollBar_->setPageStep(viewWidth);
+    if (scrollOffset_ > maxScroll) {
+        scrollOffset_ = maxScroll;
+        hScrollBar_->setValue(scrollOffset_);
+    }
+}
+
+// ---- Public interface ----
 
 void TimelinePanelV2::setTotalFrames(int count)
 {
     totalFrames_ = std::max(1, count);
     if (currentFrame_ >= totalFrames_) currentFrame_ = totalFrames_ - 1;
-    int maxScroll = std::max(0, totalFrames_ * (cellWidth_ + cellSpacing_) - (width() - kTransportWidth - kFpsWidth - kLabelWidth - 20));
-    scrollOffset_ = std::min(scrollOffset_, maxScroll);
+    updateScrollBarRange();
     updateLabels();
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
 }
 
 void TimelinePanelV2::setCurrentFrame(int frame)
 {
     currentFrame_ = std::clamp(frame, 0, totalFrames_ - 1);
 
-    int stripWidth = width() - kTransportWidth - kFpsWidth - kLabelWidth - 20;
-    int cellTotal = cellWidth_ + cellSpacing_;
+    int viewWidth = scrollArea_->viewport()->width();
+    int cellTotal = kCellTotal;
     int frameLeft = currentFrame_ * cellTotal - scrollOffset_;
-    int frameRight = frameLeft + cellWidth_;
+    int frameRight = frameLeft + kCellWidth;
+    int bodyViewWidth = viewWidth - kHeaderWidth;
+
     if (frameLeft < 0) {
-        scrollOffset_ = std::max(0, scrollOffset_ + frameLeft - cellTotal);
-    } else if (frameRight > stripWidth) {
-        scrollOffset_ += frameRight - stripWidth + cellTotal;
+        scrollOffset_ = std::max(0, scrollOffset_ + frameLeft - cellTotal * 2);
+    } else if (frameRight > bodyViewWidth) {
+        scrollOffset_ += frameRight - bodyViewWidth + cellTotal * 2;
     }
 
-    int maxScroll = std::max(0, totalFrames_ * cellTotal - stripWidth);
-    scrollOffset_ = std::min(scrollOffset_, maxScroll);
+    int maxScroll = std::max(0, (totalFrames_ + 1) * cellTotal + kHeaderWidth + 20 - viewWidth);
+    scrollOffset_ = std::clamp(scrollOffset_, 0, maxScroll);
+    hScrollBar_->setValue(scrollOffset_);
 
     updateLabels();
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
 }
 
 void TimelinePanelV2::setFPS(int fps)
@@ -179,12 +654,9 @@ void TimelinePanelV2::setFPS(int fps)
     updateLabels();
 }
 
-void TimelinePanelV2::invalidateFrameThumbnail(int frame)
+void TimelinePanelV2::invalidateFrameThumbnail(int)
 {
-    if (appState_) {
-        appState_->thumbnailCache().invalidateFrame(frame);
-    }
-    update();
+    for (auto* t : trackWidgets_) t->update();
 }
 
 void TimelinePanelV2::togglePlayback()
@@ -192,32 +664,12 @@ void TimelinePanelV2::togglePlayback()
     onPlayPause();
 }
 
-int TimelinePanelV2::frameToX(int frame) const
-{
-    return txPort_ + frame * (cellWidth_ + cellSpacing_) - scrollOffset_;
-}
-
-int TimelinePanelV2::frameAtPos(int x) const
-{
-    int rel = x - txPort_ + scrollOffset_;
-    if (rel < 0) return -1;
-    int frame = rel / (cellWidth_ + cellSpacing_);
-    int posInCell = rel - frame * (cellWidth_ + cellSpacing_);
-    if (posInCell >= cellWidth_) return -1;
-    if (frame >= totalFrames_) return -1;
-    return frame;
-}
-
-int TimelinePanelV2::visibleFrameCount() const
-{
-    int stripWidth = width() - kTransportWidth - kFpsWidth - kLabelWidth - 20;
-    return (stripWidth + cellSpacing_) / (cellWidth_ + cellSpacing_);
-}
-
 void TimelinePanelV2::updateLabels()
 {
     frameLabel_->setText(QString("%1 / %2").arg(currentFrame_ + 1).arg(totalFrames_));
 }
+
+// ---- Transport slots ----
 
 void TimelinePanelV2::onPlayPause()
 {
@@ -242,8 +694,10 @@ void TimelinePanelV2::onStop()
     currentFrame_ = 0;
     scrollOffset_ = 0;
     appState_->setCurrentFrame(0);
+    hScrollBar_->setValue(0);
     updateLabels();
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
     emit frameChanged(currentFrame_);
     emit playbackToggled(false);
 }
@@ -253,8 +707,7 @@ void TimelinePanelV2::onPrevFrame()
     if (currentFrame_ > 0) {
         currentFrame_--;
         appState_->setCurrentFrame(currentFrame_);
-        updateLabels();
-        update();
+        setCurrentFrame(currentFrame_);
         emit frameChanged(currentFrame_);
     }
 }
@@ -264,8 +717,7 @@ void TimelinePanelV2::onNextFrame()
     if (currentFrame_ < totalFrames_ - 1) {
         currentFrame_++;
         appState_->setCurrentFrame(currentFrame_);
-        updateLabels();
-        update();
+        setCurrentFrame(currentFrame_);
         emit frameChanged(currentFrame_);
     }
 }
@@ -286,51 +738,54 @@ void TimelinePanelV2::onPlaybackTick()
     if (currentFrame_ >= totalFrames_ - 1) {
         currentFrame_ = 0;
         scrollOffset_ = 0;
+        hScrollBar_->setValue(0);
     } else {
         currentFrame_++;
     }
     appState_->setCurrentFrame(currentFrame_);
     updateLabels();
-    update();
+    setCurrentFrame(currentFrame_);
     emit frameChanged(currentFrame_);
 }
 
 void TimelinePanelV2::onScrollChanged(int value)
 {
     scrollOffset_ = value;
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
 }
 
 void TimelinePanelV2::addFrame()
 {
     totalFrames_++;
     appState_->document().setTotalFrames(totalFrames_);
+    updateScrollBarRange();
     updateLabels();
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
 }
 
 void TimelinePanelV2::duplicateFrame()
 {
     if (currentFrame_ < 0 || currentFrame_ >= totalFrames_) return;
-
     totalFrames_++;
     appState_->document().setTotalFrames(totalFrames_);
 
     auto& srcRoot = appState_->document().rootLayerForFrame(currentFrame_);
     auto& dstRoot = appState_->document().rootLayerForFrame(totalFrames_ - 1);
-
     dstRoot.layers().clear();
     for (const auto& layer : srcRoot.layers()) {
         dstRoot.addLayer(layer->clone());
     }
-
     appState_->document().setModified(true);
     currentFrame_ = totalFrames_ - 1;
     appState_->setCurrentFrame(currentFrame_);
 
+    updateScrollBarRange();
     updateLabels();
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
     emit frameChanged(currentFrame_);
 }
@@ -341,251 +796,101 @@ void TimelinePanelV2::deleteFrame()
     if (currentFrame_ < 0 || currentFrame_ >= totalFrames_) return;
 
     int delFrame = currentFrame_;
-
     appState_->document().shiftFrameData(delFrame + 1, -1);
     appState_->document().removeFrameData(totalFrames_ - 1);
     totalFrames_--;
     appState_->document().setTotalFrames(totalFrames_);
 
-    if (currentFrame_ >= totalFrames_) {
-        currentFrame_ = totalFrames_ - 1;
-    }
+    if (currentFrame_ >= totalFrames_) currentFrame_ = totalFrames_ - 1;
     appState_->setCurrentFrame(currentFrame_);
 
+    updateScrollBarRange();
     updateLabels();
-    update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
     emit frameChanged(currentFrame_);
 }
 
-void TimelinePanelV2::paintEvent(QPaintEvent*)
+void TimelinePanelV2::onNewSequence()
 {
-    QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing, true);
-    p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-
-    p.fillRect(rect(), kBgColor);
-
-    int topBarH = 28;
-    int w = width();
-    int h = height();
-
-    txPort_ = kTransportWidth + kFpsWidth + kLabelWidth + 12;
-
-    int stripWidth = w - txPort_ - 12;
-    trackTop_ = topBarH + 2;
-    trackHeight_ = h - trackTop_ - 4;
-    int thumbH = cellHeight_ - thumbPad_ * 2 - 14;
-
-    QRect trackRect(txPort_, trackTop_, stripWidth, trackHeight_);
-    p.fillRect(trackRect, QColor("#0D0F14"));
-    p.setPen(QPen(kCellBorder, 1));
-    p.drawRect(trackRect);
-
-    int cellTotal = cellWidth_ + cellSpacing_;
-
-    int firstVisible = std::max(0, scrollOffset_ / cellTotal);
-    int lastVisible = std::min(totalFrames_ - 1,
-        (scrollOffset_ + stripWidth) / cellTotal + 1);
-
-    for (int f = firstVisible; f <= lastVisible; ++f) {
-        int cellX = txPort_ + f * cellTotal - scrollOffset_;
-        int cellY = trackTop_ + 4;
-
-        QRect cellRect(cellX, cellY, cellWidth_, cellHeight_);
-
-        bool isCurrent = (f == currentFrame_);
-        bool isHovered = (f == hoveredFrame_);
-
-        QColor bgColor = kCellBg;
-        if (isCurrent) bgColor = kCellActiveBg;
-        if (isHovered && !isCurrent) bgColor = kCellHoverBg;
-
-        p.setPen(Qt::NoPen);
-        p.setBrush(bgColor);
-        p.drawRoundedRect(cellRect, 4, 4);
-
-        QColor borderColor = isCurrent ? kCellActiveBorder : kCellBorder;
-        if (isHovered && !isCurrent) borderColor = QColor("#4A4E60");
-        p.setPen(QPen(borderColor, isCurrent ? 2.0 : 1.0));
-        p.setBrush(Qt::NoBrush);
-        p.drawRoundedRect(cellRect.adjusted(0, 0, -1, -1), 4, 4);
-
-        QRect thumbRect(cellX + thumbPad_, cellY + thumbPad_,
-                        cellWidth_ - thumbPad_ * 2, thumbH);
-
-        p.fillRect(thumbRect, Qt::white);
-
-        if (appState_) {
-            auto* entry = appState_->thumbnailCache().getThumbnail(f);
-            if (entry && !entry->pixels.empty() && entry->width > 0 && entry->height > 0) {
-                QImage img(reinterpret_cast<const uchar*>(entry->pixels.data()),
-                           entry->width, entry->height,
-                           entry->width * static_cast<int>(sizeof(uint32_t)),
-                           QImage::Format_ARGB32_Premultiplied);
-                p.drawImage(thumbRect, img);
-            }
-        }
-
-        p.setPen(kFrameNumColor);
-        QFont numFont("JetBrains Mono", 8);
-        p.setFont(numFont);
-        QRect numRect(cellX, cellY + cellHeight_ - 14, cellWidth_, 12);
-        p.drawText(numRect, Qt::AlignCenter, QString::number(f + 1));
-
-        if (isCurrent) {
-            int px = cellX + cellWidth_ / 2;
-            int py = cellY + cellHeight_ + 1;
-            QPolygon triangle;
-            triangle << QPoint(px, py)
-                     << QPoint(px + 4, py + 5)
-                     << QPoint(px - 4, py + 5);
-            p.setPen(Qt::NoPen);
-            p.setBrush(kPlayheadColor);
-            p.drawPolygon(triangle);
-        }
-    }
-
-    int addX = txPort_ + totalFrames_ * cellTotal - scrollOffset_;
-    QRect addRect(addX, trackTop_ + 4, cellWidth_, cellHeight_);
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor("#141A18"));
-    p.drawRoundedRect(addRect, 4, 4);
-    p.setPen(QPen(QColor("#2A4030"), 1));
-    p.setBrush(Qt::NoBrush);
-    p.drawRoundedRect(addRect.adjusted(0, 0, -1, -1), 4, 4);
-
-    p.setPen(QPen(QColor("#3A5A40"), 2));
-    int cx = addX + cellWidth_ / 2;
-    int cy = addRect.center().y();
-    p.drawLine(cx - 8, cy, cx + 8, cy);
-    p.drawLine(cx, cy - 8, cx, cy + 8);
-
-    addFrameBtn_ = nullptr;
-
-    int contentWidth = (totalFrames_ + 1) * cellTotal + 8;
-    if (contentWidth > stripWidth) {
-        int maxScroll = std::max(0, contentWidth - stripWidth);
-        scrollOffset_ = std::clamp(scrollOffset_, 0, maxScroll);
-
-        int scrollY = h - 10;
-        int scrollH = 6;
-        QRect scrollBgRect(txPort_, scrollY, stripWidth, scrollH);
-        p.fillRect(scrollBgRect, kScrollBg);
-
-        if (maxScroll > 0) {
-            float visibleRatio = static_cast<float>(stripWidth) / contentWidth;
-            int handleWidth = std::max(20, static_cast<int>(stripWidth * visibleRatio));
-            int handleX = txPort_ + static_cast<int>(
-                static_cast<float>(scrollOffset_) / maxScroll * (stripWidth - handleWidth));
-            p.fillRect(QRect(handleX, scrollY, handleWidth, scrollH), kScrollHandle);
-        }
-    }
-
-    if (!playing_ && currentFrame_ >= 0 && currentFrame_ < totalFrames_) {
-        int px = txPort_ + currentFrame_ * cellTotal - scrollOffset_ + cellWidth_ / 2;
-        p.setPen(QPen(kPlayheadColor, 1, Qt::DotLine));
-        p.drawLine(px, trackTop_, px, trackTop_ + trackHeight_);
-    }
+    if (!appState_) return;
+    appState_->addSequence();
+    QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
 }
 
-void TimelinePanelV2::mousePressEvent(QMouseEvent* event)
+// ---- Track slots ----
+
+void TimelinePanelV2::onActivateTrack(int seqIndex)
 {
-    if (event->button() == Qt::LeftButton) {
-        int addX = txPort_ + totalFrames_ * (cellWidth_ + cellSpacing_) - scrollOffset_;
-        QRect addRect(addX, trackTop_ + 4, cellWidth_, cellHeight_);
+    if (!appState_) return;
+    appState_->setActiveSequence(seqIndex);
 
-        if (addRect.contains(event->pos())) {
-            addFrame();
-            return;
-        }
+    auto& seq = appState_->activeSequence();
+    totalFrames_ = seq.totalFrames();
+    fps_ = seq.fps();
+    currentFrame_ = seq.currentFrame();
 
-        int frame = frameAtPos(event->pos().x());
-        if (frame >= 0 && frame < totalFrames_ &&
-            event->pos().y() >= trackTop_ && event->pos().y() <= trackTop_ + trackHeight_) {
-            scrubbing_ = true;
-            currentFrame_ = frame;
-            appState_->setCurrentFrame(currentFrame_);
-            updateLabels();
-            update();
-            emit frameChanged(currentFrame_);
-        }
+    fpsSpin_->blockSignals(true);
+    fpsSpin_->setValue(fps_);
+    fpsSpin_->blockSignals(false);
+
+    scrollOffset_ = 0;
+    hScrollBar_->setValue(0);
+    updateScrollBarRange();
+    updateLabels();
+
+    for (size_t i = 0; i < trackWidgets_.size(); ++i) {
+        trackWidgets_[i]->setActive(static_cast<int>(i) == seqIndex);
     }
+    rulerWidget_->update();
+
+    emit sequenceChanged(seqIndex);
+    emit frameChanged(currentFrame_);
 }
 
-void TimelinePanelV2::mouseMoveEvent(QMouseEvent* event)
+void TimelinePanelV2::onRenameTrack(int seqIndex, const QString& name)
 {
-    if (scrubbing_ && (event->buttons() & Qt::LeftButton)) {
-        int frame = frameAtPos(event->pos().x());
-        if (frame >= 0 && frame < totalFrames_ && frame != currentFrame_) {
-            currentFrame_ = frame;
-            appState_->setCurrentFrame(currentFrame_);
-            updateLabels();
-            update();
-            emit frameChanged(currentFrame_);
-        }
-    }
-
-    int frame = frameAtPos(event->pos().x());
-    if (frame != hoveredFrame_) {
-        hoveredFrame_ = frame;
-        update();
-    }
+    if (!appState_) return;
+    appState_->renameSequence(seqIndex, name.toStdString());
 }
 
-void TimelinePanelV2::mouseReleaseEvent(QMouseEvent* event)
+void TimelinePanelV2::onDupTrack(int seqIndex)
 {
-    if (event->button() == Qt::LeftButton && scrubbing_) {
-        scrubbing_ = false;
-        update();
-    }
+    if (!appState_) return;
+    appState_->duplicateSequence(seqIndex);
+    QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
 }
 
-void TimelinePanelV2::wheelEvent(QWheelEvent* event)
+void TimelinePanelV2::onDelTrack(int seqIndex)
 {
-    int delta = event->angleDelta().y();
-    int contentWidth = (totalFrames_ + 1) * (cellWidth_ + cellSpacing_) + 8;
-    int stripWidth = width() - txPort_ - 12;
-    int maxScroll = std::max(0, contentWidth - stripWidth);
-
-    scrollOffset_ = std::clamp(scrollOffset_ - delta / 2, 0, maxScroll);
-    update();
+    if (!appState_) return;
+    if (appState_->sequenceCount() <= 1) return;
+    appState_->removeSequence(seqIndex);
+    QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
 }
 
-void TimelinePanelV2::contextMenuEvent(QContextMenuEvent* event)
+void TimelinePanelV2::onTrackFrameClicked(int frame)
 {
-    int frame = frameAtPos(event->pos().x());
-    if (frame < 0 || frame >= totalFrames_) return;
-
-    QMenu menu(this);
-    menu.setStyleSheet(QString(
-        "QMenu { background:%1; color:%2; border:1px solid %3; border-radius:4px; padding:4px; }"
-        "QMenu::item { padding:4px 20px; border-radius:3px; }"
-        "QMenu::item:selected { background:%4; }")
-        .arg(kCellBg.name(), kBtnText.name(), kCellBorder.name(), kBtnHover.name()));
-
-    QAction* dupAction = menu.addAction("Duplicate Frame");
-    QAction* delAction = menu.addAction("Delete Frame");
-    menu.addSeparator();
-    QAction* addAction = menu.addAction("Insert Frame After");
-
-    QAction* chosen = menu.exec(event->globalPos());
-    if (chosen == dupAction) {
-        currentFrame_ = frame;
-        duplicateFrame();
-    } else if (chosen == delAction) {
-        currentFrame_ = frame;
-        deleteFrame();
-    } else if (chosen == addAction) {
-        currentFrame_ = frame;
+    if (frame < 0) {
+        // "+" add frame clicked
         addFrame();
+        return;
     }
+    currentFrame_ = frame;
+    appState_->setCurrentFrame(currentFrame_);
+    updateLabels();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
+    emit frameChanged(currentFrame_);
 }
 
 void TimelinePanelV2::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    update();
+    updateScrollBarRange();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
 }
 
 } // namespace fap

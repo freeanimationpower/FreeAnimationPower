@@ -129,6 +129,14 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
     onionPrevFrames_ = ts.onionPrevFrames();
     onionNextFrames_ = ts.onionNextFrames();
     onionOpacity_ = ts.onionOpacity();
+
+    connect(appState_.get(), &AppState::activeSequenceChanged,
+            this, [this](int) {
+        totalFrames_ = appState_->document().totalFrames();
+        currentFrame_ = appState_->document().currentFrame();
+        invalidateBackgroundCache();
+        update();
+    });
 }
 
 // ============================================================================
@@ -271,25 +279,28 @@ void CanvasWidgetV2::render(QPainter* painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, false);
 
-    auto& root = doc.rootLayerForFrame(currentFrame_);
-    for (size_t li = root.layerCount(); li > 0; --li) {
-        const Layer* layer = root.layers()[li - 1].get();
-        if (!layer || !layer->visible()) continue;
-        if (layer->type() != LayerType::Raster) continue;
+    for (size_t si = 0; si < doc.sequenceCount(); ++si) {
+        if (!doc.sequenceAt(si).visible()) continue;
+        const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
+        for (size_t li = 0; li < root.layerCount(); ++li) {
+            const Layer* layer = root.layerAt(li);
+            if (!layer || !layer->visible()) continue;
+            if (layer->type() != LayerType::Raster) continue;
 
-        const auto& rl = static_cast<const RasterLayer&>(*layer);
-        QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
-                   rl.width(), rl.height(),
-                   rl.width() * static_cast<int>(sizeof(uint32_t)),
-                   QImage::Format_ARGB32_Premultiplied);
-        QImage display = img.convertToFormat(QImage::Format_ARGB32);
-        painter->setOpacity(layer->opacity());
-        painter->setCompositionMode(toQtCompositionMode(layer->blendMode()));
-        painter->setRenderHint(QPainter::Antialiasing, false);
-        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
-        painter->drawImage(QPoint(rl.originX(), rl.originY()), display);
-        painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
-        painter->setRenderHint(QPainter::Antialiasing, true);
+            const auto& rl = static_cast<const RasterLayer&>(*layer);
+            QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
+                       rl.width(), rl.height(),
+                       rl.width() * static_cast<int>(sizeof(uint32_t)),
+                       QImage::Format_ARGB32_Premultiplied);
+            QImage display = img.convertToFormat(QImage::Format_ARGB32);
+            painter->setOpacity(layer->opacity());
+            painter->setCompositionMode(toQtCompositionMode(layer->blendMode()));
+            painter->setRenderHint(QPainter::Antialiasing, false);
+            painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+            painter->drawImage(QPoint(rl.originX(), rl.originY()), display);
+            painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+            painter->setRenderHint(QPainter::Antialiasing, true);
+        }
     }
 
     painter->restore();
@@ -601,25 +612,28 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
             }
         }
 
-        // Current frame layers (bottom to top)
-        auto& root = doc.rootLayerForFrame(currentFrame_);
-        for (size_t li = root.layerCount(); li > 0; --li) {
-            const Layer* layer = root.layers()[li - 1].get();
-            if (!layer || !layer->visible()) continue;
-            if (layer->type() != LayerType::Raster) continue;
-            const auto& rl = static_cast<const RasterLayer&>(*layer);
+        // All sequences composited bottom-to-top (acetate effect)
+        for (size_t si = 0; si < doc.sequenceCount(); ++si) {
+            if (!doc.sequenceAt(si).visible()) continue;
+            const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
+            for (size_t li = 0; li < root.layerCount(); ++li) {
+                const Layer* layer = root.layerAt(li);
+                if (!layer || !layer->visible()) continue;
+                if (layer->type() != LayerType::Raster) continue;
+                const auto& rl = static_cast<const RasterLayer&>(*layer);
 
-            QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
-                       rl.width(), rl.height(),
-                       rl.width() * static_cast<int>(sizeof(uint32_t)),
-                       QImage::Format_ARGB32_Premultiplied);
-            QImage display = img.convertToFormat(QImage::Format_ARGB32);
+                QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
+                           rl.width(), rl.height(),
+                           rl.width() * static_cast<int>(sizeof(uint32_t)),
+                           QImage::Format_ARGB32_Premultiplied);
+                QImage display = img.convertToFormat(QImage::Format_ARGB32);
 
-            p.setOpacity(static_cast<qreal>(layer->opacity()));
-            p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
-            p.setRenderHint(QPainter::Antialiasing, false);
-            p.setRenderHint(QPainter::SmoothPixmapTransform, false);
-            p.drawImage(QPoint(rl.originX(), rl.originY()), display);
+                p.setOpacity(static_cast<qreal>(layer->opacity()));
+                p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
+                p.setRenderHint(QPainter::Antialiasing, false);
+                p.setRenderHint(QPainter::SmoothPixmapTransform, false);
+                p.drawImage(QPoint(rl.originX(), rl.originY()), display);
+            }
         }
 
         p.end();
@@ -692,31 +706,34 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
             }
         }
 
-        // Current frame layers — offset-aware, only R
-        auto& root = doc.rootLayerForFrame(currentFrame_);
-        for (size_t li = root.layerCount(); li > 0; --li) {
-            const Layer* layer = root.layers()[li - 1].get();
-            if (!layer || !layer->visible()) continue;
-            if (layer->type() != LayerType::Raster) continue;
-            const auto& rl = static_cast<const RasterLayer&>(*layer);
+        // All sequences — offset-aware, only R
+        for (size_t si = 0; si < doc.sequenceCount(); ++si) {
+            if (!doc.sequenceAt(si).visible()) continue;
+            const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
+            for (size_t li = 0; li < root.layerCount(); ++li) {
+                const Layer* layer = root.layerAt(li);
+                if (!layer || !layer->visible()) continue;
+                if (layer->type() != LayerType::Raster) continue;
+                const auto& rl = static_cast<const RasterLayer&>(*layer);
 
-            QRect layerBounds(rl.originX(), rl.originY(), rl.width(), rl.height());
-            QRect inter = rect.intersected(layerBounds);
-            if (inter.isEmpty()) continue;
+                QRect layerBounds(rl.originX(), rl.originY(), rl.width(), rl.height());
+                QRect inter = rect.intersected(layerBounds);
+                if (inter.isEmpty()) continue;
 
-            QRect srcRect = inter.translated(-rl.originX(), -rl.originY());
+                QRect srcRect = inter.translated(-rl.originX(), -rl.originY());
 
-            QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
-                       rl.width(), rl.height(),
-                       rl.width() * static_cast<int>(sizeof(uint32_t)),
-                       QImage::Format_ARGB32_Premultiplied);
-            QImage display = img.convertToFormat(QImage::Format_ARGB32);
+                QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
+                           rl.width(), rl.height(),
+                           rl.width() * static_cast<int>(sizeof(uint32_t)),
+                           QImage::Format_ARGB32_Premultiplied);
+                QImage display = img.convertToFormat(QImage::Format_ARGB32);
 
-            p.setOpacity(static_cast<qreal>(layer->opacity()));
-            p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
-            p.setRenderHint(QPainter::Antialiasing, false);
-            p.setRenderHint(QPainter::SmoothPixmapTransform, false);
-            p.drawImage(inter, display, srcRect);
+                p.setOpacity(static_cast<qreal>(layer->opacity()));
+                p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
+                p.setRenderHint(QPainter::Antialiasing, false);
+                p.setRenderHint(QPainter::SmoothPixmapTransform, false);
+                p.drawImage(inter, display, srcRect);
+            }
         }
 
         p.end();
@@ -1037,11 +1054,6 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
                 p.setPen(QPen(brushColor_, 1.5f / zoom_));
                 p.drawLine(caretTop, caretBtm);
             }
-            double caretY = textEditPos_.y() + (lines.size() - 1) * leadPx;
-            QPointF caretPos(caretX, caretY - static_cast<double>(fm.ascent()));
-            QPointF caretEnd(caretX, caretY + static_cast<double>(fm.descent()));
-            p.setPen(QPen(brushColor_, 1.5f / zoom_));
-            p.drawLine(caretPos, caretEnd);
         }
     }
 
@@ -1330,7 +1342,7 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
 
 void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
 {
-    if (middlePanning_) {
+    if (panning_) {
         QPointF delta = event->pos() - lastMousePos_;
         offsetX_ += static_cast<float>(delta.x());
         offsetY_ += static_cast<float>(delta.y());
