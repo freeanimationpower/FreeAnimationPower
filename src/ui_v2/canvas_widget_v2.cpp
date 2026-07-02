@@ -137,6 +137,12 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
         invalidateBackgroundCache();
         update();
     });
+
+    connect(appState_.get(), &AppState::documentChanged,
+            this, [this]() {
+        invalidateBackgroundCache();
+        update();
+    });
 }
 
 // ============================================================================
@@ -281,6 +287,7 @@ void CanvasWidgetV2::render(QPainter* painter)
 
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
         if (!doc.sequenceAt(si).visible()) continue;
+        float seqOpacity = doc.sequenceAt(si).opacity();
         const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
         for (size_t li = 0; li < root.layerCount(); ++li) {
             const Layer* layer = root.layerAt(li);
@@ -293,7 +300,7 @@ void CanvasWidgetV2::render(QPainter* painter)
                        rl.width() * static_cast<int>(sizeof(uint32_t)),
                        QImage::Format_ARGB32_Premultiplied);
             QImage display = img.convertToFormat(QImage::Format_ARGB32);
-            painter->setOpacity(layer->opacity());
+            painter->setOpacity(layer->opacity() * seqOpacity);
             painter->setCompositionMode(toQtCompositionMode(layer->blendMode()));
             painter->setRenderHint(QPainter::Antialiasing, false);
             painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
@@ -615,6 +622,7 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
         // All sequences composited bottom-to-top (acetate effect)
         for (size_t si = 0; si < doc.sequenceCount(); ++si) {
             if (!doc.sequenceAt(si).visible()) continue;
+            float seqOpacity = doc.sequenceAt(si).opacity();
             const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
             for (size_t li = 0; li < root.layerCount(); ++li) {
                 const Layer* layer = root.layerAt(li);
@@ -628,7 +636,7 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
                            QImage::Format_ARGB32_Premultiplied);
                 QImage display = img.convertToFormat(QImage::Format_ARGB32);
 
-                p.setOpacity(static_cast<qreal>(layer->opacity()));
+                p.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
                 p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
                 p.setRenderHint(QPainter::Antialiasing, false);
                 p.setRenderHint(QPainter::SmoothPixmapTransform, false);
@@ -709,6 +717,7 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
         // All sequences — offset-aware, only R
         for (size_t si = 0; si < doc.sequenceCount(); ++si) {
             if (!doc.sequenceAt(si).visible()) continue;
+            float seqOpacity = doc.sequenceAt(si).opacity();
             const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
             for (size_t li = 0; li < root.layerCount(); ++li) {
                 const Layer* layer = root.layerAt(li);
@@ -728,7 +737,7 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
                            QImage::Format_ARGB32_Premultiplied);
                 QImage display = img.convertToFormat(QImage::Format_ARGB32);
 
-                p.setOpacity(static_cast<qreal>(layer->opacity()));
+                p.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
                 p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
                 p.setRenderHint(QPainter::Antialiasing, false);
                 p.setRenderHint(QPainter::SmoothPixmapTransform, false);

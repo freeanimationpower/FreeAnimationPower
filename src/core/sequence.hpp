@@ -25,6 +25,8 @@ public:
     void setName(const std::string& name) { name_ = name; }
     bool visible() const { return visible_; }
     void setVisible(bool v) { visible_ = v; }
+    float opacity() const { return opacity_; }
+    void setOpacity(float o) { opacity_ = std::clamp(o, 0.0f, 1.0f); }
 
     int currentFrame() const { return current_frame_; }
     int totalFrames() const { return total_frames_; }
@@ -67,6 +69,7 @@ private:
     SequenceUid uid_;
     std::string name_;
     bool visible_ = true;
+    float opacity_ = 1.0f;
 
     int current_frame_ = 0;
     int total_frames_ = 1;

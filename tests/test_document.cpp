@@ -212,3 +212,35 @@ TEST(LayerTest, LayerProperties) {
     layer.setOpacity(0.5f);
     EXPECT_FLOAT_EQ(layer.opacity(), 0.5f);
 }
+
+TEST(SequenceTest, OpacityDefaults) {
+    Sequence seq("Test", 1920, 1080);
+    EXPECT_FLOAT_EQ(seq.opacity(), 1.0f);
+}
+
+TEST(SequenceTest, SetOpacity) {
+    Sequence seq("Test", 1920, 1080);
+    seq.setOpacity(0.75f);
+    EXPECT_FLOAT_EQ(seq.opacity(), 0.75f);
+    seq.setOpacity(-0.5f);
+    EXPECT_FLOAT_EQ(seq.opacity(), 0.0f);
+    seq.setOpacity(2.0f);
+    EXPECT_FLOAT_EQ(seq.opacity(), 1.0f);
+}
+
+TEST(SequenceTest, ClonePreservesOpacity) {
+    Sequence seq("Original", 1920, 1080);
+    seq.setOpacity(0.6f);
+    auto copy = seq.clone();
+    EXPECT_FLOAT_EQ(copy->opacity(), 0.6f);
+}
+
+TEST(DocumentTest, SetSequenceOpacity) {
+    Document doc;
+    doc.addSequence("S2");
+    doc.setActiveSequence(1);
+    doc.activeSequence().setOpacity(0.3f);
+    EXPECT_FLOAT_EQ(doc.activeSequence().opacity(), 0.3f);
+    // Sequence 0 still at default
+    EXPECT_FLOAT_EQ(doc.sequenceAt(0).opacity(), 1.0f);
+}

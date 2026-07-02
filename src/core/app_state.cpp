@@ -145,6 +145,11 @@ void AppState::renameSequence(int index, const std::string& name) {
     document_->renameSequence(static_cast<size_t>(index), name);
 }
 
+void AppState::setSequenceOpacity(int index, float opacity) {
+    document_->sequenceAt(static_cast<size_t>(index)).setOpacity(opacity);
+    emit documentChanged();
+}
+
 bool AppState::isModified() const {
     return document_->modified();
 }

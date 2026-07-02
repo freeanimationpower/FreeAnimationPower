@@ -45,7 +45,7 @@ public:
     static constexpr int kCellWidth = 32;
     static constexpr int kCellSpacing = 1;
     static constexpr int kCellTotal = kCellWidth + kCellSpacing;
-    static constexpr int kTrackHeight = 28;
+    static constexpr int kTrackHeight = 52;
     static constexpr int kRulerHeight = 18;
 
 signals:
