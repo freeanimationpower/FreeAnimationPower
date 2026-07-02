@@ -7,7 +7,7 @@
 namespace fap {
 
 class Document;
-class Timeline;
+class Sequence;
 class ToolState;
 class Layer;
 class GroupLayer;
@@ -31,8 +31,8 @@ public:
     Document& document() { return *document_; }
     const Document& document() const { return *document_; }
 
-    Timeline& timeline() { return *timeline_; }
-    const Timeline& timeline() const { return *timeline_; }
+    Sequence& activeSequence();
+    const Sequence& activeSequence() const;
 
     ToolState& toolState() { return *tool_state_; }
     const ToolState& toolState() const { return *tool_state_; }
@@ -70,10 +70,19 @@ public:
     Layer* activeLayer();
     const Layer* activeLayer() const;
 
+    int activeSequenceIndex() const;
+    int sequenceCount() const;
+    void setActiveSequence(int index);
+    void addSequence(const std::string& name = "");
+    void duplicateSequence(int index);
+    void removeSequence(int index);
+    void renameSequence(int index, const std::string& name);
+
     bool isModified() const;
     const std::string& filepath() const;
 
-    void resetDocument(int width = 1920, int height = 1080, int fps = 24, int totalFrames = 24);
+    void resetDocument(int width = 1920, int height = 1080,
+                       int fps = 24, int totalFrames = 24);
 
 signals:
     void activeLayerIndexChanged(int layerIndex);
@@ -82,13 +91,10 @@ signals:
     void documentChanged();
     void documentModifiedChanged(bool modified);
     void canvasSizeChanged(int width, int height);
-
-private slots:
-    void onTimelineFrameChanged(int frame);
+    void activeSequenceChanged(int index);
 
 private:
     std::unique_ptr<Document> document_;
-    std::unique_ptr<Timeline> timeline_;
     std::unique_ptr<ToolState> tool_state_;
     std::unique_ptr<AudioEngine> audio_engine_;
     std::unique_ptr<RulerTool> ruler_tool_;
@@ -102,6 +108,7 @@ private:
     LayerUid active_layer_uid_ = 0;
 
     void wireSignals();
+    void wireSequenceSignals();
     void refreshActiveLayerUid();
 };
 

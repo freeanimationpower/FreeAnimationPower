@@ -29,6 +29,7 @@ public:
     virtual std::unique_ptr<Layer> clone() const = 0;
 
     LayerUid uid() const { return uid_; }
+    void regenerateUid() { uid_ = generateLayerUid(); }
     const std::string& name() const { return name_; }
     LayerType type() const { return type_; }
     bool visible() const { return visible_; }

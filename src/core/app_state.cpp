@@ -1,6 +1,6 @@
 #include "core/app_state.hpp"
 #include "core/document.hpp"
-#include "core/timeline.hpp"
+#include "core/sequence.hpp"
 #include "core/tool_state.hpp"
 #include "core/layer.hpp"
 #include "core/types.hpp"
@@ -16,7 +16,6 @@ namespace fap {
 AppState::AppState(QObject* parent)
     : QObject(parent)
     , document_(std::make_unique<Document>())
-    , timeline_(std::make_unique<Timeline>())
     , tool_state_(std::make_unique<ToolState>())
     , audio_engine_(std::make_unique<AudioEngine>())
     , ruler_tool_(std::make_unique<RulerTool>())
@@ -26,9 +25,8 @@ AppState::AppState(QObject* parent)
     , frame_viewer_(std::make_unique<FrameViewerData>())
     , pencil_retouch_(std::make_unique<PencilRetouchEngine>()) {
     tool_state_->resetToDefaults();
-    timeline_->setTotalFrames(document_->totalFrames());
-    timeline_->setFPS(document_->fps());
     wireSignals();
+    wireSequenceSignals();
     thumbnail_cache_->setDocument(document_.get());
     frame_viewer_->setDocument(document_.get());
 }
@@ -36,24 +34,30 @@ AppState::AppState(QObject* parent)
 AppState::~AppState() = default;
 
 void AppState::wireSignals() {
-    timeline_->setOnFrameChanged([this](int frame) {
-        emit currentFrameChanged(frame);
-    });
-
     QObject::connect(tool_state_.get(), &ToolState::toolSettingsChanged,
                      this, [this]() { emit documentChanged(); });
 }
 
-void AppState::onTimelineFrameChanged(int frame) {
-    emit currentFrameChanged(frame);
+void AppState::wireSequenceSignals() {
+    activeSequence().setOnFrameChanged([this](int frame) {
+        emit currentFrameChanged(frame);
+    });
+}
+
+Sequence& AppState::activeSequence() {
+    return document_->activeSequence();
+}
+
+const Sequence& AppState::activeSequence() const {
+    return document_->activeSequence();
 }
 
 int AppState::currentFrame() const {
-    return timeline_->currentFrame();
+    return document_->activeSequence().currentFrame();
 }
 
 void AppState::setCurrentFrame(int frame) {
-    timeline_->setCurrentFrame(frame);
+    document_->activeSequence().setCurrentFrame(frame);
     refreshActiveLayerUid();
 }
 
@@ -79,13 +83,16 @@ void AppState::refreshActiveLayerUid() {
 }
 
 GroupLayer* AppState::activeRootLayer() {
-    return &document_->rootLayerForFrame(timeline_->currentFrame());
+    return &document_->activeSequence().rootLayerForFrame(
+        document_->activeSequence().currentFrame());
 }
 
 const GroupLayer* AppState::activeRootLayer() const {
-    const GroupLayer* peek = document_->peekRootLayerForFrame(timeline_->currentFrame());
+    const GroupLayer* peek = document_->activeSequence().peekRootLayerForFrame(
+        document_->activeSequence().currentFrame());
     if (peek) return peek;
-    return &document_->rootLayerForFrame(timeline_->currentFrame());
+    return &document_->activeSequence().rootLayerForFrame(
+        document_->activeSequence().currentFrame());
 }
 
 Layer* AppState::activeLayer() {
@@ -100,6 +107,44 @@ const Layer* AppState::activeLayer() const {
     return root->layerAt(active_layer_index_);
 }
 
+int AppState::activeSequenceIndex() const {
+    return static_cast<int>(document_->activeSequenceIndex());
+}
+
+int AppState::sequenceCount() const {
+    return static_cast<int>(document_->sequenceCount());
+}
+
+void AppState::setActiveSequence(int index) {
+    document_->setActiveSequence(static_cast<size_t>(index));
+    wireSequenceSignals();
+
+    active_layer_index_ = 0;
+    active_layer_uid_ = 0;
+    refreshActiveLayerUid();
+
+    emit activeSequenceChanged(index);
+    emit currentFrameChanged(document_->activeSequence().currentFrame());
+    emit activeLayerIndexChanged(0);
+    emit documentChanged();
+}
+
+void AppState::addSequence(const std::string& name) {
+    document_->addSequence(name);
+}
+
+void AppState::duplicateSequence(int index) {
+    document_->duplicateSequence(static_cast<size_t>(index));
+}
+
+void AppState::removeSequence(int index) {
+    document_->removeSequence(static_cast<size_t>(index));
+}
+
+void AppState::renameSequence(int index, const std::string& name) {
+    document_->renameSequence(static_cast<size_t>(index), name);
+}
+
 bool AppState::isModified() const {
     return document_->modified();
 }
@@ -111,13 +156,9 @@ const std::string& AppState::filepath() const {
 void AppState::resetDocument(int width, int height, int fps, int totalFrames) {
     document_ = std::make_unique<Document>();
     document_->setCanvasSize(width, height);
-    document_->setFPS(fps);
-    document_->setTotalFrames(totalFrames);
-
-    timeline_ = std::make_unique<Timeline>();
-    timeline_->setTotalFrames(totalFrames);
-    timeline_->setFPS(fps);
-    timeline_->setCurrentFrame(0);
+    document_->activeSequence().setFPS(fps);
+    document_->activeSequence().setTotalFrames(totalFrames);
+    document_->activeSequence().setCurrentFrame(0);
 
     audio_engine_ = std::make_unique<AudioEngine>();
     ruler_tool_ = std::make_unique<RulerTool>();
@@ -132,6 +173,7 @@ void AppState::resetDocument(int width, int height, int fps, int totalFrames) {
     thumbnail_cache_->setDocument(document_.get());
     frame_viewer_->setDocument(document_.get());
     wireSignals();
+    wireSequenceSignals();
 
     active_layer_index_ = 0;
 

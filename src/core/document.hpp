@@ -2,14 +2,12 @@
 
 #include "types.hpp"
 #include "layer.hpp"
-#include "undo_manager.hpp"
+#include "sequence.hpp"
 #include <memory>
 #include <string>
-#include <map>
+#include <vector>
 
 namespace fap {
-
-static constexpr size_t kDefaultLayerCapacity = 128;
 
 class Document : public NonCopyable {
 public:
@@ -18,41 +16,56 @@ public:
 
     int width() const { return width_; }
     int height() const { return height_; }
-    int fps() const { return fps_; }
-    int totalFrames() const { return total_frames_; }
-
     void setCanvasSize(int w, int h);
-    void setFPS(int fps);
-    void setTotalFrames(int count);
 
-    GroupLayer& rootLayerForFrame(int frame);
-    const GroupLayer& rootLayerForFrame(int frame) const;
-    const GroupLayer* peekRootLayerForFrame(int frame) const;
+    size_t sequenceCount() const { return sequences_.size(); }
+    Sequence& sequenceAt(size_t index) { return *sequences_.at(index); }
+    const Sequence& sequenceAt(size_t index) const { return *sequences_.at(index); }
+
+    Sequence& activeSequence() { return *sequences_.at(active_sequence_); }
+    const Sequence& activeSequence() const { return *sequences_.at(active_sequence_); }
+    size_t activeSequenceIndex() const { return active_sequence_; }
+
+    void setActiveSequence(size_t index);
+    Sequence& addSequence(const std::string& name = "");
+    void removeSequence(size_t index);
+    void duplicateSequence(size_t index);
+    void renameSequence(size_t index, const std::string& name);
+
+    int fps() const { return activeSequence().fps(); }
+    int totalFrames() const { return activeSequence().totalFrames(); }
+    int currentFrame() const { return activeSequence().currentFrame(); }
+
+    void setFPS(int fps) { activeSequence().setFPS(fps); modified_ = true; }
+    void setTotalFrames(int count) { activeSequence().setTotalFrames(count); modified_ = true; }
+    void setCurrentFrame(int frame) { activeSequence().setCurrentFrame(frame); }
+
+    GroupLayer& rootLayerForFrame(int frame) { return activeSequence().rootLayerForFrame(frame); }
+    const GroupLayer& rootLayerForFrame(int frame) const { return activeSequence().rootLayerForFrame(frame); }
+    const GroupLayer* peekRootLayerForFrame(int frame) const { return activeSequence().peekRootLayerForFrame(frame); }
 
     GroupLayer& rootLayer() { return rootLayerForFrame(0); }
     const GroupLayer& rootLayer() const { return rootLayerForFrame(0); }
+
+    UndoManager& undoManager() { return activeSequence().undoManager(); }
+    const UndoManager& undoManager() const { return activeSequence().undoManager(); }
+
+    void shiftFrameData(int fromFrame, int delta) { activeSequence().shiftFrameData(fromFrame, delta); }
+    void removeFrameData(int frameIdx) { activeSequence().removeFrameData(frameIdx); }
 
     bool modified() const { return modified_; }
     void setModified(bool m) { modified_ = m; }
 
     const std::string& filepath() const { return filepath_; }
 
-    UndoManager& undoManager() { return undo_manager_; }
-    const UndoManager& undoManager() const { return undo_manager_; }
-
-    void shiftFrameData(int fromFrame, int delta);
-    void removeFrameData(int frameIdx);
-
 private:
     std::string filepath_;
     int width_ = 1920;
     int height_ = 1080;
-    int fps_ = 24;
-    int total_frames_ = 24;
     bool modified_ = false;
-    std::map<int, std::unique_ptr<GroupLayer>> frames_;
-    UndoManager undo_manager_;
-    void ensureDefaultLayer(GroupLayer& root);
+
+    std::vector<std::unique_ptr<Sequence>> sequences_;
+    size_t active_sequence_ = 0;
 };
 
 } // namespace fap

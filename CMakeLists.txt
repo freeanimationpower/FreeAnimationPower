@@ -60,7 +60,7 @@ endif()
 set(CORE_HEADERS
     src/core/types.hpp
     src/core/layer.hpp
-    src/core/timeline.hpp
+    src/core/sequence.hpp
     src/core/document.hpp    src/core/stroke.hpp
     src/core/canvas.hpp
     src/core/undo_manager.hpp
@@ -71,7 +71,7 @@ set(CORE_HEADERS
 set(CORE_SOURCES
     src/core/types.cpp
     src/core/layer.cpp
-    src/core/timeline.cpp
+    src/core/sequence.cpp
     src/core/document.cpp    src/core/stroke.cpp
     src/core/canvas.cpp
     src/core/project.cpp
@@ -211,7 +211,6 @@ target_compile_definitions(free-animation-2d-style PRIVATE
 if(FAP_BUILD_TESTS)
     set(TEST_SOURCES
         tests/test_document.cpp
-        tests/test_timeline.cpp
         tests/test_brush_engine.cpp
         tests/test_bezier.cpp
         tests/test_file_format.cpp
