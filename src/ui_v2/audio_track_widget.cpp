@@ -218,12 +218,14 @@ void AudioTrackWidget::drawWaveform(QPainter& p)
 
     const int hdrW = TimelinePanelV2::kHeaderWidth;
     const int w = width();
+    if (w <= hdrW) return;
+
     const int midY = height() / 2;
     const int offset = panel_->sharedScrollOffset();
     const int maxAmplitude = 24;
 
-    float spp = static_cast<float>(waveformPicks_.size())
-              / static_cast<float>(w - hdrW);
+    const float spp = static_cast<float>(waveformPicks_.size())
+                    / static_cast<float>(w - hdrW);
 
     p.setPen(QPen(kWaveformColor, 1));
 
