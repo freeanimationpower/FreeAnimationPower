@@ -167,6 +167,7 @@ public:
         setMouseTracking(true);
 
         nameEdit_ = new QLineEdit(name_, this);
+        nameEdit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         nameEdit_->setStyleSheet(QString(
             "QLineEdit { background:transparent; color:%1; border:none; "
             "font-size:11px; font-family:'Inter'; padding:0px 8px; }"
@@ -183,9 +184,28 @@ public:
             nameEdit_->setCursorPosition(0);
         });
 
+        lockBtn_ = new QPushButton(QIcon(":/icons/layers/unlock.png"), "", this);
+        lockBtn_->setFixedSize(28, 28);
+        lockBtn_->setIconSize(QSize(20, 20));
+        lockBtn_->setCheckable(true);
+        lockBtn_->setToolTip("Lock / Unlock Sequence");
+        lockBtn_->setStyleSheet(QString(
+            "QPushButton { background:transparent; border:1px solid transparent; "
+            "border-radius:3px; }"
+            "QPushButton:hover { background:%1; border-color:%2; }")
+            .arg(kBtnHover.name(), kPlayheadColor.name()));
+        connect(lockBtn_, &QPushButton::clicked, this, [this](bool checked) {
+            if (appState_) {
+                appState_->setSequenceLocked(seqIndex_, checked);
+                lockBtn_->setIcon(QIcon(checked ? ":/icons/layers/lock.png"
+                                                : ":/icons/layers/unlock.png"));
+                updateNameStyle();
+            }
+        });
+
         dupBtn_ = new QPushButton(QIcon(":/icons/layers/duplicate.png"), "", this);
-        dupBtn_->setFixedSize(20, 20);
-        dupBtn_->setIconSize(QSize(14, 14));
+        dupBtn_->setFixedSize(28, 28);
+        dupBtn_->setIconSize(QSize(20, 20));
         dupBtn_->setToolTip("Duplicate Sequence");
         dupBtn_->setStyleSheet(QString(
             "QPushButton { background:transparent; border:1px solid transparent; "
@@ -195,22 +215,22 @@ public:
         connect(dupBtn_, &QPushButton::clicked, this, [this]() { panel_->onDupTrack(seqIndex_); });
 
         delBtn_ = new QPushButton(QIcon(":/icons/layers/delete.png"), "", this);
-        delBtn_->setFixedSize(20, 20);
-        delBtn_->setIconSize(QSize(14, 14));
+        delBtn_->setFixedSize(28, 28);
+        delBtn_->setIconSize(QSize(20, 20));
         delBtn_->setToolTip("Delete Sequence");
         delBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(delBtn_, &QPushButton::clicked, this, [this]() { panel_->onDelTrack(seqIndex_); });
 
         upBtn_ = new QPushButton(QIcon(":/icons/layers/move_up.png"), "", this);
-        upBtn_->setFixedSize(18, 18);
-        upBtn_->setIconSize(QSize(12, 12));
+        upBtn_->setFixedSize(28, 28);
+        upBtn_->setIconSize(QSize(20, 20));
         upBtn_->setToolTip("Move Up");
         upBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(upBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, -1); });
 
         downBtn_ = new QPushButton(QIcon(":/icons/layers/move_down.png"), "", this);
-        downBtn_->setFixedSize(18, 18);
-        downBtn_->setIconSize(QSize(12, 12));
+        downBtn_->setFixedSize(28, 28);
+        downBtn_->setIconSize(QSize(20, 20));
         downBtn_->setToolTip("Move Down");
         downBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(downBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, 1); });
@@ -236,29 +256,44 @@ public:
             if (appState_) appState_->setSequenceOpacity(seqIndex_, val / 100.0f);
         });
 
+        if (appState_) {
+            bool initLocked = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_)).locked();
+            lockBtn_->setChecked(initLocked);
+            lockBtn_->setIcon(QIcon(initLocked ? ":/icons/layers/lock.png"
+                                               : ":/icons/layers/unlock.png"));
+        }
+
         positionHeader();
     }
 
     void setName(const QString& name) { name_ = name; nameEdit_->setText(name); }
     void setActive(bool active) {
         isActive_ = active;
+        updateNameStyle();
+        update();
+    }
+    void updateNameStyle() {
+        bool locked = appState_
+            && appState_->document().sequenceAt(static_cast<size_t>(seqIndex_)).locked();
+        QColor color = locked ? QColor("#FF4A4A")
+                      : (isActive_ ? kTrackNameActiveText : kTrackNameText);
         nameEdit_->setStyleSheet(QString(
             "QLineEdit { background:transparent; color:%1; border:none; "
             "font-size:11px; font-family:'Inter'; padding:0px 8px; }"
             "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
-            .arg(isActive_ ? kTrackNameActiveText.name() : kTrackNameText.name()));
-        update();
+            .arg(color.name()));
     }
     int seqIndex() const { return seqIndex_; }
     const QString& name() const { return name_; }
     bool isActive() const { return isActive_; }
     void positionHeader() {
         const int hdrW = TimelinePanelV2::kHeaderWidth;
-        nameEdit_->setGeometry(8, 4, hdrW - 84, 22);
-        upBtn_->move(hdrW - 84, 5);
-        downBtn_->move(hdrW - 66, 5);
-        dupBtn_->move(hdrW - 46, 5);
-        delBtn_->move(hdrW - 24, 5);
+        nameEdit_->setGeometry(8, 4, hdrW - 164, 22);
+        lockBtn_->move(hdrW - 156, 3);
+        upBtn_->move(hdrW - 126, 3);
+        downBtn_->move(hdrW - 96, 3);
+        dupBtn_->move(hdrW - 66, 3);
+        delBtn_->move(hdrW - 36, 3);
         opacityLabel_->setGeometry(8, 38, 42, 16);
         opacitySlider_->setGeometry(50, 38, hdrW - 58, 16);
     }
@@ -418,6 +453,7 @@ private:
     QPushButton* delBtn_ = nullptr;
     QPushButton* upBtn_ = nullptr;
     QPushButton* downBtn_ = nullptr;
+    QPushButton* lockBtn_ = nullptr;
 };
 
 // ========================================================================

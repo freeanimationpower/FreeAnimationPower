@@ -1138,6 +1138,11 @@ RasterLayer* CanvasWidgetV2::activeRasterLayer()
     return rl;
 }
 
+bool CanvasWidgetV2::isSequenceLocked() const
+{
+    return appState_->document().activeSequence().locked();
+}
+
 QImage CanvasWidgetV2::captureRect(const QRect& r)
 {
     if (r.isEmpty()) return QImage();
@@ -1187,6 +1192,17 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
             setCursor(Qt::ClosedHandCursor);
         }
         return;
+    }
+
+    // Sequence lock shield — block destructive tools on locked sequences
+    if (isSequenceLocked()) {
+        auto tool = appState_->toolState().activeTool();
+        if (tool != ToolType::Hand && tool != ToolType::ColorPicker) {
+            emit statusMessage("Sequence is locked — unlock to edit");
+            setCursor(Qt::ForbiddenCursor);
+            event->ignore();
+            return;
+        }
     }
 
     auto tool = appState_->toolState().activeTool();
@@ -1364,6 +1380,15 @@ void CanvasWidgetV2::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    if (isSequenceLocked()) {
+        auto tool = appState_->toolState().activeTool();
+        if (tool != ToolType::Hand && tool != ToolType::ColorPicker) {
+            setCursor(Qt::ForbiddenCursor);
+            event->ignore();
+            return;
+        }
+    }
+
     auto tool = appState_->toolState().activeTool();
 
     if (drawing_ && (tool == ToolType::Brush || tool == ToolType::Eraser)) {
@@ -1479,6 +1504,15 @@ void CanvasWidgetV2::mouseReleaseEvent(QMouseEvent* event)
             setCursor(Qt::ArrowCursor);
         }
         return;
+    }
+
+    if (isSequenceLocked()) {
+        auto tool = appState_->toolState().activeTool();
+        if (tool != ToolType::Hand && tool != ToolType::ColorPicker) {
+            setCursor(Qt::ForbiddenCursor);
+            event->ignore();
+            return;
+        }
     }
 
     if (drawing_) {

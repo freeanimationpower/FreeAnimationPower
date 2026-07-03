@@ -42,7 +42,7 @@ public:
     void onMoveTrack(int seqIndex, int delta);
     void onTrackFrameClicked(int frame);
 
-    static constexpr int kHeaderWidth = 120;
+    static constexpr int kHeaderWidth = 280;
     static constexpr int kCellWidth = 32;
     static constexpr int kCellSpacing = 1;
     static constexpr int kCellTotal = kCellWidth + kCellSpacing;

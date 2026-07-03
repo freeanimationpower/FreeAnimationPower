@@ -150,6 +150,11 @@ void AppState::setSequenceOpacity(int index, float opacity) {
     emit documentChanged();
 }
 
+void AppState::setSequenceLocked(int index, bool locked) {
+    document_->sequenceAt(static_cast<size_t>(index)).setLocked(locked);
+    emit documentChanged();
+}
+
 void AppState::moveSequence(int from, int to) {
     document_->moveSequence(static_cast<size_t>(from), static_cast<size_t>(to));
     emit documentChanged();

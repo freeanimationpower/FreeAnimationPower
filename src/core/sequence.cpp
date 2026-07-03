@@ -142,6 +142,7 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
     seq->looping_ = looping_;
     seq->visible_ = visible_;
     seq->opacity_ = opacity_;
+    seq->locked_ = locked_;
 
     for (const auto& [frameIdx, rootLayer] : frames_) {
         auto cloned = rootLayer->clone();

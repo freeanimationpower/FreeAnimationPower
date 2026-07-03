@@ -74,6 +74,7 @@ public:
     void resetView();
 
     void invalidateBackgroundCache();
+    bool isSequenceLocked() const;
 
 signals:
     void canvasUpdated();

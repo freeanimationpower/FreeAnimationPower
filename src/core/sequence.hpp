@@ -27,6 +27,8 @@ public:
     void setVisible(bool v) { visible_ = v; }
     float opacity() const { return opacity_; }
     void setOpacity(float o) { opacity_ = std::clamp(o, 0.0f, 1.0f); }
+    bool locked() const { return locked_; }
+    void setLocked(bool l) { locked_ = l; }
 
     int currentFrame() const { return current_frame_; }
     int totalFrames() const { return total_frames_; }
@@ -70,6 +72,7 @@ private:
     std::string name_;
     bool visible_ = true;
     float opacity_ = 1.0f;
+    bool locked_ = false;
 
     int current_frame_ = 0;
     int total_frames_ = 1;
