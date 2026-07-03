@@ -78,6 +78,7 @@ public:
     void removeSequence(int index);
     void renameSequence(int index, const std::string& name);
     void setSequenceOpacity(int index, float opacity);
+    void moveSequence(int from, int to);
 
     bool isModified() const;
     const std::string& filepath() const;

@@ -59,4 +59,15 @@ void Document::renameSequence(size_t index, const std::string& name) {
     }
 }
 
+void Document::moveSequence(size_t from, size_t to) {
+    if (from >= sequences_.size() || to >= sequences_.size() || from == to) return;
+    auto seq = std::move(sequences_[from]);
+    sequences_.erase(sequences_.begin() + static_cast<ptrdiff_t>(from));
+    sequences_.insert(sequences_.begin() + static_cast<ptrdiff_t>(to), std::move(seq));
+    if (active_sequence_ == from) active_sequence_ = to;
+    else if (from < active_sequence_ && to >= active_sequence_) active_sequence_--;
+    else if (from > active_sequence_ && to <= active_sequence_) active_sequence_++;
+    modified_ = true;
+}
+
 } // namespace fap

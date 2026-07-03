@@ -39,6 +39,7 @@ public:
     void onRenameTrack(int seqIndex, const QString& name);
     void onDupTrack(int seqIndex);
     void onDelTrack(int seqIndex);
+    void onMoveTrack(int seqIndex, int delta);
     void onTrackFrameClicked(int frame);
 
     static constexpr int kHeaderWidth = 120;

@@ -31,6 +31,7 @@ public:
     void removeSequence(size_t index);
     void duplicateSequence(size_t index);
     void renameSequence(size_t index, const std::string& name);
+    void moveSequence(size_t from, size_t to);
 
     int fps() const { return activeSequence().fps(); }
     int totalFrames() const { return activeSequence().totalFrames(); }

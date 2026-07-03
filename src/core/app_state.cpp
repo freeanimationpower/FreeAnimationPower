@@ -150,6 +150,12 @@ void AppState::setSequenceOpacity(int index, float opacity) {
     emit documentChanged();
 }
 
+void AppState::moveSequence(int from, int to) {
+    document_->moveSequence(static_cast<size_t>(from), static_cast<size_t>(to));
+    emit documentChanged();
+    emit activeSequenceChanged(static_cast<int>(document_->activeSequenceIndex()));
+}
+
 bool AppState::isModified() const {
     return document_->modified();
 }

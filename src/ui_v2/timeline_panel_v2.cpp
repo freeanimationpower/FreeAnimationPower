@@ -205,6 +205,20 @@ public:
         delBtn_->setVisible(false);
         connect(delBtn_, &QPushButton::clicked, this, [this]() { panel_->onDelTrack(seqIndex_); });
 
+        upBtn_ = new QPushButton(QString::fromUtf8("\u25B2"), this);
+        upBtn_->setFixedSize(18, 18);
+        upBtn_->setToolTip("Move Up");
+        upBtn_->setStyleSheet(delBtn_->styleSheet());
+        upBtn_->setVisible(false);
+        connect(upBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, -1); });
+
+        downBtn_ = new QPushButton(QString::fromUtf8("\u25BC"), this);
+        downBtn_->setFixedSize(18, 18);
+        downBtn_->setToolTip("Move Down");
+        downBtn_->setStyleSheet(delBtn_->styleSheet());
+        downBtn_->setVisible(false);
+        connect(downBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, 1); });
+
         opacityLabel_ = new QLabel("Opacity:", this);
         opacityLabel_->setStyleSheet(QString(
             "color:%1; font-size:9px; background:transparent;").arg(kTrackNameText.name()));
@@ -244,7 +258,9 @@ public:
     bool isActive() const { return isActive_; }
     void positionHeader() {
         const int hdrW = TimelinePanelV2::kHeaderWidth;
-        nameEdit_->setGeometry(8, 4, hdrW - 60, 22);
+        nameEdit_->setGeometry(8, 4, hdrW - 84, 22);
+        upBtn_->move(hdrW - 84, 5);
+        downBtn_->move(hdrW - 66, 5);
         dupBtn_->move(hdrW - 46, 5);
         delBtn_->move(hdrW - 24, 5);
         opacityLabel_->setGeometry(8, 30, 42, 16);
@@ -373,12 +389,16 @@ protected:
 
     void enterEvent(QEnterEvent*) override {
         isHovered_ = true;
+        upBtn_->setVisible(true);
+        downBtn_->setVisible(true);
         dupBtn_->setVisible(true);
         delBtn_->setVisible(true);
         update();
     }
     void leaveEvent(QEvent*) override {
         isHovered_ = false;
+        upBtn_->setVisible(false);
+        downBtn_->setVisible(false);
         dupBtn_->setVisible(false);
         delBtn_->setVisible(false);
         update();
@@ -414,6 +434,8 @@ private:
     QLabel* opacityLabel_ = nullptr;
     QPushButton* dupBtn_ = nullptr;
     QPushButton* delBtn_ = nullptr;
+    QPushButton* upBtn_ = nullptr;
+    QPushButton* downBtn_ = nullptr;
 };
 
 // ========================================================================
@@ -871,6 +893,15 @@ void TimelinePanelV2::onDelTrack(int seqIndex)
     if (!appState_) return;
     if (appState_->sequenceCount() <= 1) return;
     appState_->removeSequence(seqIndex);
+    QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
+}
+
+void TimelinePanelV2::onMoveTrack(int seqIndex, int delta)
+{
+    if (!appState_) return;
+    int target = seqIndex + delta;
+    if (target < 0 || target >= appState_->sequenceCount()) return;
+    appState_->moveSequence(seqIndex, target);
     QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
 }
 

@@ -348,6 +348,7 @@ void LayerPanelV2::moveLayerDown() {
         doc.setModified(true);
         refreshLayerList();
         list_->setCurrentRow(row + 1);
+        emit layerDisplayPropertiesChanged();
         emit layerChanged(row + 1);
     }
 }

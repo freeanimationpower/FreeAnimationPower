@@ -285,12 +285,13 @@ void CanvasWidgetV2::render(QPainter* painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, false);
 
-    for (size_t si = 0; si < doc.sequenceCount(); ++si) {
-        if (!doc.sequenceAt(si).visible()) continue;
-        float seqOpacity = doc.sequenceAt(si).opacity();
-        const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
-        for (size_t li = 0; li < root.layerCount(); ++li) {
-            const Layer* layer = root.layerAt(li);
+    for (size_t si = doc.sequenceCount(); si > 0; --si) {
+        size_t idx = si - 1;
+        if (!doc.sequenceAt(idx).visible()) continue;
+        float seqOpacity = doc.sequenceAt(idx).opacity();
+        const auto& root = doc.sequenceAt(idx).rootLayerForFrame(currentFrame_);
+        for (size_t li = root.layerCount(); li > 0; --li) {
+            const Layer* layer = root.layerAt(li - 1);
             if (!layer || !layer->visible()) continue;
             if (layer->type() != LayerType::Raster) continue;
 
@@ -620,12 +621,14 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
         }
 
         // All sequences composited bottom-to-top (acetate effect)
-        for (size_t si = 0; si < doc.sequenceCount(); ++si) {
-            if (!doc.sequenceAt(si).visible()) continue;
-            float seqOpacity = doc.sequenceAt(si).opacity();
-            const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
-            for (size_t li = 0; li < root.layerCount(); ++li) {
-                const Layer* layer = root.layerAt(li);
+        // Iterate in reverse: timeline top = visual top (Premiere-style)
+        for (size_t si = doc.sequenceCount(); si > 0; --si) {
+            size_t idx = si - 1;
+            if (!doc.sequenceAt(idx).visible()) continue;
+            float seqOpacity = doc.sequenceAt(idx).opacity();
+            const auto& root = doc.sequenceAt(idx).rootLayerForFrame(currentFrame_);
+            for (size_t li = root.layerCount(); li > 0; --li) {
+                const Layer* layer = root.layerAt(li - 1);
                 if (!layer || !layer->visible()) continue;
                 if (layer->type() != LayerType::Raster) continue;
                 const auto& rl = static_cast<const RasterLayer&>(*layer);
@@ -715,12 +718,13 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
         }
 
         // All sequences — offset-aware, only R
-        for (size_t si = 0; si < doc.sequenceCount(); ++si) {
-            if (!doc.sequenceAt(si).visible()) continue;
-            float seqOpacity = doc.sequenceAt(si).opacity();
-            const auto& root = doc.sequenceAt(si).rootLayerForFrame(currentFrame_);
-            for (size_t li = 0; li < root.layerCount(); ++li) {
-                const Layer* layer = root.layerAt(li);
+        for (size_t si = doc.sequenceCount(); si > 0; --si) {
+            size_t idx = si - 1;
+            if (!doc.sequenceAt(idx).visible()) continue;
+            float seqOpacity = doc.sequenceAt(idx).opacity();
+            const auto& root = doc.sequenceAt(idx).rootLayerForFrame(currentFrame_);
+            for (size_t li = root.layerCount(); li > 0; --li) {
+                const Layer* layer = root.layerAt(li - 1);
                 if (!layer || !layer->visible()) continue;
                 if (layer->type() != LayerType::Raster) continue;
                 const auto& rl = static_cast<const RasterLayer&>(*layer);
