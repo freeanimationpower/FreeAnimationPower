@@ -172,3 +172,45 @@ kBorderColor = #1E2128, kAccent = #FF6B4A
 | `src/ui_v2/main_window_v2.cpp` | Sin maxHeight, sequenceChanged simplificado |
 | `tests/test_document.cpp` | REESCRITO — 20 tests |
 | `CMakeLists.txt` | -timeline +sequence |
+
+---
+
+## 7. Session Update — 2026-07-03 (Opacidad + Timeline NLE)
+
+### Sequence Opacity
+- `Sequence::opacity_` (float 0.0-1.0 default 1.0, clamped)
+- `AppState::setSequenceOpacity(index, opacity)` → `emit documentChanged()`
+- Canvas: 3 compositing loops use `layer->opacity() * seqOpacity`
+- Per-track QSlider (0-100) with `blockSignals(true)` on init
+
+### Canvas Compositing Order Fixed
+- **Layer order**: Restored original `li > 0; --li` + `layerAt(li-1)` to match layer panel display
+- **Sequence order**: Inverted to `si = count; si > 0; --si` (Premiere-style: track 0 = top)
+- 3 locations: `buildBackgroundCache` full, partial, and `render()` export
+
+### Canvas documentChanged Connection
+- `CanvasWidgetV2` now connects `AppState::documentChanged` → `invalidateBackgroundCache()` + `update()`
+- Fixes opacity changes not rendering in real-time
+
+### Sequence Reordering
+- `Document::moveSequence(from, to)` with active_sequence_ index adjustment
+- `AppState::moveSequence(from, to)` + `emit documentChanged()`
+- ▲▼ buttons in track header Row 1 (uses `move_up.png` / `move_down.png` icons)
+
+### TimelinePanelV2 Refinements
+- **kTrackHeight**: 28 → 36 → 52 → 64px final
+- **Buttons**: Unicode chars → real icons from resources (duplicate.png, delete.png, move_up.png, move_down.png)
+- **Buttons**: hover-only → always visible
+- **FPS spinbox**: 42px/10pt → 56px/12pt
+- **Transport bar**: 16px spacers between groups, FPS 10pt, Frame 11pt, [+Track] 80x24
+- **2-row Header**: Row1 (2px accent + QLineEdit 11px + ▲▼⧉✕), Row2 (Opacity: label + QSlider)
+- **SequenceTrackWidget**: QLineEdit permanent (no double-click), QSlider 0-100 with CSS styling
+
+### Bugs Fixed
+- `LayerPanelV2::moveLayerDown()` missing `emit layerDisplayPropertiesChanged()` (pre-existing)
+- `SequenceTrackWidget::frameHasContent()` used wrong sequence (activeSequence → sequenceAt(seqIndex))
+- Use-after-free: `QTimer::singleShot(0)` for dup/del/new, `clearFocus()` in rebuildTracks
+- `CanvasWidgetV2` pre-existing: `caretX`, `middlePanning_`, `TextEntry::undoImage/undoRect`
+
+### Tests
+- 154/154 pass (4 new opacity tests: OpacityDefaults, SetOpacity, ClonePreservesOpacity, SetSequenceOpacity)

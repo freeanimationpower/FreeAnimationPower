@@ -8,6 +8,31 @@ Free Animation Power is a professional 2D animation tool combining bitmap (raste
 
 **Key philosophy**: Every brush stroke can be rendered as pixels (raster), as a vector path, or as both simultaneously — allowing artists to use the strengths of each pipeline without switching tools.
 
+### Multi-Sequence Architecture (v2.1)
+
+Free Animation Power supports multiple independent timelines ("Sequences") within a single document, similar to tracks in Adobe Premiere:
+
+```
+Document
+ ├── Sequence 0 (top track / visual top layer)
+ │   ├── frames_ (sparse map: frame → GroupLayer)
+ │   ├── keyframes_ [layer][frame] matrix
+ │   ├── UndoManager (128 entries, isolated per sequence)
+ │   └── playback state (currentFrame, fps, looping, playing)
+ ├── Sequence 1
+ │   └── ...
+ └── Sequence N (bottom track / visual background)
+```
+
+**Key features**:
+- **Isolated Undo**: Each sequence has its own `UndoManager` — switching sequences changes the undo stack
+- **Acetate Overlay**: All sequences composited on canvas (sequence 0 = topmost, sequence N = background)
+- **Per-sequence opacity**: Slider (0-100%) multiplies with per-layer opacity
+- **Sequence reordering**: ▲▼ buttons to move tracks up/down (calls `Document::moveSequence`)
+- **Deep copy**: `Sequence::clone()` regenerates all `LayerUid`s via atomic counter
+- **Per-sequence FPS**: Each sequence can have independent framerate
+- **NLE Timeline**: 64px tracks with permanent name editor, opacity slider, and action buttons
+
 ---
 
 ## Architecture
@@ -36,7 +61,7 @@ Free Animation Power is a professional 2D animation tool combining bitmap (raste
                              │
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                     Core Data Model                               │
-│  Document  Timeline  Layer (Raster/Vector/Group)  Canvas         │
+│  Document  Sequence  Layer (Raster/Vector/Group)  Canvas         │
 │  Project  Stroke  UndoManager  ToolState  AppState               │
 │  Types (Vec2, Color, Rect, StrokePoint, BlendMode, LayerUid)     │
 └────────────────────────────┬─────────────────────────────────────┘
@@ -52,7 +77,7 @@ Free Animation Power is a professional 2D animation tool combining bitmap (raste
 
 | Directory | Purpose |
 |-----------|---------|
-| `src/core/` | Data model — Document, Layer, Timeline, Stroke, Canvas, Undo, ToolState |
+| `src/core/` | Data model — Document, Sequence, Layer, Stroke, Canvas, Undo, ToolState |
 | `src/engine/raster/` | Bitmap pixel engine — stamp blitting, alpha compositing |
 | `src/engine/vector/` | Bezier path engine — curve evaluation, flattening, path construction |
 | `src/engine/brush/` | Brush engine — presets, dynamics, paper texture, ABR import |
@@ -64,7 +89,7 @@ Free Animation Power is a professional 2D animation tool combining bitmap (raste
 | `src/io/` | File format (.fap), video export, document I/O |
 | `src/platform/` | Input handling, tablet (Wacom) support |
 | `docs/` | Architecture docs, build instructions, handoffs |
-| `tests/` | GoogleTest suite (139 tests) |
+| `tests/` | GoogleTest suite (154 tests) |
 
 ### Layer Types
 
@@ -96,12 +121,13 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - Pressure-sensitive brushes with tablet support (Wacom)
 - Multi-layer document with blend modes and opacity
 - Timeline with frame navigation, playback, onion skinning
-- Undo/Redo with full pixel restoration
+- Undo/Redo with full pixel restoration (isolated per-sequence)
+- Multi-sequence timeline with per-sequence opacity, reordering, deep copy
 - Color picker with RGBA/Hex, recent colors palette
 - Canvas view: zoom, pan, fit, flip horizontal, rotate, grid
 - Video export (MP4 via FFmpeg), GIF export
 - File save/open (.fap format)
-- 139 unit tests, all passing
+- 154 unit tests, all passing
 - Keyboard shortcuts for all tools and operations
 
 ### UI Layout
@@ -121,8 +147,13 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 │  - Onion Skin          │                      │                  │
 │  - Canvas Size         │                      │                  │
 ├────────────────────────┴──────────────────────┴──────────────────┤
-│  Timeline Panel  [◀][▶][■]  Frame: 1/24  24fps  [+][++][−]    │
-│  [thumb][thumb][thumb][thumb][thumb]...                          │
+│ ▶ Timeline Panel (multi-track NLE)                                │
+│ [<][>][||][■]  FPS [24]  Frame: 1/24              [+ Track]      │
+│ ┌──────┬─────────────────────────────────────────────────┐        │
+│ │ Seq1 │ ▓▓░░▓▓░░▓▓░░▓▓░░▓▓............... [+]           │        │
+│ │ Seq2 │ ░░▓▓░░▓▓░░░░▓▓▒░▓▓............... [+]           │        │
+│ └──────┴─────────────────────────────────────────────────┘        │
+│ ◄══════════════════▓████══════════════════════════►               │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -454,7 +485,7 @@ cmake --build build --config Release
 ```powershell
 ctest --test-dir build
 ```
-**Status**: 139/139 tests passing.
+**Status**: 154/154 tests passing.
 
 ### Requirements
 - CMake 3.20+
@@ -481,7 +512,7 @@ For detailed build instructions per platform (Linux, macOS), see `docs/build-ins
 | UI Framework | Qt 6.5+ (Widgets) |
 | Build System | CMake 3.20+ |
 | Rendering | Qt Raster (QPainter) + OpenGL |
-| Testing | GoogleTest (139 tests) |
+| Testing | GoogleTest (154 tests) |
 | Compression | miniz (zlib) |
 | Video Export | FFmpeg (MP4, GIF) |
 | Platform | Windows (primary), macOS/Linux (target) |
