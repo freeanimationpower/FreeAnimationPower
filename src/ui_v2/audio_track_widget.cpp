@@ -171,12 +171,6 @@ void AudioTrackWidget::decodeAudio()
     auto* decoder = new QAudioDecoder(this);
     decoder->setSource(QUrl::fromLocalFile(filepath_));
 
-    QAudioFormat format;
-    format.setSampleRate(44100);
-    format.setChannelCount(1);
-    format.setSampleFormat(QAudioFormat::Int16);
-    decoder->setAudioFormat(format);
-
     QObject::connect(decoder, &QAudioDecoder::bufferReady, this, [this, decoder]() {
         auto buffer = decoder->read();
         if (!buffer.isValid() || buffer.sampleCount() == 0) return;
@@ -220,6 +214,8 @@ void AudioTrackWidget::decodeAudio()
         decoded_ = true;
         durationMs_ = decoder->duration();
         decoder->deleteLater();
+        qDebug() << "Audio decoded:" << waveformPicks_.size() << "peaks,"
+                 << durationMs_ << "ms, file:" << filepath_;
         update();
     });
 
