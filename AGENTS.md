@@ -97,6 +97,25 @@ Top bar (fixed) → Ruler (fixed)
 
 **Session report**: `docs/session-report-2026-07-03.md` — non-destructive rebuild, free audio movement, waveform fix.
 
+### Waveform Decoding Architecture (Jul 2026)
+
+**QAudioDecoder** in `AudioTrackWidget::decodeAudio()` — adaptive 5-branch handler:
+
+| Buffer format | Backend | Handling |
+|--------------|---------|----------|
+| Float | WMF (MP3), FFmpeg | `std::abs(samples[i])` |
+| Int32 | WMF (24-bit WAV) | `abs / 2147483648.0f` |
+| Int16 | DirectSound, some WAV codecs | `abs / 32768.0f` |
+| UInt8 | Legacy codecs | `(sample - 128.0f) / 128.0f` |
+| Unknown (else) | Any | `peak = 0.2f` (visible fallback) |
+
+**Key invariant**: `decoder->setAudioFormat()` is NEVER called. The decoder uses its backend's native format. Forcing Int16 on WMF silently blocks bufferReady emission for MP3.
+
+**Guards**:
+- `if (w <= hdrW) return;` in drawWaveform — prevents division-by-zero during takeAt/insertItem layout moves
+- `if (!buffer.isValid() || buffer.sampleCount() == 0) return;` in bufferReady
+- `decodeError_` flag sets paintEvent message to "Decoder error" vs "No waveform data"
+
 ## Testing
 
 Use `tdd` skill for new features. All tests in `tests/` directory.

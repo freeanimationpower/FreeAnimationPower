@@ -134,15 +134,19 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 ### Audio Track Support (v2.2)
 
 - **Import**: MP3, WAV, OGG, FLAC via QFileDialog from `[+ Track ▾]` dropdown
-- **Waveform**: Async QAudioDecoder with forced Int16 mono 44100Hz format
+- **Waveform**: Async QAudioDecoder with adaptive 5-format buffer handler
   - Progressive rendering: cyan `#00D4AA` waveform drawn as it decodes (every 5 buffers)
-  - Error handling with qWarning fallback if codec unsupported
+  - Detects native buffer format dynamically: Float, Int32, Int16, UInt8 — no forced conversion
+  - Visible fallback (20% amplitude) when backend reports Unknown format
+  - Error handling with `qWarning` + `decodeError_` flag + "Decoder error" UI message
+  - **Key fix**: `decoder->setAudioFormat(Int16)` removed — WMF backend on Windows rejects forced conversions. Decoder now uses native format.
 - **Playback**: QMediaPlayer + QAudioOutput synchronized with timeline playback
   - Anti-stutter: setPosition() called once on play, never during active playback
   - Scrubbing: seeks position without playing (only when timeline is paused)
   - Volume slider 0-100% mapped to linear QAudioOutput::setVolume()
   - Mute toggle with speaker emoji (🔊/🔇)
 - **Track management**: pointer-based removal via removeAudioTrack(track) — no index collisions
+- **Guard**: `if (w <= hdrW) return` in drawWaveform — protects against division-by-zero during layout moves (takeAt/insertItem)
 
 ### Timeline Panel v2.3 — Non-Destructive Rebuild & Free Audio Movement (Jul 2026)
 

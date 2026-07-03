@@ -108,7 +108,65 @@ El movimiento con `takeAt/insertItem` dejaba el widget con `width()=0` antes del
 
 ---
 
-## 5. Commits
+## 5. Waveform Decoding Odyssey (Jul 2026)
+
+### Bug: "No waveform data" persistente
+
+La forma de onda nunca se dibujaba al importar archivos MP3/WAV/FLAC. El texto "No waveform data" aparecía indefinidamente.
+
+### Root cause chain
+
+1. **Forced format rejection** — `decoder->setAudioFormat(Int16, 44100, mono)` en `decodeAudio()` forzaba al backend WMF de Windows a convertir MP3 a Int16. WMF rechazaba la conversión → el decoder nunca emitía `bufferReady` → `waveformPicks_` vacío permanente.
+
+2. **Native Float32 reinterpretation** — El codec MP3 nativo entrega Float32. El código original interpretaba los bytes como `qint16` via `buffer.constData<qint16>()`. Los 16 bits bajos de un float de audio típico (magnitud < 0.01) son ~0 → peaks de 0.0 → drawWaveform invisible.
+
+3. **Silent format rejection** — El `else { return; }` en el `bufferReady` lambda abortaba silenciosamente cualquier formato no reconocido (Int32 de WAV 24-bit, UInt8 de WMF). El `finished()` se emitía igual → `decoded_ = true` → "No waveform data".
+
+### Solucion final (5 iteraciones)
+
+**Iteracion 1**: `w <= hdrW` guard en `drawWaveform` — protege division por cero durante `takeAt/insertItem`.
+
+**Iteracion 2**: 5-branch format handler (Float, Int32, Int16, UInt8, fallback 0.2f) reemplaza reinterpretacion ciega de Int16.
+
+**Iteracion 3**: `paintEvent` 3-ramas (`!decoded_` / `waveformPicks_.empty()` / `drawWaveform`) con mensaje "No waveform data" visual.
+
+**Iteracion 4**: Eliminado `decoder->setAudioFormat(format)` — el decoder usa formato nativo del backend. WMF entrega Float32 para MP3, FFmpeg entrega Float32, DirectSound entrega Int16.
+
+**Iteracion 5**: Instrumentacion con `qDebug` en `bufferReady`, `finished`, `error` + flag `decodeError_` + mensaje "Decoder error" en `paintEvent`.
+
+### Arquitectura final de decodificacion
+
+```
+decodeAudio()
+  → QAudioDecoder (sin formato forzado)
+  → bufferReady lambda (5-branch handler)
+     ├─ Float   → std::abs(samples[i])
+     ├─ Int32   → abs / 2^31
+     ├─ Int16   → abs / 2^15
+     ├─ UInt8   → (sample - 128) / 128
+     └─ else    → peak = 0.2f (visible fallback)
+  → waveformPicks_.push_back(peak)
+  → update() cada 5 buffers
+  → finished / error → decoded_ = true
+```
+
+### Commits del waveform fix
+
+```
+0c88917 fix: guard drawWaveform against width <= headerWidth
+792c7a6 fix: decode audio in native buffer format (Float for MP3)
+dbafa35 fix: bufferReady handles all 4 Qt6 native formats
+719baaa fix: remove forced setAudioFormat(Int16) — let decoder use native format
+614ff00 debug: instrument bufferReady/finished/error with qDebug + decodeError_
+```
+
+### Estado final
+
+Build: 0 errors. Tests: 154/154 pass. Waveform: visible en todos los formatos (MP3, WAV, FLAC, OGG) en Windows + WMF backend.
+
+---
+
+## 6. Commits
 
 ```
 844f1c2 refactor: non-destructive timeline rebuild + free audio track movement (v2.3)

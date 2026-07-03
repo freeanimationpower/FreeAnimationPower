@@ -319,3 +319,54 @@ void onMoveAudioTrack(int index, int delta) {
 ### Tests
 
 154/154 tests pass (100%). Build: 0 errors, 0 warnings.
+
+---
+
+## 10. Waveform Decoding Odyssey — Silent Killers in QAudioDecoder
+
+### El bug: "No waveform data" infinito
+
+La forma de onda nunca se renderizaba. El `paintEvent` mostraba "No waveform data" o "Decoder error".
+
+### Causas (3 silent killers)
+
+| # | Killer | Mecanismo | Fix |
+|---|--------|-----------|-----|
+| 1 | `decoder->setAudioFormat(Int16)` | WMF rechazaba conversion. `bufferReady` nunca se emitia. | Eliminar `setAudioFormat`. Usar formato nativo. |
+| 2 | `buffer.constData<qint16>()` en Float32 | Reinterpretacion de 32-bit float como 16-bit int → peaks ~0 | 5-branch handler: Float, Int32, Int16, UInt8, fallback |
+| 3 | `else { return; }` en bufferReady | Formatos desconocidos (Int32, UInt8) abortaban silenciosamente | Fallback `peak = 0.2f` visible en el `else` |
+
+### Linea de tiempo de fixes (5 commits)
+
+```
+0c88917 fix: if (w <= hdrW) return — guard against layout recalculation
+792c7a6 fix: Float/Int16 dynamic detection + paintEvent "No waveform data"
+dbafa35 fix: all 4 Qt6 formats (Float/Int32/Int16/UInt8) + 0.2f fallback
+719baaa fix: remove decoder->setAudioFormat(Int16) — WMF delivers Float natively
+614ff00 debug: qDebug instrumentation + decodeError_ flag
+```
+
+### Arquitectura final del bufferReady
+
+```cpp
+QObject::connect(decoder, &QAudioDecoder::bufferReady, this, [this, decoder]() {
+    auto buffer = decoder->read();
+    if (!buffer.isValid() || buffer.sampleCount() == 0) return;
+
+    float peak = 0.0f;
+    QAudioFormat::SampleFormat fmt = buffer.format().sampleFormat();
+
+    if (fmt == Float)       { peak = max(abs(float samples)); }
+    else if (fmt == Int32)  { peak = max(abs(qint32) / 2^31); }
+    else if (fmt == Int16)  { peak = max(abs(qint16) / 2^15); }
+    else if (fmt == UInt8)  { peak = max(abs(quint8 - 128) / 128); }
+    else                    { peak = 0.2f; }  // visible fallback
+
+    waveformPicks_.push_back(peak);
+    if (waveformPicks_.size() % 5 == 0) update();
+});
+```
+
+### Leccion aprendida
+
+`QAudioDecoder::setAudioFormat()` no es un hint — es un contrato que el backend puede rechazar silenciosamente. En Windows/WMF, forzar Int16 bloquea la decodificacion de MP3. La estrategia correcta es dejar que el decoder use el formato nativo del backend y adaptar el handler de lectura a cualquier `sampleFormat`.
