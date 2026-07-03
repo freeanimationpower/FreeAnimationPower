@@ -17,6 +17,7 @@ namespace fap {
 class AppState;
 class SequenceTrackWidget;
 class RulerWidget;
+class AudioTrackWidget;
 
 class TimelinePanelV2 : public QWidget {
     Q_OBJECT
@@ -40,6 +41,8 @@ public:
     void onDupTrack(int seqIndex);
     void onDelTrack(int seqIndex);
     void onMoveTrack(int seqIndex, int delta);
+    void onImportAudio();
+    void removeAudioTrack(AudioTrackWidget* track);
     void onTrackFrameClicked(int frame);
 
     static constexpr int kHeaderWidth = 280;
@@ -92,6 +95,7 @@ private:
     QScrollBar* hScrollBar_ = nullptr;
 
     std::vector<SequenceTrackWidget*> trackWidgets_;
+    std::vector<AudioTrackWidget*> audioTrackWidgets_;
 
     QTimer* playbackTimer_ = nullptr;
 

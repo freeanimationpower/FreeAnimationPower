@@ -130,6 +130,7 @@ set(UI_HEADERS
     src/ui_v2/color_panel_v2.hpp
     src/ui_v2/layer_panel_v2.hpp
     src/ui_v2/property_editor_v2.hpp
+    src/ui_v2/audio_track_widget.hpp
 )
 
 set(UI_SOURCES
@@ -141,6 +142,7 @@ set(UI_SOURCES
     src/ui_v2/layer_panel_v2.cpp
     src/ui_v2/layer_lock_button.cpp
     src/ui_v2/property_editor_v2.cpp
+    src/ui_v2/audio_track_widget.cpp
 )
 
 set(IO_HEADERS

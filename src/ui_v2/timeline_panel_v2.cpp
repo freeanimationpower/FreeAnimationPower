@@ -9,6 +9,7 @@
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QMenu>
 #include <QtGui/QPainter>
@@ -24,6 +25,7 @@
 #include "core/app_state.hpp"
 #include "core/document.hpp"
 #include "core/sequence.hpp"
+#include "audio_track_widget.hpp"
 #include "engine/animation/frame_thumbnail.hpp"
 
 namespace fap {
@@ -541,15 +543,27 @@ void TimelinePanelV2::setupUI()
 
     topBar->addStretch();
 
-    newSeqBtn_ = new QPushButton("+ Track", this);
-    newSeqBtn_->setFixedSize(80, 24);
-    newSeqBtn_->setToolTip("New Sequence");
+    newSeqBtn_ = new QPushButton("+ Track \u25BE", this);
+    newSeqBtn_->setFixedSize(94, 24);
+    newSeqBtn_->setToolTip("Add track");
     newSeqBtn_->setStyleSheet(QString(
         "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:4px; "
         "font-size:10px; font-weight:bold; padding:2px 10px; }"
-        "QPushButton:hover { background:%4; border-color:%5; color:#E8ECF0; }")
+        "QPushButton:hover { background:%4; border-color:%5; color:#E8ECF0; }"
+        "QPushButton::menu-indicator { image:none; subcontrol-position:right center; "
+        "subcontrol-origin:padding; left:2px; }")
         .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
              kBtnHover.name(), kPlayheadColor.name()));
+    auto* addMenu = new QMenu(this);
+    addMenu->setStyleSheet(QString(
+        "QMenu { background:%1; color:%2; border:1px solid %3; border-radius:4px; "
+        "padding:4px; }"
+        "QMenu::item { padding:4px 16px; border-radius:3px; }"
+        "QMenu::item:selected { background:%4; color:#E8ECF0; }")
+        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(), kBtnHover.name()));
+    addMenu->addAction("Add Animation Sequence", this, &TimelinePanelV2::onNewSequence);
+    addMenu->addAction("Add Audio Track", this, &TimelinePanelV2::onImportAudio);
+    newSeqBtn_->setMenu(addMenu);
     topBar->addWidget(newSeqBtn_);
 
     mainLayout->addLayout(topBar);
@@ -596,7 +610,6 @@ void TimelinePanelV2::setupUI()
     connect(stopBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onStop);
     connect(fpsSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &TimelinePanelV2::onFPSChanged);
-    connect(newSeqBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onNewSequence);
     connect(hScrollBar_, &QScrollBar::valueChanged, this, &TimelinePanelV2::onScrollChanged);
 
     rebuildTracks();
@@ -691,6 +704,11 @@ void TimelinePanelV2::setCurrentFrame(int frame)
     updateLabels();
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
+
+    if (!playing_) {
+        for (auto* at : audioTrackWidgets_)
+            at->syncToFrame(currentFrame_, fps_, false);
+    }
 }
 
 void TimelinePanelV2::setFPS(int fps)
@@ -730,6 +748,8 @@ void TimelinePanelV2::onPlayPause()
         playBtn_->setToolTip("Playing... Click to Pause (Space)");
         emit playbackToggled(true);
     }
+    for (auto* at : audioTrackWidgets_)
+        at->syncToFrame(currentFrame_, fps_, playing_);
 }
 
 void TimelinePanelV2::onStop()
@@ -746,6 +766,11 @@ void TimelinePanelV2::onStop()
     for (auto* t : trackWidgets_) t->update();
     emit frameChanged(currentFrame_);
     emit playbackToggled(false);
+
+    for (auto* at : audioTrackWidgets_) {
+        at->player()->stop();
+        at->syncToFrame(0, fps_, false);
+    }
 }
 
 void TimelinePanelV2::onPrevFrame()
@@ -865,6 +890,30 @@ void TimelinePanelV2::onNewSequence()
     QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
 }
 
+void TimelinePanelV2::onImportAudio()
+{
+    QString path = QFileDialog::getOpenFileName(this, "Import Audio", "",
+        "Audio Files (*.mp3 *.wav *.ogg *.flac);;All Files (*)");
+    if (path.isEmpty()) return;
+
+    auto* track = new AudioTrackWidget(path,
+        static_cast<int>(audioTrackWidgets_.size()),
+        appState_, this, tracksContainer_);
+    tracksLayout_->insertWidget(tracksLayout_->count() - 1, track);
+    audioTrackWidgets_.push_back(track);
+    track->positionHeader();
+}
+
+void TimelinePanelV2::removeAudioTrack(AudioTrackWidget* track)
+{
+    auto it = std::find(audioTrackWidgets_.begin(), audioTrackWidgets_.end(), track);
+    if (it != audioTrackWidgets_.end()) {
+        audioTrackWidgets_.erase(it);
+        tracksLayout_->removeWidget(track);
+        track->deleteLater();
+    }
+}
+
 void TimelinePanelV2::onActivateTrack(int seqIndex)
 {
     if (!appState_) return;
@@ -932,6 +981,8 @@ void TimelinePanelV2::onTrackFrameClicked(int frame)
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
     emit frameChanged(currentFrame_);
+    for (auto* at : audioTrackWidgets_)
+        at->syncToFrame(currentFrame_, fps_, false);
 }
 
 void TimelinePanelV2::resizeEvent(QResizeEvent* event)
