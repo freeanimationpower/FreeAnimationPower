@@ -172,6 +172,7 @@ void AudioTrackWidget::decodeAudio()
     decoder->setSource(QUrl::fromLocalFile(filepath_));
 
     QObject::connect(decoder, &QAudioDecoder::bufferReady, this, [this, decoder]() {
+        qDebug() << "bufferReady — peaks so far:" << waveformPicks_.size();
         auto buffer = decoder->read();
         if (!buffer.isValid() || buffer.sampleCount() == 0) return;
 
@@ -214,8 +215,9 @@ void AudioTrackWidget::decodeAudio()
         decoded_ = true;
         durationMs_ = decoder->duration();
         decoder->deleteLater();
-        qDebug() << "Audio decoded:" << waveformPicks_.size() << "peaks,"
-                 << durationMs_ << "ms, file:" << filepath_;
+        qDebug() << "finished — peaks:" << waveformPicks_.size()
+                 << "duration:" << durationMs_ << "ms"
+                 << "format:" << decoder->audioFormat();
         update();
     });
 
@@ -223,6 +225,7 @@ void AudioTrackWidget::decodeAudio()
                      this, [this, decoder](QAudioDecoder::Error) {
         qWarning() << "Error decoding audio:" << filepath_ << decoder->errorString();
         decoded_ = true;
+        decodeError_ = true;
         decoder->deleteLater();
         update();
     });
@@ -296,7 +299,7 @@ void AudioTrackWidget::paintEvent(QPaintEvent*)
         p.setFont(f);
         p.drawText(QRect(hdrW + 8, 0, w - hdrW - 16, h),
                    Qt::AlignVCenter | Qt::AlignLeft,
-                   "No waveform data");
+                   decodeError_ ? "Decoder error" : "No waveform data");
     } else {
         drawWaveform(p);
     }

@@ -53,6 +53,7 @@ private:
     bool decoded_ = false;
     qint64 durationMs_ = 0;
     bool muted_ = false;
+    bool decodeError_ = false;
 
     QLineEdit* nameEdit_ = nullptr;
     QPushButton* upBtn_ = nullptr;
