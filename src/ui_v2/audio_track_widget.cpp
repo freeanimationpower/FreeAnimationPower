@@ -181,12 +181,23 @@ void AudioTrackWidget::decodeAudio()
         auto buffer = decoder->read();
         if (!buffer.isValid() || buffer.sampleCount() == 0) return;
 
-        const auto* samples = buffer.constData<qint16>();
-        int count = buffer.sampleCount();
         float peak = 0.0f;
-        for (int i = 0; i < count; ++i) {
-            peak = std::max(peak, std::abs(static_cast<float>(samples[i]) / 32768.0f));
+        const int count = buffer.sampleCount();
+
+        if (buffer.format().sampleFormat() == QAudioFormat::Float) {
+            const auto* samples = buffer.constData<float>();
+            for (int i = 0; i < count; ++i) {
+                peak = std::max(peak, std::abs(samples[i]));
+            }
+        } else if (buffer.format().sampleFormat() == QAudioFormat::Int16) {
+            const auto* samples = buffer.constData<qint16>();
+            for (int i = 0; i < count; ++i) {
+                peak = std::max(peak, std::abs(static_cast<float>(samples[i]) / 32768.0f));
+            }
+        } else {
+            return;
         }
+
         waveformPicks_.push_back(peak);
 
         if (waveformPicks_.size() % 5 == 0) {
@@ -272,6 +283,13 @@ void AudioTrackWidget::paintEvent(QPaintEvent*)
         p.drawText(QRect(hdrW + 8, 0, w - hdrW - 16, h),
                    Qt::AlignVCenter | Qt::AlignLeft,
                    "Decoding audio...");
+    } else if (waveformPicks_.empty()) {
+        p.setPen(kTrackNameText);
+        QFont f("Inter", 9);
+        p.setFont(f);
+        p.drawText(QRect(hdrW + 8, 0, w - hdrW - 16, h),
+                   Qt::AlignVCenter | Qt::AlignLeft,
+                   "No waveform data");
     } else {
         drawWaveform(p);
     }
