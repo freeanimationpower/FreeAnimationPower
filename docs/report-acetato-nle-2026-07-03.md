@@ -208,3 +208,114 @@ Allows: Hand (pan), ColorPicker (eyedropper).
 - `decoder->setAudioFormat(format)` with `QAudioFormat::Int16` mono 44100Hz
 - Fixes silent waveform on MP3 (native Float32 codec) and FLAC
 - Buffer validation: `isValid()` + `sampleCount() > 0`
+
+---
+
+## 9. Timeline Panel v2.3 — Non-Destructive Rebuild & Free Audio Movement
+
+### Bug: Use-After-Free en Audio Tracks
+
+**Sintoma**: Al duplicar/crear/eliminar secuencias, las pistas de audio desaparecian visualmente y la app crasheaba.
+
+**Causa**: `rebuildTracks()` usaba `delete item->widget()` sobre TODOS los widgets del `tracksLayout_`, incluyendo `AudioTrackWidget*`. Los punteros preservados en `audioTrackWidgets_` quedaban dangling.
+
+### Solucion Arquitectonica
+
+**Dominios separados con manejo diferenciado:**
+
+| Componente | Dominio | Comportamiento en rebuild |
+|------------|--------|--------------------------|
+| `SequenceTrackWidget` | Core (`Document::sequences()`) | Destruido y recreado desde `AppState` |
+| `AudioTrackWidget` | UI-only (`audioTrackWidgets_`) | Extraido del layout (sin delete), preservado, reinsertado |
+
+### rebuildTracks() — Flujo No-Destructivo
+
+```
+1. clearFocus()                              → protege QLineEdit
+2. removeWidget(at) × N                      → extrae audio (sin borrar)
+3. tw->deleteLater() × N                     → borra SOLO secuencias
+4. trackWidgets_.clear()
+5. Limpia QSpacerItem del layout
+6. Crea SequenceTrackWidget[] desde Document  → inserta al tope
+7. addWidget(at) × N                         → reinserta audio preservado
+8. addStretch()                              → scroll infinito
+```
+
+### onMoveAudioTrack() — Movimiento Libre
+
+Sin restriccion de zona. El audio puede intercalarse entre secuencias:
+
+```cpp
+void onMoveAudioTrack(int index, int delta) {
+    auto* widget = audioTrackWidgets_[index];
+    int oldPos = tracksLayout_->indexOf(widget);
+    int newPos = oldPos + delta;
+    // bounds: 0 a count()-2 (excluye stretch)
+    if (newPos < 0 || newPos > tracksLayout_->count() - 2) return;
+
+    auto* item = tracksLayout_->takeAt(oldPos);
+    if (item) {
+        tracksLayout_->insertItem(newPos, item);
+        tracksLayout_->update();       // fuerza geometria sync
+        widget->positionHeader();      // recalcula header
+        widget->update();              // repinta waveform
+    }
+}
+```
+
+### Waveform Fix
+
+- `tracksLayout_->update()` síncrono ANTES de `widget->update()`
+- Sin esto, `drawWaveform` recibe `width()=0` tras el `takeAt`/`insertItem`
+- La onda se renderiza correctamente tras cada movimiento
+
+### Layout Final (scroll vertical + libre)
+
+```
+┌──────────────────────────────────────────────────┐
+│ Transport Bar [▶][⏹][◀][▶] FPS[24]  [+Track▾]   │ ← FIJO
+├──────────────────────────────────────────────────┤
+│ RulerWidget (regla de frames)                    │ ← FIJO
+├──────────────────────────────────────────────────┤
+│ ┌ QScrollArea (ScrollBarAlwaysOn vertical) ────┐│
+│ │ [SequenceTrackWidget 0]                       ││
+│ │ [AudioTrackWidget 0]        ▲ ▼ 🔊 ✕         ││
+│ │ [SequenceTrackWidget 1]                       ││
+│ │ [SequenceTrackWidget 2]                       ││
+│ │ [= stretch =]                                 ││
+│ └───────────────────────────────────────────────┘│
+├──────────────────────────────────────────────────┤
+│ ═══════ QScrollBar Horizontal ═════════════════ │ ← FIJO
+└──────────────────────────────────────────────────┘
+```
+
+### AudioTrackWidget — Botones de Movimiento
+
+- ▲/▼ botones (28x28) con iconos `move_up.png` / `move_down.png`
+- Signals `moveUpRequested()` / `moveDownRequested()` via Q_OBJECT
+- Lambdas dinamicas en `onImportAudio()`: buscan indice en vector via `std::find`
+- `setTrackIndex(int)` para reindexacion al eliminar tracks
+- `positionHeader()`: 4 botones horizontales (up, down, mute, del)
+
+### Defensas de Memoria (5 niveles)
+
+| Nivel | Mecanismo |
+|-------|-----------|
+| 1 | `MainWindowV2::sequenceChanged` inline (no llama rebuild) |
+| 2 | `QTimer::singleShot(0, ...)` difiere ejecucion |
+| 3 | `clearFocus()` antes de remover widgets del layout |
+| 4 | `if (item)` null-check tras `takeAt()` |
+| 5 | `std::max(0, count()-1)` bounds en `insertWidget()` |
+
+### Archivos
+
+| Archivo | Cambios | Lineas |
+|---------|---------|--------|
+| `audio_track_widget.hpp` | +Q_OBJECT, +signals, +botones, +setTrackIndex | +8 |
+| `audio_track_widget.cpp` | +creacion de botones, +positionHeader 4-btn | +29 |
+| `timeline_panel_v2.hpp` | +onMoveAudioTrack, -separator | +1/-3 |
+| `timeline_panel_v2.cpp` | rebuildTracks rewrite, onMoveAudioTrack, onImportAudio signals, removeAudioTrack reindex, audio repaints, scrollbar | +71/-9 |
+
+### Tests
+
+154/154 tests pass (100%). Build: 0 errors, 0 warnings.

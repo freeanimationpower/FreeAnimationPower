@@ -254,3 +254,78 @@ kBorderColor = #1E2128, kAccent = #FF6B4A
 - `decodeAudio()`: added `setAudioFormat()` to force Int16 mono — fixes silent waveform on MP3/FLAC
 - `bufferReady()`: added `buffer.isValid()` + `sampleCount() > 0` validation
 - `onPlayPause()`: fixed missing closing brace from replaceAll edit
+
+---
+
+## 9. Session Update — 2026-07-03 (Timeline Panel v2.3 — Non-Destructive Rebuild & Free Audio Movement)
+
+### Bug Original
+`rebuildTracks()` aplicaba `delete item->widget()` sobre TODOS los widgets del layout, incluyendo `AudioTrackWidget*`. Los punteros en `audioTrackWidgets_` quedaban colgados (dangling), causando use-after-free al iterar en `setCurrentFrame`, `onPlayPause`, `onStop`.
+
+### Solucion: rebuildTracks() No-Destructivo
+
+```
+Flujo de rebuildTracks():
+1. clearFocus() para proteger QLineEdit activos
+2. removeWidget(at) para extraer audio tracks SIN borrar
+3. deleteLater() solo en SequenceTrackWidget
+4. trackWidgets_.clear()
+5. Limpia QSpacerItem del layout
+6. Recrea SequenceTrackWidget desde Document
+7. Reinserta AudioTrackWidget preservados (removeWidget + addWidget cycle)
+8. addStretch() — espaciador infinito hacia abajo
+```
+
+### Movimiento Libre de Audio (onMoveAudioTrack)
+
+Swap directo en layout usando `takeAt`/`insertItem` — sin restriccion de zona. El audio puede moverse entre secuencias:
+
+```cpp
+void TimelinePanelV2::onMoveAudioTrack(int index, int delta) {
+    auto* widget = audioTrackWidgets_[index];
+    int oldPos = tracksLayout_->indexOf(widget);
+    int newPos = oldPos + delta;
+    int maxPos = tracksLayout_->count() - 2;  // excluye stretch
+    if (newPos < 0 || newPos > maxPos) return;
+
+    auto* item = tracksLayout_->takeAt(oldPos);
+    if (item) {
+        tracksLayout_->insertItem(newPos, item);
+        tracksLayout_->update();       // fuerza geometria sincrona
+        widget->positionHeader();
+        widget->update();
+    }
+}
+```
+
+### AudioTrackWidget Mejoras
+- Botones ▲/▼ con iconos reales (move_up.png, move_down.png)
+- Signals `moveUpRequested()` / `moveDownRequested()` emitidas via Q_OBJECT
+- Lambdas dinamicas que buscan el indice en `audioTrackWidgets_` via `std::find`
+- `setTrackIndex(int)` para reindexacion tras eliminar tracks
+- `positionHeader()` actualizado para 4 botones (up, down, mute, del)
+
+### Waveform Fix
+- `tracksLayout_->update()` síncrono antes de `widget->update()` en `onMoveAudioTrack`
+- Garantiza que `drawWaveform` reciba `width() > 0` tras mover el widget
+
+### Scroll Vertical
+- `QScrollArea` con `ScrollBarAlwaysOn` (vertical)
+- `ScrollBarAlwaysOff` horizontal (manejado por `sharedScrollOffset_` + `hScrollBar_`)
+
+### Defensas de Memoria (5 niveles)
+1. `MainWindowV2::sequenceChanged` — inline update, sin rebuild
+2. `QTimer::singleShot(0, ...)` — difiere rebuild
+3. `clearFocus()` — protege QLineEdit
+4. `if (item)` — guard en takeAt/insertItem
+5. `std::max(0, count()-1)` — bounds en insertWidget
+
+### Archivos
+| Archivo | Cambios |
+|---------|---------|
+| `audio_track_widget.hpp` | +Q_OBJECT, +signals, +upBtn_/downBtn_, +setTrackIndex |
+| `audio_track_widget.cpp` | +botones ▲/▼, +positionHeader 4-buttons |
+| `timeline_panel_v2.hpp` | +onMoveAudioTrack, -separator_/updateSeparator |
+| `timeline_panel_v2.cpp` | rebuildTracks rewrite, onMoveAudioTrack, onImportAudio signals, removeAudioTrack reindex, audio repaints |
+
+**Total**: +111 / -9 lineas. 154/154 tests pass.

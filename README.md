@@ -114,7 +114,7 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 
 ---
 
-## Current State (v2.0.0)
+## Current State (v2.3.0)
 
 ### What Works
 - All 11 tools: Brush, Eraser, Pick Color, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand
@@ -123,6 +123,7 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - Timeline with frame navigation, playback, onion skinning
 - Undo/Redo with full pixel restoration (isolated per-sequence)
 - Multi-sequence timeline with per-sequence opacity, reordering, deep copy
+- Audio tracks with waveform visualization, mute, volume, scrubbing, free movement
 - Color picker with RGBA/Hex, recent colors palette
 - Canvas view: zoom, pan, fit, flip horizontal, rotate, grid
 - Video export (MP4 via FFmpeg), GIF export
@@ -143,6 +144,28 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
   - Mute toggle with speaker emoji (🔊/🔇)
 - **Track management**: pointer-based removal via removeAudioTrack(track) — no index collisions
 
+### Timeline Panel v2.3 — Non-Destructive Rebuild & Free Audio Movement (Jul 2026)
+
+**Bug fix**: `rebuildTracks()` previously destroyed all layout widgets including `AudioTrackWidget*`, leaving dangling pointers in `audioTrackWidgets_`. This caused crashes when duplicating/removing sequences with audio tracks present.
+
+**Architecture**:
+
+| Component | Domain | Rebuild behavior |
+|-----------|--------|-----------------|
+| `SequenceTrackWidget` | Core (`Document::sequences()`) | Destroyed & recreated from `AppState` |
+| `AudioTrackWidget` | UI-only (`audioTrackWidgets_`) | Extracted, preserved, reinserted (no delete) |
+
+**Key features**:
+- **Non-destructive rebuild**: Audio tracks are removed from layout without deletion, then reinserted after sequence tracks are rebuilt
+- **Free audio movement**: ▲▼ buttons use `takeAt`/`insertItem` for unrestricted layout positioning — audio can sit between, above, or below sequence tracks
+- **Vertical scroll**: `QScrollArea` with `ScrollBarAlwaysOn` vertical, `ScrollBarAlwaysOff` horizontal (handled by `sharedScrollOffset_` + `hScrollBar_`)
+- **Waveform fix**: `tracksLayout_->update()` called synchronously before `widget->update()` to ensure `drawWaveform` receives correct `width()` after layout changes
+- **5 memory safety guards**: `clearFocus()`, `QTimer::singleShot(0)`, null-check on `takeAt`, bounds on `insertWidget`, and dynamic index lookup via `std::find` in move button lambdas
+- **AudioTrackWidget**: now has 4 header buttons (▲▼ 🔊 ✕), `Q_OBJECT` signals `moveUpRequested`/`moveDownRequested`, and `setTrackIndex()` for reindexing after removal
+
+**Session report**: `docs/session-report-2026-07-03.md`  
+**Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Section 9)
+
 ### UI Layout
 ```
 ┌────────────────────────┬──────────────────────┬──────────────────┐
@@ -160,13 +183,16 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 │  - Onion Skin          │                      │                  │
 │  - Canvas Size         │                      │                  │
 ├────────────────────────┴──────────────────────┴──────────────────┤
-│ ▶ Timeline Panel (multi-track NLE)                                │
-│ [<][>][||][■]  FPS [24]  Frame: 1/24              [+ Track]      │
-│ ┌──────┬─────────────────────────────────────────────────┐        │
-│ │ Seq1 │ ▓▓░░▓▓░░▓▓░░▓▓░░▓▓............... [+]           │        │
-│ │ Seq2 │ ░░▓▓░░▓▓░░░░▓▓▒░▓▓............... [+]           │        │
-│ └──────┴─────────────────────────────────────────────────┘        │
-│ ◄══════════════════▓████══════════════════════════►               │
+│ ▶ Timeline Panel (multi-track NLE, scroll vertical, free audio)   │
+│ [<][>][||][■]  FPS [24]  Frame: 1/24              [+ Track ▾]   │
+│ ┌──────┬─────────────────────────────────────────────────┐       │
+│ │ Seq1 │ ▓▓░░▓▓░░▓▓░░▓▓░░▓▓............... [+]           │       │
+│ │ 🎵A1 │ ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈    │       │
+│ │ Seq2 │ ░░▓▓░░▓▓░░░░▓▓▒░▓▓............... [+]           │       │
+│ │ Seq3 │ ▓▓░░▓▓░░▓▓░░▓▓░░▓▓............... [+]           │
+│ └──────┴─────────────────────────────────────────────────┘       │
+│ ◄══════════════════▓████══════════════════════════►              │
+│ [═══════════════════ scroll vertical ═══════════════]            │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
