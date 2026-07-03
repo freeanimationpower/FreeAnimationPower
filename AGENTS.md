@@ -67,6 +67,36 @@ Key invariants:
 
 **Session report**: `docs/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session, rollback, and final architecture solution.
 
+## Timeline Panel Architecture (v2.3 — Jul 2026)
+
+**Non-destructive rebuild + free track movement** in `src/ui_v2/timeline_panel_v2.cpp`:
+
+| Component | Domain | Rebuild behavior |
+|-----------|--------|-----------------|
+| `SequenceTrackWidget` | Core (`Document::sequences()`) | Destroyed & recreated from `AppState` |
+| `AudioTrackWidget` | UI-only (`audioTrackWidgets_`) | Extracted, preserved, reinserted (no delete) |
+
+### Key invariants
+
+- `rebuildTracks()` NEVER calls `delete` on `AudioTrackWidget*` — uses `removeWidget` + `addWidget` cycle
+- `onMoveAudioTrack()` uses `takeAt`/`insertItem` for free layout movement (no zone restriction, no separator)
+- `QTimer::singleShot(0, ...)` defers all sequence mutations before `rebuildTracks()`
+- `QApplication::focusWidget()->clearFocus()` protects `QLineEdit` from focus-loss crashes
+- `tracksLayout_->update()` called before `widget->update()` — forces synchronous geometry before waveform repaint
+- `ScrollBarAlwaysOn` for vertical scrolling, horizontal handled by `sharedScrollOffset_` + custom `hScrollBar_`
+
+### Layout structure
+```
+Top bar (fixed) → Ruler (fixed)
+  → QScrollArea [tracksContainer_ with QVBoxLayout]
+    → SequenceTrackWidget[]  (from Document, index order)
+    → AudioTrackWidget[]     (preserved, freely movable)
+    → QSpacerItem (stretch)
+  → QScrollBar horizontal (fixed)
+```
+
+**Session report**: `docs/session-report-2026-07-03.md` — non-destructive rebuild, free audio movement, waveform fix.
+
 ## Testing
 
 Use `tdd` skill for new features. All tests in `tests/` directory.
