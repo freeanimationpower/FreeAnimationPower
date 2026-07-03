@@ -154,3 +154,57 @@ Cambiado de `activeSequence()` a `sequenceAt(seqIndex_)`.
 
 154/154 tests pass, incluyendo:
 - 4 opacity tests (OpacityDefaults, SetOpacity, ClonePreservesOpacity, SetSequenceOpacity)
+
+---
+
+## 7. Sequence Lock Shield
+
+### Core
+- `Sequence::locked_` (bool default false) + `locked()`/`setLocked()` + `clone()` preservation
+- `AppState::setSequenceLocked(index, locked)` → `emit documentChanged()`
+
+### Canvas Shield (3 mouse events)
+```cpp
+if (isSequenceLocked()) {
+    auto tool = appState_->toolState().activeTool();
+    if (tool != ToolType::Hand && tool != ToolType::ColorPicker) {
+        setCursor(Qt::ForbiddenCursor);
+        event->ignore();
+        return;
+    }
+}
+```
+Blocks: Brush, Eraser, Fill, Text, Line, Rect, Ellipse, Move, Select.
+Allows: Hand (pan), ColorPicker (eyedropper).
+
+### TimelinePanelV2
+- lockBtn_ (28x28) in header Row1: 🔒/🔓 icons from resources
+- QLineEdit red `#FF4A4A` when locked (via `updateNameStyle()`)
+- `kHeaderWidth`: 240 → 280px (eliminated delBtn_ overflow past header bg)
+
+---
+
+## 8. Audio Track Support
+
+### AudioTrackWidget
+- NEW: `src/ui_v2/audio_track_widget.hpp` (62 lines) + `.cpp` (254 lines)
+- QMediaPlayer + QAudioOutput for real playback
+- QAudioDecoder (async) with forced `QAudioFormat::Int16` mono 44100Hz
+- Waveform drawn in cyan `#00D4AA` progressively (every 5 buffers)
+- Error handling via `QAudioDecoder::error` signal → qWarning fallback
+- Volume QSlider 0-100 → `audioOutput_->setVolume(val/100.0f)`
+- Mute toggle (🔊/🔇) → `audioOutput_->setMuted()`
+- Safe destructor: `player_->stop()` before deletion
+
+### TimelinePanelV2 Integration
+- `[+ Track ▾]` QMenu: "Add Animation Sequence" + "Add Audio Track"
+- `onImportAudio()`: QFileDialog (mp3/wav/ogg/flac) → creates AudioTrackWidget
+- `removeAudioTrack(AudioTrackWidget*)`: pointer-based via `std::find`
+- Audio sync: onPlayPause/onStop/setCurrentFrame/onTrackFrameClicked
+  - Anti-stutter: `setPosition()` once on play, never during active playback
+  - Scrubbing: `setPosition()` each frame only when NOT playing
+
+### Waveform Fix
+- `decoder->setAudioFormat(format)` with `QAudioFormat::Int16` mono 44100Hz
+- Fixes silent waveform on MP3 (native Float32 codec) and FLAC
+- Buffer validation: `isValid()` + `sampleCount() > 0`

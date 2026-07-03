@@ -130,6 +130,19 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - 154 unit tests, all passing
 - Keyboard shortcuts for all tools and operations
 
+### Audio Track Support (v2.2)
+
+- **Import**: MP3, WAV, OGG, FLAC via QFileDialog from `[+ Track ▾]` dropdown
+- **Waveform**: Async QAudioDecoder with forced Int16 mono 44100Hz format
+  - Progressive rendering: cyan `#00D4AA` waveform drawn as it decodes (every 5 buffers)
+  - Error handling with qWarning fallback if codec unsupported
+- **Playback**: QMediaPlayer + QAudioOutput synchronized with timeline playback
+  - Anti-stutter: setPosition() called once on play, never during active playback
+  - Scrubbing: seeks position without playing (only when timeline is paused)
+  - Volume slider 0-100% mapped to linear QAudioOutput::setVolume()
+  - Mute toggle with speaker emoji (🔊/🔇)
+- **Track management**: pointer-based removal via removeAudioTrack(track) — no index collisions
+
 ### UI Layout
 ```
 ┌────────────────────────┬──────────────────────┬──────────────────┐

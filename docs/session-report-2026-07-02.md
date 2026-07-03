@@ -214,3 +214,43 @@ kBorderColor = #1E2128, kAccent = #FF6B4A
 
 ### Tests
 - 154/154 pass (4 new opacity tests: OpacityDefaults, SetOpacity, ClonePreservesOpacity, SetSequenceOpacity)
+
+---
+
+## 8. Session Update — 2026-07-03 (Lock Shield + Audio Tracks)
+
+### Sequence Lock Shield
+- `Sequence::locked_` (bool default false) + `locked()`/`setLocked()` + `clone()`
+- `AppState::setSequenceLocked(index, locked)` → `emit documentChanged()`
+- Canvas shield in 3 mouse events (press, move, release):
+  - Blocks Brush, Eraser, Fill, Text, Line, Rect, Ellipse, Move, Select on locked sequences
+  - Only Hand and ColorPicker tools pass through
+  - `Qt::ForbiddenCursor` shown for blocked tools
+  - `isSequenceLocked()` helper method
+- lockBtn_ in header Row1: 🔒/🔓 icons, red `#FF4A4A` name text when locked
+- `kHeaderWidth`: 240 → 280px (eliminated overflow of delBtn_ past header bg)
+
+### AudioTrackWidget (NEW)
+- `src/ui_v2/audio_track_widget.hpp/cpp` (~310 lines total)
+- QMediaPlayer + QAudioOutput for real audio playback
+- QAudioDecoder (async) with forced `QAudioFormat::Int16` mono 44100Hz
+- Waveform drawn progressively in cyan `#00D4AA` every 5 decoded buffers
+- Error handling via `QAudioDecoder::error` signal → qWarning + fallback
+- Anti-stutter playback: `setPosition()` once on play, never during active playback
+- Scrubbing: seeks position without playing (only when paused)
+- Volume QSlider 0-100 → `QAudioOutput::setVolume(val/100.0f)`
+- Mute toggle with speaker emoji (🔊/🔇)
+- Safe destructor: `player_->stop()` before deletion
+- Pointer-based removal: `removeAudioTrack(AudioTrackWidget*)` via `std::find`
+
+### TimelinePanelV2 Audio Integration
+- `[+ Track ▾]` QMenu dropdown: "Add Animation Sequence" + "Add Audio Track"
+- `onImportAudio()`: QFileDialog (mp3/wav/ogg/flac) → creates AudioTrackWidget
+- `removeAudioTrack(AudioTrackWidget*)`: pointer-based, no index collisions
+- Audio sync wired into: `onPlayPause()`, `onStop()`, `setCurrentFrame()`, `onTrackFrameClicked()`
+- QMenu styled with dark theme matching existing panel CSS
+
+### Bugfixes
+- `decodeAudio()`: added `setAudioFormat()` to force Int16 mono — fixes silent waveform on MP3/FLAC
+- `bufferReady()`: added `buffer.isValid()` + `sampleCount() > 0` validation
+- `onPlayPause()`: fixed missing closing brace from replaceAll edit
