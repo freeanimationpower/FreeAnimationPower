@@ -183,19 +183,30 @@ void AudioTrackWidget::decodeAudio()
 
         float peak = 0.0f;
         const int count = buffer.sampleCount();
+        QAudioFormat::SampleFormat fmt = buffer.format().sampleFormat();
 
-        if (buffer.format().sampleFormat() == QAudioFormat::Float) {
+        if (fmt == QAudioFormat::Float) {
             const auto* samples = buffer.constData<float>();
             for (int i = 0; i < count; ++i) {
                 peak = std::max(peak, std::abs(samples[i]));
             }
-        } else if (buffer.format().sampleFormat() == QAudioFormat::Int16) {
+        } else if (fmt == QAudioFormat::Int32) {
+            const auto* samples = buffer.constData<qint32>();
+            for (int i = 0; i < count; ++i) {
+                peak = std::max(peak, std::abs(static_cast<float>(samples[i]) / 2147483648.0f));
+            }
+        } else if (fmt == QAudioFormat::Int16) {
             const auto* samples = buffer.constData<qint16>();
             for (int i = 0; i < count; ++i) {
                 peak = std::max(peak, std::abs(static_cast<float>(samples[i]) / 32768.0f));
             }
+        } else if (fmt == QAudioFormat::UInt8) {
+            const auto* samples = buffer.constData<quint8>();
+            for (int i = 0; i < count; ++i) {
+                peak = std::max(peak, std::abs((static_cast<float>(samples[i]) - 128.0f) / 128.0f));
+            }
         } else {
-            return;
+            peak = 0.2f;
         }
 
         waveformPicks_.push_back(peak);
