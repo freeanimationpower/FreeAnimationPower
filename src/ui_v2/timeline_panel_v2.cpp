@@ -183,40 +183,36 @@ public:
             nameEdit_->setCursorPosition(0);
         });
 
-        dupBtn_ = new QPushButton(QString::fromUtf8("\u29C9"), this);
+        dupBtn_ = new QPushButton(QIcon(":/icons/layers/duplicate.png"), "", this);
         dupBtn_->setFixedSize(20, 20);
+        dupBtn_->setIconSize(QSize(14, 14));
         dupBtn_->setToolTip("Duplicate Sequence");
         dupBtn_->setStyleSheet(QString(
-            "QPushButton { background:transparent; color:%1; border:1px solid transparent; "
-            "border-radius:3px; font-size:11px; }"
-            "QPushButton:hover { background:%2; border-color:%3; color:#E8ECF0; }")
-            .arg(kBtnText.name(), kBtnHover.name(), kPlayheadColor.name()));
-        dupBtn_->setVisible(false);
+            "QPushButton { background:transparent; border:1px solid transparent; "
+            "border-radius:3px; }"
+            "QPushButton:hover { background:%1; border-color:%2; }")
+            .arg(kBtnHover.name(), kPlayheadColor.name()));
         connect(dupBtn_, &QPushButton::clicked, this, [this]() { panel_->onDupTrack(seqIndex_); });
 
-        delBtn_ = new QPushButton(QString::fromUtf8("\u2715"), this);
+        delBtn_ = new QPushButton(QIcon(":/icons/layers/delete.png"), "", this);
         delBtn_->setFixedSize(20, 20);
+        delBtn_->setIconSize(QSize(14, 14));
         delBtn_->setToolTip("Delete Sequence");
-        delBtn_->setStyleSheet(QString(
-            "QPushButton { background:transparent; color:%1; border:1px solid transparent; "
-            "border-radius:3px; font-size:11px; }"
-            "QPushButton:hover { background:%2; border-color:%3; color:#E8ECF0; }")
-            .arg(kBtnText.name(), kBtnHover.name(), kPlayheadColor.name()));
-        delBtn_->setVisible(false);
+        delBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(delBtn_, &QPushButton::clicked, this, [this]() { panel_->onDelTrack(seqIndex_); });
 
-        upBtn_ = new QPushButton(QString::fromUtf8("\u25B2"), this);
+        upBtn_ = new QPushButton(QIcon(":/icons/layers/move_up.png"), "", this);
         upBtn_->setFixedSize(18, 18);
+        upBtn_->setIconSize(QSize(12, 12));
         upBtn_->setToolTip("Move Up");
-        upBtn_->setStyleSheet(delBtn_->styleSheet());
-        upBtn_->setVisible(false);
+        upBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(upBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, -1); });
 
-        downBtn_ = new QPushButton(QString::fromUtf8("\u25BC"), this);
+        downBtn_ = new QPushButton(QIcon(":/icons/layers/move_down.png"), "", this);
         downBtn_->setFixedSize(18, 18);
+        downBtn_->setIconSize(QSize(12, 12));
         downBtn_->setToolTip("Move Down");
-        downBtn_->setStyleSheet(delBtn_->styleSheet());
-        downBtn_->setVisible(false);
+        downBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(downBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, 1); });
 
         opacityLabel_ = new QLabel("Opacity:", this);
@@ -263,8 +259,8 @@ public:
         downBtn_->move(hdrW - 66, 5);
         dupBtn_->move(hdrW - 46, 5);
         delBtn_->move(hdrW - 24, 5);
-        opacityLabel_->setGeometry(8, 30, 42, 16);
-        opacitySlider_->setGeometry(50, 30, hdrW - 58, 16);
+        opacityLabel_->setGeometry(8, 38, 42, 16);
+        opacitySlider_->setGeometry(50, 38, hdrW - 58, 16);
     }
 
 protected:
@@ -299,7 +295,7 @@ protected:
         p.setPen(QPen(kBorderColor, 1));
         p.drawLine(0, h - 1, w, h - 1);
 
-        int cellY = 13;
+        int cellY = 16;
         int firstVisible = std::max(0, offset / cellTotal);
         int lastVisible = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
 
@@ -365,14 +361,14 @@ protected:
         int x = event->pos().x();
 
         if (x < hdrW) {
-            if (!isActive_ && event->pos().y() < height() - 20) {
+            if (!isActive_ && event->pos().y() < height() - 24) {
                 panel_->onActivateTrack(seqIndex_);
             }
             return;
         }
 
         int addX = hdrW + totalFrames * cellTotal - panel_->sharedScrollOffset();
-        if (x >= addX && event->pos().y() >= 13 && event->pos().y() < 13 + (TimelinePanelV2::kTrackHeight - 22)) {
+        if (x >= addX && event->pos().y() >= 16 && event->pos().y() < 16 + (TimelinePanelV2::kTrackHeight - 22)) {
             panel_->onTrackFrameClicked(-1);
             return;
         }
@@ -387,22 +383,8 @@ protected:
         if (frame != hoveredFrame_) { hoveredFrame_ = frame; update(); }
     }
 
-    void enterEvent(QEnterEvent*) override {
-        isHovered_ = true;
-        upBtn_->setVisible(true);
-        downBtn_->setVisible(true);
-        dupBtn_->setVisible(true);
-        delBtn_->setVisible(true);
-        update();
-    }
-    void leaveEvent(QEvent*) override {
-        isHovered_ = false;
-        upBtn_->setVisible(false);
-        downBtn_->setVisible(false);
-        dupBtn_->setVisible(false);
-        delBtn_->setVisible(false);
-        update();
-    }
+    void enterEvent(QEnterEvent*) override { isHovered_ = true; update(); }
+    void leaveEvent(QEvent*) override { isHovered_ = false; update(); }
 
     void resizeEvent(QResizeEvent*) override { positionHeader(); }
 
@@ -447,7 +429,7 @@ TimelinePanelV2::TimelinePanelV2(std::shared_ptr<AppState> state, QWidget* paren
     , appState_(std::move(state))
 {
     setMouseTracking(true);
-    setMinimumHeight(100);
+    setMinimumHeight(120);
 
     if (appState_) {
         auto& doc = appState_->document();
@@ -506,10 +488,10 @@ void TimelinePanelV2::setupUI()
     fpsSpin_ = new QSpinBox(this);
     fpsSpin_->setRange(1, 120);
     fpsSpin_->setValue(fps_);
-    fpsSpin_->setFixedWidth(42);
+    fpsSpin_->setFixedWidth(56);
     fpsSpin_->setStyleSheet(QString(
         "QSpinBox { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
-        "padding:1px 3px; font-size:10px; font-family:'JetBrains Mono',monospace; }"
+        "padding:1px 3px; font-size:12px; font-family:'JetBrains Mono',monospace; }"
         "QSpinBox:focus { border-color:%4; }")
         .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(), kPlayheadColor.name()));
     topBar->addWidget(fpsSpin_);
