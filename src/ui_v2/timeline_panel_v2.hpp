@@ -76,6 +76,7 @@ private:
     void duplicateFrame();
     void deleteFrame();
     void onNewSequence();
+    void onMoveAudioTrack(int index, int delta);
     void updateScrollBarRange();
 
     std::shared_ptr<AppState> appState_;

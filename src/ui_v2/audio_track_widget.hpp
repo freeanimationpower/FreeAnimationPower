@@ -17,6 +17,7 @@ class AppState;
 class TimelinePanelV2;
 
 class AudioTrackWidget : public QWidget {
+    Q_OBJECT
 public:
     AudioTrackWidget(const QString& filepath, int index,
                      std::shared_ptr<AppState> appState,
@@ -29,7 +30,12 @@ public:
 
     const QString& filepath() const { return filepath_; }
     int trackIndex() const { return index_; }
+    void setTrackIndex(int i) { index_ = i; }
     QMediaPlayer* player() { return player_; }
+
+signals:
+    void moveUpRequested();
+    void moveDownRequested();
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -49,6 +55,8 @@ private:
     bool muted_ = false;
 
     QLineEdit* nameEdit_ = nullptr;
+    QPushButton* upBtn_ = nullptr;
+    QPushButton* downBtn_ = nullptr;
     QPushButton* muteBtn_ = nullptr;
     QPushButton* delBtn_ = nullptr;
     QSlider* volumeSlider_ = nullptr;

@@ -8,6 +8,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QScrollBar>
+#include <QtWidgets/QFrame>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QSlider>
@@ -576,7 +577,7 @@ void TimelinePanelV2::setupUI()
     scrollArea_ = new QScrollArea(this);
     scrollArea_->setWidgetResizable(true);
     scrollArea_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scrollArea_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     scrollArea_->setFrameShape(QFrame::NoFrame);
     scrollArea_->setStyleSheet(QString(
         "QScrollArea { background:%1; border:none; }"
@@ -622,14 +623,32 @@ void TimelinePanelV2::rebuildTracks()
         focused->clearFocus();
     }
 
-    QLayoutItem* item;
-    while ((item = tracksLayout_->takeAt(0)) != nullptr) {
-        delete item->widget();
-        delete item;
+    for (auto* at : audioTrackWidgets_) {
+        tracksLayout_->removeWidget(at);
+    }
+
+    for (auto* tw : trackWidgets_) {
+        tracksLayout_->removeWidget(tw);
+        tw->deleteLater();
     }
     trackWidgets_.clear();
 
-    if (!appState_) return;
+    for (int i = tracksLayout_->count() - 1; i >= 0; --i) {
+        auto* item = tracksLayout_->itemAt(i);
+        if (item && item->spacerItem()) {
+            tracksLayout_->takeAt(i);
+            delete item;
+        }
+    }
+
+    if (!appState_) {
+        for (auto* at : audioTrackWidgets_) {
+            tracksLayout_->addWidget(at);
+            at->positionHeader();
+        }
+        tracksLayout_->addStretch();
+        return;
+    }
 
     int count = appState_->sequenceCount();
     if (count == 0) {
@@ -651,6 +670,11 @@ void TimelinePanelV2::rebuildTracks()
         tracksLayout_->addWidget(track);
         track->positionHeader();
         trackWidgets_.push_back(track);
+    }
+
+    for (auto* at : audioTrackWidgets_) {
+        tracksLayout_->addWidget(at);
+        at->positionHeader();
     }
 
     tracksLayout_->addStretch();
@@ -704,6 +728,7 @@ void TimelinePanelV2::setCurrentFrame(int frame)
     updateLabels();
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
+    for (auto* at : audioTrackWidgets_) at->update();
 
     if (!playing_) {
         for (auto* at : audioTrackWidgets_)
@@ -770,6 +795,7 @@ void TimelinePanelV2::onStop()
     for (auto* at : audioTrackWidgets_) {
         at->player()->stop();
         at->syncToFrame(0, fps_, false);
+        at->update();
     }
 }
 
@@ -824,6 +850,7 @@ void TimelinePanelV2::onScrollChanged(int value)
     scrollOffset_ = value;
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
+    for (auto* at : audioTrackWidgets_) at->update();
 }
 
 void TimelinePanelV2::addFrame()
@@ -899,7 +926,22 @@ void TimelinePanelV2::onImportAudio()
     auto* track = new AudioTrackWidget(path,
         static_cast<int>(audioTrackWidgets_.size()),
         appState_, this, tracksContainer_);
-    tracksLayout_->insertWidget(tracksLayout_->count() - 1, track);
+
+    connect(track, &AudioTrackWidget::moveUpRequested, this, [this, track]() {
+        auto it = std::find(audioTrackWidgets_.begin(), audioTrackWidgets_.end(), track);
+        if (it != audioTrackWidgets_.end()) {
+            onMoveAudioTrack(static_cast<int>(std::distance(audioTrackWidgets_.begin(), it)), -1);
+        }
+    });
+    connect(track, &AudioTrackWidget::moveDownRequested, this, [this, track]() {
+        auto it = std::find(audioTrackWidgets_.begin(), audioTrackWidgets_.end(), track);
+        if (it != audioTrackWidgets_.end()) {
+            onMoveAudioTrack(static_cast<int>(std::distance(audioTrackWidgets_.begin(), it)), 1);
+        }
+    });
+
+    int insertPos = std::max(0, tracksLayout_->count() - 1);
+    tracksLayout_->insertWidget(insertPos, track);
     audioTrackWidgets_.push_back(track);
     track->positionHeader();
 }
@@ -911,6 +953,31 @@ void TimelinePanelV2::removeAudioTrack(AudioTrackWidget* track)
         audioTrackWidgets_.erase(it);
         tracksLayout_->removeWidget(track);
         track->deleteLater();
+
+        for (size_t i = 0; i < audioTrackWidgets_.size(); ++i) {
+            audioTrackWidgets_[i]->setTrackIndex(static_cast<int>(i));
+        }
+    }
+}
+
+void TimelinePanelV2::onMoveAudioTrack(int index, int delta)
+{
+    if (index < 0 || index >= static_cast<int>(audioTrackWidgets_.size())) return;
+
+    auto* widget = audioTrackWidgets_[index];
+    int oldPos = tracksLayout_->indexOf(widget);
+    if (oldPos < 0) return;
+
+    int newPos = oldPos + delta;
+    int maxPos = tracksLayout_->count() - 2;
+    if (newPos < 0 || newPos > maxPos) return;
+
+    auto* item = tracksLayout_->takeAt(oldPos);
+    if (item) {
+        tracksLayout_->insertItem(newPos, item);
+        tracksLayout_->update();
+        widget->positionHeader();
+        widget->update();
     }
 }
 
@@ -991,6 +1058,7 @@ void TimelinePanelV2::resizeEvent(QResizeEvent* event)
     updateScrollBarRange();
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
+    for (auto* at : audioTrackWidgets_) at->update();
 }
 
 } // namespace fap

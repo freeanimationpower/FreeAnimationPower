@@ -12,6 +12,7 @@
 #include <QUrl>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QIcon>
 #include <algorithm>
 #include <cmath>
 
@@ -67,6 +68,28 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
         updateMuteStyle();
     });
 
+    upBtn_ = new QPushButton(QIcon(":/icons/layers/move_up.png"), "", this);
+    upBtn_->setFixedSize(28, 28);
+    upBtn_->setIconSize(QSize(20, 20));
+    upBtn_->setToolTip("Move Audio Track Up");
+    upBtn_->setStyleSheet(QString(
+        "QPushButton { background:transparent; border:1px solid transparent; "
+        "border-radius:3px; }"
+        "QPushButton:hover { background:%1; border-color:%2; }")
+        .arg(kBtnHover.name(), kPlayheadColor.name()));
+    connect(upBtn_, &QPushButton::clicked, this, [this]() { emit moveUpRequested(); });
+
+    downBtn_ = new QPushButton(QIcon(":/icons/layers/move_down.png"), "", this);
+    downBtn_->setFixedSize(28, 28);
+    downBtn_->setIconSize(QSize(20, 20));
+    downBtn_->setToolTip("Move Audio Track Down");
+    downBtn_->setStyleSheet(QString(
+        "QPushButton { background:transparent; border:1px solid transparent; "
+        "border-radius:3px; }"
+        "QPushButton:hover { background:%1; border-color:%2; }")
+        .arg(kBtnHover.name(), kPlayheadColor.name()));
+    connect(downBtn_, &QPushButton::clicked, this, [this]() { emit moveDownRequested(); });
+
     delBtn_ = new QPushButton(QString::fromUtf8("\u2715"), this);
     delBtn_->setFixedSize(28, 28);
     delBtn_->setToolTip("Remove Audio Track");
@@ -119,8 +142,10 @@ AudioTrackWidget::~AudioTrackWidget()
 void AudioTrackWidget::positionHeader()
 {
     const int hdrW = TimelinePanelV2::kHeaderWidth;
-    nameEdit_->setGeometry(8, 4, hdrW - 72, 22);
-    muteBtn_->move(hdrW - 64, 3);
+    nameEdit_->setGeometry(8, 4, hdrW - 132, 22);
+    upBtn_->move(hdrW - 126, 3);
+    downBtn_->move(hdrW - 96, 3);
+    muteBtn_->move(hdrW - 66, 3);
     delBtn_->move(hdrW - 34, 3);
     volumeLabel_->setGeometry(8, 38, 28, 16);
     volumeSlider_->setGeometry(40, 38, hdrW - 48, 16);
