@@ -31,10 +31,13 @@ public:
     int currentFrame() const { return currentFrame_; }
     int totalFrames() const { return totalFrames_; }
     int sharedScrollOffset() const { return scrollOffset_; }
+    std::shared_ptr<AppState> appState() const { return appState_; }
 
     void togglePlayback();
+    bool isPlaying() const { return playing_; }
     void invalidateFrameThumbnail(int frame);
     void rebuildTracks();
+    void refreshTimelineLayout();
 
     void onActivateTrack(int seqIndex);
     void onRenameTrack(int seqIndex, const QString& name);
@@ -104,6 +107,7 @@ private:
     int totalFrames_ = 24;
     int fps_ = 24;
     bool playing_ = false;
+    bool updatingFps_ = false;
 
     int scrollOffset_ = 0;
 };

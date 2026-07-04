@@ -21,6 +21,7 @@ public:
     explicit PropertyEditorV2(std::shared_ptr<AppState> state, QWidget* parent = nullptr);
 
     void refreshFields();
+    void refreshSequenceFields();
     void updateColorVariations();
 
 signals:
@@ -31,6 +32,7 @@ signals:
     void stabilizerChanged(int level);
     void fillTypeChanged(int type);
     void primaryColorChanged(const QColor& color);
+    void durationFramesChanged(int frames);
 
 private:
     void setupUI();
@@ -108,6 +110,11 @@ private:
 
     // Text tool controls
     QWidget* textGroup_ = nullptr;
+
+    // Sequence / Timeline controls
+    QWidget* timelineGroup_ = nullptr;
+    QSpinBox* durationSpin_ = nullptr;
+
     QPushButton* fontBtn_ = nullptr;
     QComboBox* fontStyleCombo_ = nullptr;
     QSpinBox* fontSizeSpin_ = nullptr;

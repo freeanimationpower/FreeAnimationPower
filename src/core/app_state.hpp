@@ -79,6 +79,9 @@ public:
     void renameSequence(int index, const std::string& name);
     void setSequenceOpacity(int index, float opacity);
     void setSequenceLocked(int index, bool locked);
+    void setWorkAreaStart(int frame);
+    void setWorkAreaEnd(int frame);
+    void setDurationFrames(int count);
     void moveSequence(int from, int to);
 
     bool isModified() const;

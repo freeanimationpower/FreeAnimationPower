@@ -86,6 +86,45 @@ void PropertyEditorV2::setupUI()
     mainLayout->setContentsMargins(8, 8, 8, 8);
     mainLayout->setSpacing(8);
 
+    timelineGroup_ = new QWidget(this);
+    auto* timelineLayout = new QVBoxLayout(timelineGroup_);
+    timelineLayout->setContentsMargins(0, 0, 0, 0);
+    timelineLayout->setSpacing(6);
+
+    auto* seqTitleLabel = new QLabel("SEQUENCE", timelineGroup_);
+    seqTitleLabel->setStyleSheet(kLabelStyle);
+    timelineLayout->addWidget(seqTitleLabel);
+
+    auto* durRow = new QHBoxLayout();
+    durRow->setSpacing(6);
+    auto* durLabel = new QLabel("DURATION", timelineGroup_);
+    durLabel->setStyleSheet(kLabelStyle);
+    durLabel->setFixedWidth(52);
+    durRow->addWidget(durLabel);
+
+    durationSpin_ = new QSpinBox(timelineGroup_);
+    durationSpin_->setRange(1, 10000);
+    durationSpin_->setValue(24);
+    durationSpin_->setStyleSheet(kSpinStyle);
+    durationSpin_->setFixedWidth(64);
+    durationSpin_->setSuffix(" fr");
+    durRow->addWidget(durationSpin_);
+    durRow->addStretch();
+    timelineLayout->addLayout(durRow);
+
+    mainLayout->addWidget(timelineGroup_);
+
+    auto* seqSep = new QFrame(this);
+    seqSep->setFrameShape(QFrame::HLine);
+    seqSep->setStyleSheet(kSeparatorStyle);
+    mainLayout->addWidget(seqSep);
+
+    connect(durationSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
+            [this](int val) {
+        if (updatingFromState_) return;
+        emit durationFramesChanged(val);
+    });
+
     brushGroup_ = new QWidget(this);
     auto* brushLayout = new QVBoxLayout(brushGroup_);
     brushLayout->setContentsMargins(0, 0, 0, 0);
@@ -494,6 +533,8 @@ void PropertyEditorV2::refreshFields()
 {
     if (!appState_) return;
 
+    refreshSequenceFields();
+
     auto tool = appState_->toolState().activeTool();
 
     bool showBrush = false;
@@ -898,6 +939,16 @@ void PropertyEditorV2::updateColorVariations()
         fillTypeCombo_->setCurrentIndex(ts.fillType());
         fillTypeCombo_->blockSignals(false);
     }
+}
+
+void PropertyEditorV2::refreshSequenceFields()
+{
+    if (!appState_) return;
+
+    updatingFromState_ = true;
+    int dur = appState_->activeSequence().durationFrames();
+    durationSpin_->setValue(dur);
+    updatingFromState_ = false;
 }
 
 QColor PropertyEditorV2::generateVariation(const QColor& base, int index, int total) const

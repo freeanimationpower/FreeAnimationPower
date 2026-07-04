@@ -18,6 +18,7 @@ Sequence::Sequence(std::string name, int canvasWidth, int canvasHeight,
     , name_(std::move(name))
     , total_frames_(std::max(1, totalFrames))
     , fps_(std::max(1, fps))
+    , durationFrames_(std::max(1, totalFrames))
     , canvas_width_(canvasWidth)
     , canvas_height_(canvasHeight)
 {
@@ -60,6 +61,30 @@ void Sequence::prevFrame() {
     } else if (looping_) {
         setCurrentFrame(total_frames_ - 1);
     }
+}
+
+int Sequence::effectiveWorkAreaEnd() const {
+    if (workAreaEnd_ > 0) {
+        return std::min(workAreaEnd_, total_frames_);
+    }
+    return total_frames_;
+}
+
+int Sequence::advanceFrame() {
+    int waStart = std::clamp(workAreaStart_, 0, total_frames_ - 1);
+    int waEnd = effectiveWorkAreaEnd();
+
+    if (waEnd <= waStart) {
+        waEnd = total_frames_;
+    }
+
+    if (current_frame_ >= waEnd - 1) {
+        setCurrentFrame(waStart);
+    } else {
+        setCurrentFrame(current_frame_ + 1);
+    }
+
+    return current_frame_;
 }
 
 void Sequence::addKeyframe(int layerIndex, int frame) {
@@ -143,6 +168,9 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
     seq->visible_ = visible_;
     seq->opacity_ = opacity_;
     seq->locked_ = locked_;
+    seq->workAreaStart_ = workAreaStart_;
+    seq->workAreaEnd_ = workAreaEnd_;
+    seq->durationFrames_ = durationFrames_;  
 
     for (const auto& [frameIdx, rootLayer] : frames_) {
         auto cloned = rootLayer->clone();

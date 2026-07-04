@@ -398,6 +398,15 @@ void MainWindowV2::setupConnections()
 
     connect(timeline_panel_, &TimelinePanelV2::sequenceChanged, [this](int) {
         updateUIState();
+        if (property_editor_) property_editor_->refreshSequenceFields();
+    });
+
+    connect(property_editor_, &PropertyEditorV2::durationFramesChanged,
+            [this](int dur) {
+        appState_->setDurationFrames(dur);
+        if (timeline_panel_) {
+            timeline_panel_->refreshTimelineLayout();
+        }
     });
 
     connect(canvas_, &CanvasWidgetV2::frameChanged, [this](int frame) {

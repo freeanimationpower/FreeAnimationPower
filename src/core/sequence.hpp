@@ -30,6 +30,14 @@ public:
     bool locked() const { return locked_; }
     void setLocked(bool l) { locked_ = l; }
 
+    int workAreaStart() const { return workAreaStart_; }
+    void setWorkAreaStart(int frame) { workAreaStart_ = std::max(0, frame); }
+    int workAreaEnd() const { return workAreaEnd_; }
+    void setWorkAreaEnd(int frame) { workAreaEnd_ = frame; }
+    int effectiveWorkAreaEnd() const;
+    int durationFrames() const { return durationFrames_; }
+    void setDurationFrames(int count) { durationFrames_ = std::max(1, count); }
+
     int currentFrame() const { return current_frame_; }
     int totalFrames() const { return total_frames_; }
     int fps() const { return fps_; }
@@ -47,6 +55,7 @@ public:
 
     void nextFrame();
     void prevFrame();
+    int advanceFrame();
     void goToStart() { setCurrentFrame(0); }
     void goToEnd() { setCurrentFrame(total_frames_ - 1); }
 
@@ -79,6 +88,10 @@ private:
     int fps_ = 24;
     bool playing_ = false;
     bool looping_ = false;
+
+    int workAreaStart_ = 0;
+    int workAreaEnd_ = 0;
+    int durationFrames_ = 1;
 
     std::vector<std::vector<bool>> keyframes_;
     std::map<int, std::unique_ptr<GroupLayer>> frames_;

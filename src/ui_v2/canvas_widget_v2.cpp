@@ -1727,7 +1727,20 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
     switch (event->key()) {
         case Qt::Key_B: emit toolChangedByKey(0); break;
         case Qt::Key_E: emit toolChangedByKey(1); break;
-        case Qt::Key_I: emit toolChangedByKey(2); break;
+        case Qt::Key_I:
+            if (event->modifiers() & Qt::ShiftModifier) {
+                appState_->setWorkAreaStart(currentFrame_);
+                emit statusMessage(QString("Work Area In: %1").arg(currentFrame_ + 1));
+                break;
+            }
+            emit toolChangedByKey(2); break;
+        case Qt::Key_O:
+            if (event->modifiers() & Qt::ShiftModifier) {
+                appState_->setWorkAreaEnd(currentFrame_ + 1);
+                emit statusMessage(QString("Work Area Out: %1").arg(currentFrame_ + 1));
+                break;
+            }
+            handled = false; break;
         case Qt::Key_G: emit toolChangedByKey(3); break;
         case Qt::Key_T: emit toolChangedByKey(4); break;
         case Qt::Key_L: emit toolChangedByKey(5); break;

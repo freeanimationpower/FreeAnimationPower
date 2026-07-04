@@ -155,6 +155,21 @@ void AppState::setSequenceLocked(int index, bool locked) {
     emit documentChanged();
 }
 
+void AppState::setWorkAreaStart(int frame) {
+    activeSequence().setWorkAreaStart(frame);
+    emit documentChanged();
+}
+
+void AppState::setWorkAreaEnd(int frame) {
+    activeSequence().setWorkAreaEnd(frame);
+    emit documentChanged();
+}
+
+void AppState::setDurationFrames(int count) {
+    activeSequence().setDurationFrames(count);
+    emit documentChanged();
+}
+
 void AppState::moveSequence(int from, int to) {
     document_->moveSequence(static_cast<size_t>(from), static_cast<size_t>(to));
     emit documentChanged();

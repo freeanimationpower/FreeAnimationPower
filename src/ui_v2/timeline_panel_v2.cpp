@@ -115,6 +115,20 @@ protected:
             }
         }
 
+        if (panel_->appState()) {
+            auto& seq = panel_->appState()->activeSequence();
+            int waStart = seq.workAreaStart();
+            int waEnd = seq.effectiveWorkAreaEnd();
+            if (waEnd > waStart) {
+                int x1 = hdrW + waStart * cellTotal - offset;
+                int x2 = hdrW + waEnd * cellTotal - offset;
+                p.fillRect(QRect(x1, 0, x2 - x1, 4), QColor(255, 107, 74, 80));
+                p.setPen(QPen(QColor(255, 107, 74, 180), 1));
+                p.drawLine(x1, 0, x1, h);
+                p.drawLine(x2, 0, x2, h);
+            }
+        }
+
         int px = hdrW + curFrame * cellTotal - offset + cellW / 2;
         QPolygon tri;
         tri << QPoint(px, 2)
@@ -126,12 +140,114 @@ protected:
     }
 
     void mousePressEvent(QMouseEvent* event) override {
-        if (event->button() == Qt::LeftButton) {
-            int frame = hitFrame(event->pos().x());
+        if (event->button() != Qt::LeftButton) return;
+
+        int hdrW = TimelinePanelV2::kHeaderWidth;
+        int cellTotal = TimelinePanelV2::kCellTotal;
+        int offset = panel_->sharedScrollOffset();
+        int mx = event->pos().x();
+
+        if (panel_->appState()) {
+            auto& seq = panel_->appState()->activeSequence();
+            int waStart = seq.workAreaStart();
+            int waEnd = seq.effectiveWorkAreaEnd();
+            int x1 = hdrW + waStart * cellTotal - offset;
+            int x2 = hdrW + waEnd * cellTotal - offset;
+
+            if (waEnd > waStart && std::abs(mx - x1) <= 5) {
+                currentDrag_ = DragTarget::WorkAreaIn;
+                return;
+            }
+            if (waEnd > waStart && std::abs(mx - x2) <= 5) {
+                currentDrag_ = DragTarget::WorkAreaOut;
+                return;
+            }
+        }
+
+        currentDrag_ = DragTarget::Playhead;
+        if (panel_->isPlaying()) {
+            panel_->togglePlayback();
+        }
+        int frame = hitFrame(mx);
+        if (frame >= 0) {
+            panel_->setCurrentFrame(frame);
+            panel_->update();
+            emit panel_->frameChanged(frame);
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override {
+        if (!panel_->appState()) return;
+
+        int hdrW = TimelinePanelV2::kHeaderWidth;
+        int cellTotal = TimelinePanelV2::kCellTotal;
+        int offset = panel_->sharedScrollOffset();
+        int mx = event->pos().x();
+
+        auto& seq = panel_->appState()->activeSequence();
+
+        if (currentDrag_ == DragTarget::WorkAreaIn) {
+            int frame = std::max(0, (mx - hdrW + offset) / cellTotal);
+            int waEnd = seq.effectiveWorkAreaEnd();
+            frame = std::min(frame, waEnd - 1);
+            panel_->appState()->setWorkAreaStart(frame);
+            update();
+            return;
+        }
+
+        if (currentDrag_ == DragTarget::WorkAreaOut) {
+            int waStart = seq.workAreaStart();
+            int totalFrames = seq.totalFrames();
+            int frame = std::max(waStart + 1, (mx - hdrW + offset) / cellTotal);
+            frame = std::min(frame, totalFrames);
+            panel_->appState()->setWorkAreaEnd(frame);
+            update();
+            return;
+        }
+
+        if (currentDrag_ == DragTarget::Playhead) {
+            int frame = hitFrame(mx);
             if (frame >= 0) {
                 panel_->setCurrentFrame(frame);
                 panel_->update();
                 emit panel_->frameChanged(frame);
+            }
+            return;
+        }
+
+        int waStart = seq.workAreaStart();
+        int waEnd = seq.effectiveWorkAreaEnd();
+        int x1 = hdrW + waStart * cellTotal - offset;
+        int x2 = hdrW + waEnd * cellTotal - offset;
+
+        if (waEnd > waStart && (std::abs(mx - x1) <= 5 || std::abs(mx - x2) <= 5)) {
+            setCursor(Qt::SizeHorCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent*) override {
+        if (currentDrag_ == DragTarget::None) return;
+        currentDrag_ = DragTarget::None;
+
+        if (panel_->appState()) {
+            int hdrW = TimelinePanelV2::kHeaderWidth;
+            int cellTotal = TimelinePanelV2::kCellTotal;
+            int offset = panel_->sharedScrollOffset();
+            auto& seq = panel_->appState()->activeSequence();
+            int waStart = seq.workAreaStart();
+            int waEnd = seq.effectiveWorkAreaEnd();
+
+            QPoint pos = mapFromGlobal(QCursor::pos());
+            int mx = pos.x();
+            int x1 = hdrW + waStart * cellTotal - offset;
+            int x2 = hdrW + waEnd * cellTotal - offset;
+
+            if (waEnd > waStart && (std::abs(mx - x1) <= 5 || std::abs(mx - x2) <= 5)) {
+                setCursor(Qt::SizeHorCursor);
+            } else {
+                setCursor(Qt::ArrowCursor);
             }
         }
     }
@@ -148,6 +264,9 @@ private:
     }
 
     TimelinePanelV2* panel_;
+
+    enum class DragTarget { None, Playhead, WorkAreaIn, WorkAreaOut };
+    DragTarget currentDrag_ = DragTarget::None;
 };
 
 // ========================================================================
@@ -334,15 +453,17 @@ protected:
         p.drawLine(0, h - 1, w, h - 1);
 
         int cellY = 16;
+        const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+        int durFrames = seq.durationFrames();
         int firstVisible = std::max(0, offset / cellTotal);
-        int lastVisible = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
+        int lastVisible = std::min(durFrames - 1, (offset + w - hdrW) / cellTotal + 1);
 
         for (int f = firstVisible; f <= lastVisible; ++f) {
             int cx = hdrW + f * cellTotal - offset;
             QRect cellRect(cx, cellY, cellW, cellH);
 
             bool isCurFrame = (f == curFrame) && isActive_;
-            bool hasContent = appState_ && frameHasContent(f);
+            bool hasContent = (f < totalFrames) && frameHasContent(f);
 
             QColor fillColor = hasContent ? kCellFilled : kCellEmpty;
             QColor borderColor = isCurFrame ? kCellActiveBorder : kCellBorder;
@@ -364,7 +485,7 @@ protected:
             }
         }
 
-        int addX = hdrW + totalFrames * cellTotal - offset;
+        int addX = hdrW + durFrames * cellTotal - offset;
         if (addX < w) {
             QRect addRect(addX + 1, cellY, cellW, cellH);
             p.setPen(Qt::NoPen);
@@ -682,9 +803,22 @@ void TimelinePanelV2::rebuildTracks()
     rulerWidget_->update();
 }
 
+void TimelinePanelV2::refreshTimelineLayout()
+{
+    updateScrollBarRange();
+    tracksLayout_->update();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
+    for (auto* at : audioTrackWidgets_) at->update();
+}
+
 void TimelinePanelV2::updateScrollBarRange()
 {
-    int contentWidth = (totalFrames_ + 1) * kCellTotal + kHeaderWidth + 20;
+    int durFrames = totalFrames_;
+    if (appState_) {
+        durFrames = appState_->activeSequence().durationFrames();
+    }
+    int contentWidth = (durFrames + 1) * kCellTotal + kHeaderWidth + 20;
     int viewWidth = scrollArea_->viewport()->width();
     int maxScroll = std::max(0, contentWidth - viewWidth);
     hScrollBar_->setRange(0, maxScroll);
@@ -721,7 +855,10 @@ void TimelinePanelV2::setCurrentFrame(int frame)
         scrollOffset_ += frameRight - bodyViewWidth + cellTotal * 2;
     }
 
-    int maxScroll = std::max(0, (totalFrames_ + 1) * cellTotal + kHeaderWidth + 20 - viewWidth);
+    int durFrames = appState_
+        ? appState_->activeSequence().durationFrames()
+        : totalFrames_;
+    int maxScroll = std::max(0, (durFrames + 1) * cellTotal + kHeaderWidth + 20 - viewWidth);
     scrollOffset_ = std::clamp(scrollOffset_, 0, maxScroll);
     hScrollBar_->setValue(scrollOffset_);
 
@@ -765,16 +902,21 @@ void TimelinePanelV2::onPlayPause()
     if (playing_) {
         playbackTimer_->stop();
         playing_ = false;
+        for (auto* at : audioTrackWidgets_)
+            at->player()->pause();
         playBtn_->setToolTip("Play / Pause (Space)");
         emit playbackToggled(false);
     } else {
+        double rate = static_cast<double>(fps_) / 24.0;
+        for (auto* at : audioTrackWidgets_) {
+            at->player()->setPlaybackRate(rate);
+            at->syncToFrame(currentFrame_, fps_, true);
+        }
         playbackTimer_->start(1000 / fps_);
         playing_ = true;
         playBtn_->setToolTip("Playing... Click to Pause (Space)");
         emit playbackToggled(true);
     }
-    for (auto* at : audioTrackWidgets_)
-        at->syncToFrame(currentFrame_, fps_, playing_);
 }
 
 void TimelinePanelV2::onStop()
@@ -821,24 +963,60 @@ void TimelinePanelV2::onNextFrame()
 
 void TimelinePanelV2::onFPSChanged(int fps)
 {
-    fps_ = std::max(1, fps);
+    if (updatingFps_) return;
+    updatingFps_ = true;
+
+    fps_ = std::max(1, std::min(120, fps));
     appState_->document().setFPS(fps_);
     if (playbackTimer_->isActive()) {
         playbackTimer_->setInterval(1000 / fps_);
     }
+
+    double rate = static_cast<double>(fps_) / 24.0;
+    for (auto* at : audioTrackWidgets_)
+        at->player()->setPlaybackRate(rate);
+
     updateLabels();
     emit fpsChanged(fps_);
+
+    updatingFps_ = false;
 }
 
 void TimelinePanelV2::onPlaybackTick()
 {
-    if (currentFrame_ >= totalFrames_ - 1) {
-        currentFrame_ = 0;
-        scrollOffset_ = 0;
-        hScrollBar_->setValue(0);
-    } else {
-        currentFrame_++;
+    if (!appState_) return;
+
+    int prevFrame = currentFrame_;
+    currentFrame_ = appState_->activeSequence().advanceFrame();
+
+    if (currentFrame_ < prevFrame) {
+        bool looping = appState_->activeSequence().looping();
+
+        if (looping) {
+            for (auto* at : audioTrackWidgets_)
+                at->syncToFrame(currentFrame_, fps_, true);
+        } else {
+            int waEnd = appState_->activeSequence().effectiveWorkAreaEnd();
+            currentFrame_ = std::max(0, waEnd - 1);
+            appState_->setCurrentFrame(currentFrame_);
+
+            playbackTimer_->stop();
+            playing_ = false;
+            playBtn_->setToolTip("Play / Pause (Space)");
+            emit playbackToggled(false);
+
+            for (auto* at : audioTrackWidgets_) {
+                at->player()->pause();
+                at->syncToFrame(currentFrame_, fps_, false);
+            }
+
+            updateLabels();
+            setCurrentFrame(currentFrame_);
+            emit frameChanged(currentFrame_);
+            return;
+        }
     }
+
     appState_->setCurrentFrame(currentFrame_);
     updateLabels();
     setCurrentFrame(currentFrame_);
@@ -994,6 +1172,10 @@ void TimelinePanelV2::onActivateTrack(int seqIndex)
     fpsSpin_->blockSignals(true);
     fpsSpin_->setValue(fps_);
     fpsSpin_->blockSignals(false);
+
+    double rate = static_cast<double>(fps_) / 24.0;
+    for (auto* at : audioTrackWidgets_)
+        at->player()->setPlaybackRate(rate);
 
     scrollOffset_ = 0;
     hScrollBar_->setValue(0);
