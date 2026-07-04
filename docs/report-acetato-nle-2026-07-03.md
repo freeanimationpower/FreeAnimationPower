@@ -370,3 +370,75 @@ QObject::connect(decoder, &QAudioDecoder::bufferReady, this, [this, decoder]() {
 ### Leccion aprendida
 
 `QAudioDecoder::setAudioFormat()` no es un hint — es un contrato que el backend puede rechazar silenciosamente. En Windows/WMF, forzar Int16 bloquea la decodificacion de MP3. La estrategia correcta es dejar que el decoder use el formato nativo del backend y adaptar el handler de lectura a cualquier `sampleFormat`.
+
+---
+
+## 11. Timeline Panel v2.4 — Real FPS, Work Area & Duration (Jul 2026)
+
+### Separacion conceptual
+
+Tres conceptos que antes estaban colapsados en `totalFrames_`:
+
+| Concepto | Variable | Uso |
+|----------|----------|-----|
+| Velocidad de reproduccion | `fps_` | Intervalo del QTimer `1000/fps` + `setPlaybackRate(fps/24.0)` |
+| Area de trabajo | `workAreaStart_/End_` | Limites de loop/playback. Interactivo via RulerWidget click+drag |
+| Duracion total | `durationFrames_` | Ancho del scrollbar horizontal. Celdas visibles en el timeline |
+
+### RulerWidget Interactividad
+
+```cpp
+enum class DragTarget { None, Playhead, WorkAreaIn, WorkAreaOut };
+```
+
+- **Hover**: cursor `SizeHorCursor` a ±5px de los bordes WA
+- **Drag In edge**: clamp `[0, waEnd-1]`
+- **Drag Out edge**: clamp `[waStart+1, totalFrames]`
+- **Playhead scrubbing**: click + drag continuo con `hitFrame(mx)`
+- **Auto-pause**: click en regla durante playback → `togglePlayback()` antes de mover playhead
+- **Barra visual**: fill 4px `#FF6B4A` (alpha 80) + lineas delimitadoras 1px (alpha 180)
+
+### Control de Duracion
+
+- `SequenceTrackWidget` renderiza celdas hasta `durationFrames_` (vacios mas alla de `totalFrames_`)
+- `updateScrollBarRange()` usa `durationFrames_` para max scroll horizontal
+- `PropertyEditorV2`: grupo SEQUENCE con spinbox DURATION (1-10000 fr)
+- Boton `+` auto-expande `durationFrames_`
+
+### Sincronizacion de Audio y Transporte
+
+| Disparador | Accion |
+|-----------|--------|
+| Play | `setPlaybackRate(fps/24.0)` + `syncToFrame()` |
+| Pause (||) | Timer stop + `player()->pause()` en todos los tracks |
+| Cambio FPS | `setPlaybackRate(fps/24.0)` en todos los tracks |
+| WA loop | `syncToFrame(waStart)` — re-sync audio |
+| WA end (!loop) | Auto-stop: timer + audio + playhead en ultimo frame |
+| Switch secuencia | `setPlaybackRate(newFps/24.0)` |
+
+Guards: `updatingFps_` flag (anti signal-loop), `tracksLayout_->update()` sincrono (waveform geometry fix), `isPlaying()` check (ruler click auto-pause).
+
+### Atajos
+
+| Tecla | Accion |
+|-------|--------|
+| `Shift+I` | Work Area In = currentFrame |
+| `Shift+O` | Work Area Out = currentFrame + 1 |
+
+### AppState Bridges (pipeline centralizado)
+
+```cpp
+void setWorkAreaStart(int frame);  // → activeSequence() → emit documentChanged()
+void setWorkAreaEnd(int frame);
+void setDurationFrames(int count);
+```
+
+### Commits
+
+```
+7319298 feat: Timeline v2.4 — Real FPS, Work Area In/Out, Duration Control, Transport Sync
+```
+
+### Archivos
+
+10 archivos, +342/-17 lineas. 154/154 tests pass. Build: 0 errors, 0 warnings.

@@ -114,7 +114,7 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 
 ---
 
-## Current State (v2.3.0)
+## Current State (v2.4.0)
 
 ### What Works
 - All 11 tools: Brush, Eraser, Pick Color, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand
@@ -130,6 +130,9 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - File save/open (.fap format)
 - 154 unit tests, all passing
 - Keyboard shortcuts for all tools and operations
+- **Work Area (In/Out points)** with interactive RulerWidget drag + Shift+I/O shortcuts
+- **Duration Control** with explicit `durationFrames_` per sequence + SEQUENCE panel in PropertyEditor
+- **Real FPS** with `setPlaybackRate(fps/24.0)` on all audio tracks
 
 ### Audio Track Support (v2.2)
 
@@ -169,6 +172,49 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 
 **Session report**: `docs/session-report-2026-07-03.md`  
 **Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Section 9)
+
+### Timeline Panel v2.4 — Real FPS, Work Area & Duration Control (Jul 2026)
+
+**Feature**: 3-way separation of timeline concepts emulating Premiere/After Effects standards.
+
+**Core changes (`src/core/sequence.hpp`)**:
+- `workAreaStart_` / `workAreaEnd_` — In/Out points for loop/playback bounds
+- `durationFrames_` — absolute timeline scrollable width (replaces infinite stretch)
+- `advanceFrame()` — engine-level frame advance respecting work area boundaries
+- `effectiveWorkAreaEnd()` — `workAreaEnd_ > 0 ? min(workAreaEnd_, totalFrames_) : totalFrames_`
+
+**RulerWidget interactivity**:
+- **Hover**: cursor changes to `SizeHorCursor` within ±5px of WA edges
+- **Click & Drag**: grab In/Out boundaries to resize work area in real-time
+- **Playhead scrubbing**: click + drag anywhere on ruler for smooth frame scrubbing
+- **Auto-pause on click**: clicking ruler during playback pauses transport + audio
+- **Work area bar**: 4px fill `#FF6B4A` (alpha 80) with 1px border lines (alpha 180)
+
+**Duration control**:
+- `SequenceTrackWidget::paintEvent()` renders cells up to `durationFrames_` (empty cells beyond `totalFrames_`)
+- `updateScrollBarRange()` uses `durationFrames_` for horizontal scroll max
+- PropertyEditorV2: SEQUENCE group with DURATION spinbox (1-10000 frames)
+- `+` button auto-expands `durationFrames_` when reaching the boundary
+
+**Audio transport sync**:
+- FPS-based playback rate: `rate = static_cast<double>(fps) / 24.0` on QMediaPlayer
+- WA loop: audio re-syncs position to In point when timeline wraps
+- WA end (no loop): auto-stop — timer + audio pause, stays at last WA frame
+- Sequence switch: playback rate updated to new FPS on all tracks
+- `updatingFps_` guard flag prevents FPS spinbox signal feedback loop
+
+**Keyboard shortcuts**:
+
+| Key | Action |
+|-----|--------|
+| `Shift+I` | Set Work Area In to current frame |
+| `Shift+O` | Set Work Area Out to current frame + 1 |
+
+**AppState bridges** (centralized pipeline, all emit `documentChanged()`):
+- `setWorkAreaStart(frame)` / `setWorkAreaEnd(frame)` / `setDurationFrames(count)`
+
+**Session report**: `docs/session-report-2026-07-04.md`  
+**Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Section 11)
 
 ### UI Layout
 ```

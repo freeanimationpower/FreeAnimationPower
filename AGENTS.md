@@ -116,6 +116,77 @@ Top bar (fixed) → Ruler (fixed)
 - `if (!buffer.isValid() || buffer.sampleCount() == 0) return;` in bufferReady
 - `decodeError_` flag sets paintEvent message to "Decoder error" vs "No waveform data"
 
+## Timeline Panel Architecture (v2.4 — Jul 2026)
+
+**Real FPS + Work Area + Duration Control + Transport Sync** in `src/ui_v2/timeline_panel_v2.cpp`:
+
+### Sequence model extensions (`src/core/sequence.hpp`)
+
+| Member | Default | Purpose |
+|--------|---------|---------|
+| `workAreaStart_` | 0 | In point for loop/playback (frame index) |
+| `workAreaEnd_` | 0 | Out point (0 = use `totalFrames_` as end) |
+| `durationFrames_` | = totalFrames_ | Absolute timeline scrollable width |
+
+Key methods:
+- `effectiveWorkAreaEnd()` — `workAreaEnd_ > 0 ? min(workAreaEnd_, totalFrames_) : totalFrames_`
+- `advanceFrame()` — advances 1 frame within work area bounds, wraps to `workAreaStart_` at end. Qt-free, engine-level.
+- `clone()` preserves all 3 new fields.
+
+### RulerWidget interactivity (`timeline_panel_v2.cpp`)
+
+| Interaction | Behavior |
+|------------|----------|
+| Hover ±5px of WA edge | Cursor changes to `SizeHorCursor` |
+| Click ±5px of In/Out edge | Start drag for respective WA boundary |
+| Click elsewhere | Playhead click (sets frame) + drag = scrubbing |
+| Drag WA In edge | Resize in real-time, clamp `[0, waEnd-1]` |
+| Drag WA Out edge | Resize in real-time, clamp `[waStart+1, totalFrames]` |
+| Click during playback | Auto-pauses playback + audio before moving playhead |
+
+Work area bar: 4px fill `QColor(255, 107, 74, 80)` with 1px border lines `QColor(255, 107, 74, 180)` at in/out boundaries.
+
+### AppState bridges (centralized state pipeline)
+
+All mutations go through `AppState` → `emit documentChanged()`:
+- `setWorkAreaStart(frame)` → `activeSequence().setWorkAreaStart()` 
+- `setWorkAreaEnd(frame)` → `activeSequence().setWorkAreaEnd()`
+- `setDurationFrames(count)` → `activeSequence().setDurationFrames()`
+
+### Display pipeline updates
+
+| Component | Change |
+|-----------|--------|
+| `RulerWidget::paintEvent()` | WA shading bar between in/out points |
+| `SequenceTrackWidget::paintEvent()` | Cells render up to `durationFrames_` (empty beyond `totalFrames_`) |
+| `updateScrollBarRange()` | Horizontal scroll uses `durationFrames_` instead of `totalFrames_ + 1` |
+| `onPlaybackTick()` | Calls `Sequence::advanceFrame()` for WA-aware looping |
+| `PropertyEditorV2` | SEQUENCE group with DURATION spinbox (1-10000 fr), `refreshSequenceFields()` |
+
+### Audio transport sync
+
+| Trigger | Action |
+|---------|--------|
+| Play | `setPlaybackRate(fps/24.0)` + `syncToFrame()` + `play()` |
+| Pause (||) | `playbackTimer_->stop()` + `player()->pause()` on all audio tracks |
+| Stop (■) | `player()->stop()` + position reset to 0 |
+| FPS change | `setPlaybackRate(fps/24.0)` on all tracks, timer interval `1000/fps` |
+| WA loop (looping=true) | `syncToFrame(waStart)` — re-syncs audio position |
+| WA end (looping=false) | Auto-stop: timer stop + `player()->pause()` + stay at last WA frame |
+| Sequence switch | `setPlaybackRate(newFps/24.0)` on all tracks |
+| Ruler click during playback | `togglePlayback()` → pauses before moving playhead |
+
+Guard: `updatingFps_` flag prevents signal feedback loop on `fpsSpin_` ↔ `onFPSChanged`.
+
+### Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Shift+I` | Set Work Area In point to current frame |
+| `Shift+O` | Set Work Area Out point to current frame + 1 |
+
+**Session report**: `docs/session-report-2026-07-04.md` — v2.4 full feature spec, WA interactivity, audio transport sync.
+
 ## Testing
 
 Use `tdd` skill for new features. All tests in `tests/` directory.
