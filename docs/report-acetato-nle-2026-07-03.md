@@ -437,8 +437,35 @@ void setDurationFrames(int count);
 
 ```
 7319298 feat: Timeline v2.4 — Real FPS, Work Area In/Out, Duration Control, Transport Sync
+b7c6410 docs: comprehensive v2.4 architecture docs
+089850c fix: O(1) frameHasContent + waveform layout sync + hasContent_ lifecycle
 ```
 
 ### Archivos
 
-10 archivos, +342/-17 lineas. 154/154 tests pass. Build: 0 errors, 0 warnings.
+10 archivos codigo, 4 archivos docs. 154/154 tests pass. Build: 0 errors, 0 warnings.
+
+---
+
+## 12. Frame Content Detection — O(1) hasContent_ Flag (Jul 2026)
+
+### Problema
+
+Las celdas vacias se pintaban como `kCellFilled` por el `frameHasContent` original que solo verificaba `root->layerCount() > 0` sin escanear si habia pixeles reales.
+
+### Solucion
+
+Flag `hasContent_` en `RasterLayer`, activado en:
+- `commitStroke()` / `doText()` / `commitMove()` / `commitFloatingSelection()` en `CanvasWidgetV2`
+- `setPixel()` (alpha > 0) y `blendPixel()` (outA > 0) en `layer.cpp`
+- Reseteado en `clear()`, preservado en `clone()`
+
+El motor de brochas escribe directamente sobre `pixelSpan()` via QPainter, por eso el flag se activa en commit time (no en el hot path de setPixel/blendPixel).
+
+### Resultado
+
+`SequenceTrackWidget::frameHasContent()` → `rl->hasContent()` en O(1). Sin escaneo de pixeles en `paintEvent`.
+
+### Waveform layout fix
+
+`rebuildTracks()` añade `tracksLayout_->update()` sincrono despues de `addStretch()`, asegurando geometria correcta para `AudioTrackWidget::paintEvent()`.

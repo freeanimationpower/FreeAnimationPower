@@ -142,6 +142,38 @@ La `I` sin Shift mantiene su funcion original de ColorPicker (estandar Photoshop
 
 ```
 7319298 feat: Timeline v2.4 — Real FPS, Work Area In/Out, Duration Control, Transport Sync
+b7c6410 docs: comprehensive v2.4 architecture docs
+089850c fix: O(1) frameHasContent + waveform layout sync + hasContent_ lifecycle
 ```
+
+---
+
+## 6. Optimizacion O(1) de frameHasContent (Jul 2026)
+
+### Problema
+
+Las celdas iniciales del timeline (frames 0, 1, 2) se pintaban en `kCellFilled` (#2E333D) aunque no tuvieran contenido real. El `frameHasContent` original solo verificaba `root->layerCount() > 0`, lo cual era true incluso con la capa default vacia (sin pixeles dibujados).
+
+### Solucion: Flag hasContent_ en RasterLayer
+
+| Operacion | hasContent_ |
+|-----------|-------------|
+| `setPixel()` con alpha > 0 | true |
+| `blendPixel()` con outA > 0 | true |
+| `clear()` | false |
+| `clone()` | preservado |
+| `commitStroke()` / `doText()` / `commitMove()` / `commitFloatingSelection()` | true en commit time |
+
+**Key invariant**: El motor de brochas escribe directamente sobre `pixelSpan()` via QPainter, sin pasar por `setPixel`/`blendPixel`. Por eso `hasContent_` se activa tambien al final de cada metodo de commit en `CanvasWidgetV2`.
+
+### Resultado
+
+`SequenceTrackWidget::frameHasContent()` lee `rl->hasContent()` en O(1). No hay escaneo de pixeles en el `paintEvent`.
+
+### Waveform layout fix
+
+`rebuildTracks()` ahora llama `tracksLayout_->update()` sincrono despues de `addStretch()`, igual que `refreshTimelineLayout()`. Esto garantiza que `AudioTrackWidget::paintEvent()` reciba el `width()` correcto para renderizar la onda.
+
+---
 
 ### Estado final: Estable, listo para produccion.

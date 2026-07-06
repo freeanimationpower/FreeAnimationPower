@@ -213,8 +213,15 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 **AppState bridges** (centralized pipeline, all emit `documentChanged()`):
 - `setWorkAreaStart(frame)` / `setWorkAreaEnd(frame)` / `setDurationFrames(count)`
 
+**Frame Content Detection — O(1) hasContent_ flag**:
+- `RasterLayer::hasContent_` tracks non-transparent pixel presence
+- Activated at commit time in `commitStroke()`, `doText()`, `commitMove()`, `commitFloatingSelection()`
+- Reset in `clear()`, preserved in `clone()`
+- `frameHasContent()` reads `rl->hasContent()` in O(1) — no pixel buffer scan in `paintEvent`
+- Waveform: `tracksLayout_->update()` sync in `rebuildTracks()` ensures correct geometry
+
 **Session report**: `docs/session-report-2026-07-04.md`  
-**Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Section 11)
+**Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Sections 11-12)
 
 ### UI Layout
 ```

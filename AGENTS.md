@@ -187,6 +187,26 @@ Guard: `updatingFps_` flag prevents signal feedback loop on `fpsSpin_` ↔ `onFP
 
 **Session report**: `docs/session-report-2026-07-04.md` — v2.4 full feature spec, WA interactivity, audio transport sync.
 
+### Frame Content Detection — O(1) `hasContent_` flag (Jul 2026)
+
+**RasterLayer** now carries a `hasContent_` boolean that tracks whether the layer contains non-transparent pixels:
+
+| Operation | `hasContent_` behavior |
+|-----------|----------------------|
+| `setPixel()` with alpha > 0 | Set to `true` |
+| `blendPixel()` with result alpha > 0 | Set to `true` |
+| `clear()` | Reset to `false` |
+| `clone()` | Preserved |
+| `commitStroke()` / `doText()` / `commitMove()` / `commitFloatingSelection()` | Set to `true` at commit time |
+
+**Key invariant**: `hasContent_` is NOT set in per-pixel hot paths (`setPixel`/`blendPixel`) because the brush engine writes directly to `pixelSpan()` via QPainter, bypassing those methods. Instead, the flag is set at stroke **commit time** in `CanvasWidgetV2::commitStroke()` and sibling methods.
+
+`SequenceTrackWidget::frameHasContent()` reads `rl->hasContent()` in O(1) — no pixel buffer scan.
+
+### Waveform layout invariant
+
+`rebuildTracks()` now calls `tracksLayout_->update()` synchronously after `addStretch()` — matching the same guard already in `refreshTimelineLayout()`. This ensures `AudioTrackWidget::paintEvent()` receives correct `width()` for waveform rendering.
+
 ## Testing
 
 Use `tdd` skill for new features. All tests in `tests/` directory.
