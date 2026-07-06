@@ -455,6 +455,7 @@ protected:
         int cellY = 16;
         const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
         int durFrames = seq.durationFrames();
+        int seqTotal = seq.totalFrames();
         int firstVisible = std::max(0, offset / cellTotal);
         int lastVisible = std::min(durFrames - 1, (offset + w - hdrW) / cellTotal + 1);
 
@@ -463,7 +464,7 @@ protected:
             QRect cellRect(cx, cellY, cellW, cellH);
 
             bool isCurFrame = (f == curFrame) && isActive_;
-            bool hasContent = (f < totalFrames) && frameHasContent(f);
+            bool hasContent = (f < seqTotal) && frameHasContent(f);
 
             QColor fillColor = hasContent ? kCellFilled : kCellEmpty;
             QColor borderColor = isCurFrame ? kCellActiveBorder : kCellBorder;
@@ -558,9 +559,25 @@ private:
 
     bool frameHasContent(int frame) const {
         if (!appState_) return false;
-        const auto* seq = &appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
-        const GroupLayer* root = seq->peekRootLayerForFrame(frame);
-        return root && root->layerCount() > 0;
+        const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+        const GroupLayer* root = seq.peekRootLayerForFrame(frame);
+        if (!root || root->layerCount() == 0) return false;
+
+        for (size_t i = 0; i < root->layerCount(); ++i) {
+            const Layer* layer = root->layerAt(static_cast<int>(i));
+            if (!layer || !layer->visible()) continue;
+
+            if (layer->type() == LayerType::Raster) {
+                const auto* rl = static_cast<const RasterLayer*>(layer);
+                if (rl->hasContent()) return true;
+            }
+
+            if (layer->type() == LayerType::Vector) {
+                const auto* vl = static_cast<const VectorLayer*>(layer);
+                if (vl->strokeCount() > 0) return true;
+            }
+        }
+        return false;
     }
 
     int seqIndex_;
@@ -799,6 +816,7 @@ void TimelinePanelV2::rebuildTracks()
     }
 
     tracksLayout_->addStretch();
+    tracksLayout_->update();
     updateScrollBarRange();
     rulerWidget_->update();
 }

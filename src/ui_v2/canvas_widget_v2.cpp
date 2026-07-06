@@ -2110,6 +2110,7 @@ void CanvasWidgetV2::commitStroke()
     }
 
     layer->bufferEpochTick();
+    layer->setHasContent(true);
 
     // After snapshot
     QImage afterSnap = captureRect(commitR);
@@ -2772,6 +2773,7 @@ void CanvasWidgetV2::doText(QPointF cpos)
     }
 
     layer->bufferEpochTick();
+    layer->setHasContent(true);
 
     pushFullLayerUndo(layer, before);
 
@@ -2978,6 +2980,7 @@ void CanvasWidgetV2::commitMove()
 
     std::copy(newPixels.begin(), newPixels.end(), layer->pixelData());
     layer->bufferEpochTick();
+    layer->setHasContent(true);
 
     moveOffset_ = QPointF(0, 0);
     moveImage_ = QImage();
@@ -3107,6 +3110,7 @@ void CanvasWidgetV2::commitFloatingSelection()
     }
 
     layer->bufferEpochTick();
+    layer->setHasContent(true);
 
     floatingActive_ = false;
     floatingSelection_ = QImage();

@@ -35,6 +35,7 @@ std::unique_ptr<Layer> RasterLayer::clone() const {
     copy->originX_ = originX_;
     copy->originY_ = originY_;
     copy->buffer_epoch_ = buffer_epoch_;
+    copy->hasContent_ = hasContent_;
     copy->setVisible(visible_);
     copy->setOpacity(opacity_);
     copy->setBlendMode(blend_mode_);
@@ -75,6 +76,7 @@ void RasterLayer::setPixel(int x, int y, const Color& color) {
                               | (static_cast<uint32_t>(g) << 8)
                               | (static_cast<uint32_t>(r) << 16)
                               | (static_cast<uint32_t>(alpha) << 24);
+    if (alpha > 0) hasContent_ = true;
     ++buffer_epoch_;
 }
 
@@ -106,6 +108,7 @@ void RasterLayer::blendPixel(int x, int y, const Color& color) {
                               | (static_cast<uint32_t>(outG) << 8)
                               | (static_cast<uint32_t>(outR) << 16)
                               | (static_cast<uint32_t>(outA) << 24);
+    if (outA > 0) hasContent_ = true;
     ++buffer_epoch_;
 }
 
@@ -121,6 +124,7 @@ void RasterLayer::clear(const Color& color) {
                  | (static_cast<uint32_t>(r) << 16)
                  | (static_cast<uint32_t>(alpha) << 24);
     std::fill(pixelBuffer_->pixels.begin(), pixelBuffer_->pixels.end(), val);
+    hasContent_ = false;
     ++buffer_epoch_;
 }
 

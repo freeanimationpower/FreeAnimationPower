@@ -76,6 +76,9 @@ public:
     bool isBufferShared() const { return pixelBuffer_.use_count() > 1; }
     void ensureUnique();
 
+    bool hasContent() const { return hasContent_; }
+    void setHasContent(bool v) { hasContent_ = v; }
+
     Color pixelAt(int x, int y) const;
     void setPixel(int x, int y, const Color& color);
     void blendPixel(int x, int y, const Color& color);
@@ -94,6 +97,7 @@ private:
     int originY_ = 0;
     std::shared_ptr<PixelBuffer> pixelBuffer_;
     uint64_t buffer_epoch_ = 0;
+    bool hasContent_ = false;
     size_t indexAt(int x, int y) const;
     void relocatePixels(std::vector<uint32_t> oldPixels,
                         int oldW, int oldH, int oldOX, int oldOY,
