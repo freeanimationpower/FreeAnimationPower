@@ -1,4 +1,6 @@
-# Status: Lens Pattern Refactor - Jun 17, 2026
+# Status: Lens Pattern Refactor - Jun 17, 2026 (COMPLETADO)
+
+> **Jul 2026:** El refactor fue completado. La arquitectura V2 (`src/ui_v2/`) es la interfaz principal. `CanvasWidgetV2` usa zero-copy wrappers para display. El crash de capas fue resuelto (ver `HANDOFF_REPORT_2026-06-18.md`). Build: `cmake -B build -DCMAKE_BUILD_TYPE=Release`.
 
 ## Objetivo
 Eliminar `layerCache_` de `CanvasWidget` aplicando el Patron de Lente (Lens Pattern).

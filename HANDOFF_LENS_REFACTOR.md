@@ -1,5 +1,7 @@
 # Informe de Handoff - Free Animation Power
-## Lens Pattern Refactor - Estado al 17 Jun 2026
+## Lens Pattern Refactor - Estado al 17 Jun 2026 (actualizado Jul 2026)
+
+> **Nota Jul 2026:** El refactor descrito en este documento fue completado exitosamente. La arquitectura actual usa V2 UI (`src/ui_v2/`) como interfaz principal, con `CanvasWidgetV2` que implementa el patron de lente (zero-copy QImage wrappers). El crash de capas fue resuelto en el commit `7c50d51`. Ver `HANDOFF_REPORT_2026-06-18.md` para los detalles completos de la resolucion.
 
 ---
 

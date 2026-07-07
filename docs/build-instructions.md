@@ -1,4 +1,4 @@
-# Free Animation Power — Build Instructions (v0.2.0-dev)
+# Free Animation Power — Build Instructions (v2.0.0)
 
 ## Prerequisites
 

@@ -28,8 +28,5 @@ Thumbs.db
 # Dependencies
 vcpkg_installed/
 
-debug.log
-debug_*.log
-debug_*.png
-TROUBLESHOOTING*.md
-crash.log
+# Logs
+*.log

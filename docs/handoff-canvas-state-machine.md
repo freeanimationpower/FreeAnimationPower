@@ -2,8 +2,10 @@
 
 ## Proyecto: Free Animation Power (FreeAnimation2dStyle)
 ## Alcance: Interaccion Seleccion Flotante, Renderizado, Herramientas, Pila Undo/Redo y Motor de Capas
-## Fecha: 2026-06-19
+## Fecha: 2026-06-19 (actualizado Jul 2026)
 ## Destinatario: IA de continuidad (Gemini) y desarrolladores del equipo
+
+> **Jul 2026:** La arquitectura actual usa V2 UI (`src/ui_v2/`) como interfaz principal. `CanvasWidgetV2` implementa el canvas central con `drawBrushStamp`, `drawLineStamps`, `commitStroke` y `PaintCommandV2` para undo/redo. El viejo `CanvasWidget` (`src/ui/`) es referencia heredada. Para trabajo actual, enfocarse en `canvas_widget_v2.cpp`.
 
 ---
 

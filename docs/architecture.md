@@ -1,4 +1,4 @@
-# Free Animation Power — Architecture Document (v0.2.0-dev)
+# Free Animation Power — Architecture Document (v2.0.0)
 
 ## Overview
 
