@@ -979,6 +979,16 @@ void TimelinePanelV2::onPlayPause()
         playBtn_->setToolTip("Play / Pause (Space)");
         emit playbackToggled(false);
     } else {
+        if (appState_) {
+            auto& seq = appState_->activeSequence();
+            int waStart = seq.workAreaStart();
+            int waEnd = seq.effectiveWorkAreaEnd();
+            if (waEnd > waStart && (currentFrame_ < waStart || currentFrame_ >= waEnd)) {
+                currentFrame_ = waStart;
+                appState_->setCurrentFrame(currentFrame_);
+            }
+        }
+
         double rate = static_cast<double>(fps_) / 24.0;
         for (auto* at : audioTrackWidgets_) {
             at->player()->setPlaybackRate(rate);
