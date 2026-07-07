@@ -215,4 +215,63 @@ b7c6410 docs: comprehensive v2.4 architecture docs
 
 ---
 
+## 8. UI Cleanup — FPS SpinBox Ghost Buttons + PropertyEditor Deduplication (Jul 2026)
+
+### Problema
+
+1. **Ghost arrows en fpsSpin_**: El QSpinBox de FPS mostraba flechas nativas de incremento/decremento junto a los botones `fpsMinusBtn_`/`fpsPlusBtn_`, generando basura visual y confusión de controles.
+
+2. **Botones ± invisibles**: Los botones `fpsMinusBtn_` y `fpsPlusBtn_` no invocaban `setText()` explícito, y aunque tenían el texto en el constructor, la visibilidad no estaba garantizada en todos los temas/sistemas.
+
+3. **Duplicación SEQUENCE + DURATION en PropertyEditor**: La información de secuencia y duración se mostraba tanto en el Timeline como en el panel de Propiedades. La fuente de verdad es el Timeline.
+
+### Solución
+
+#### Timeline Panel: NoButtons + setText explícito
+
+| Cambio | Línea | Efecto |
+|--------|-------|--------|
+| `fpsSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons)` | `timeline_panel_v2.cpp:680` | Elimina flechas nativas |
+| `fpsMinusBtn_->setText("−")` | `timeline_panel_v2.cpp:666` | Texto explícito del botón |
+| `fpsPlusBtn_->setText("+")` | `timeline_panel_v2.cpp:689` | Texto explícito del botón |
+| `QPushButton("−")` (constructor) | `timeline_panel_v2.cpp:665` | Signo menos tipográfico U+2212 |
+
+Botones conservan `setFixedSize(20, 22)` y estilo dark theme existente. Ninguna lambda, conexión, ni pipeline modificado.
+
+#### PropertyEditor: Remoción de SEQUENCE + DURATION
+
+| Cambio | Archivo | Efecto |
+|--------|---------|--------|
+| Bloque `timelineGroup_` + contenido comentado | `property_editor_v2.cpp:89-126` | 38 líneas removidas del layout (/* */) |
+| `refreshSequenceFields()` → no-op | `property_editor_v2.cpp:944-952` | Cuerpo vacío, requerido por `main_window_v2.cpp:401` |
+| `refreshSequenceFields()` call comentado | `property_editor_v2.cpp:536` | No se invoca desde `refreshFields()` |
+| `timelineGroup_` / `durationSpin_` comentados | `property_editor_v2.hpp:115-116` | Miembros removidos |
+| `durationFramesChanged` signal conservado | `property_editor_v2.hpp:35` | Requerido por `main_window_v2.cpp:404` |
+
+### Pipeline intacto
+
+Todas las conexiones verificadas sin cambio:
+- `fpsMinusBtn_`/`fpsPlusBtn_` lambdas → `appState_->setFps()` — intacto
+- `fpsSpin_` → `onFPSChanged` → `appState_->setFps()` — intacto
+- `documentChanged` → sync `fpsSpin_` + timer + `setPlaybackRate` — intacto
+- `updatingFps_` guard — intacto
+
+### Commits
+
+```
+e124074 fix: FPS spinbox NoButtons + explicit button text + remove duplicate SEQUENCE/DURATION from PropertyEditor
+```
+
+### Archivos
+
+| Archivo | Cambios | Líneas |
+|---------|---------|--------|
+| `src/ui_v2/timeline_panel_v2.cpp` | +3 líneas (NoButtons + setText x2) | +3/0 |
+| `src/ui_v2/property_editor_v2.cpp` | -1 línea neta (38 comentadas, 1 no-op, 1 comentada) | +0/-1 |
+| `src/ui_v2/property_editor_v2.hpp` | Miembros comentados, signal conservado | +0/-1 |
+
+154/154 tests pass. Build: 0 errors, 0 warnings.
+
+---
+
 ### Estado final: Estable, listo para produccion.

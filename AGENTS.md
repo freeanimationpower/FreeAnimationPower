@@ -162,7 +162,7 @@ All mutations go through `AppState` → `emit documentChanged()`:
 | `SequenceTrackWidget::paintEvent()` | Cells render up to `durationFrames_` (empty beyond `totalFrames_`) |
 | `updateScrollBarRange()` | Horizontal scroll uses `durationFrames_` instead of `totalFrames_ + 1` |
 | `onPlaybackTick()` | Calls `Sequence::advanceFrame()` for WA-aware looping |
-| `PropertyEditorV2` | SEQUENCE group with DURATION spinbox (1-10000 fr), `refreshSequenceFields()` |
+| `PropertyEditorV2` | SEQUENCE + DURATION group **removed** (Jul 2026 UI cleanup) — now Timeline-only |
 
 ### Audio transport sync
 
@@ -183,8 +183,8 @@ Guard: `updatingFps_` flag prevents signal feedback loop on `fpsSpin_` ↔ `onFP
 
 | Trigger | Action |
 |---------|--------|
-| `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) | Lambda → `appState_->setFps(fps ± 1)` clamped [1, 120] |
-| `fpsSpin_` → `onFPSChanged` | → `appState_->setFps(value)` |
+| `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) | Lambda → `appState_->setFps(fps ± 1)` clamped [1, 120]. Styled: dark theme, 20x22 fixed. |
+| `fpsSpin_` → `onFPSChanged` | → `appState_->setFps(value)`. `NoButtons` — no native arrow overlays. |
 | `AppState::setFps()` → `emit documentChanged()` | → lambda syncs `fpsSpin_` + timer interval + `setPlaybackRate(fps/24.0)` |
 | `documentChanged` listener | `if (fps_ != seqFps)` guard — prevents re-entrant spinbox update |
 

@@ -506,3 +506,38 @@ e4f30e8 feat: centralized FPS bridge + +/- buttons — unidirectional pipeline
 089850c fix: O(1) frameHasContent + waveform layout sync + hasContent_ lifecycle
 7319298 feat: Timeline v2.4 — Real FPS, Work Area In/Out, Duration Control, Transport Sync
 ```
+
+---
+
+## 14. UI Cleanup — FPS SpinBox Ghost Buttons + PropertyEditor Deduplication (Jul 2026)
+
+### Problema
+
+El `fpsSpin_` (QSpinBox) mostraba flechas nativas duplicando los controles `fpsMinusBtn_`/`fpsPlusBtn_`. Los botones ± no invocaban `setText()` explícito. El grupo SEQUENCE + DURATION en PropertyEditorV2 duplicaba información que ya reside en el Timeline.
+
+### Solución
+
+#### Timeline Panel (`timeline_panel_v2.cpp`)
+
+- `fpsSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons)` — elimina flechas nativas
+- `fpsMinusBtn_->setText("−")` + `fpsPlusBtn_->setText("+")` — texto explícito, visible
+- Botones conservan `setFixedSize(20, 22)` y estilo dark theme
+
+#### PropertyEditor (`property_editor_v2.cpp`, `property_editor_v2.hpp`)
+
+- Bloque `timelineGroup_` (SEQUENCE label + DURATION spinbox + separator + signal connect) comentado con `/* */`
+- `refreshSequenceFields()` reducido a no-op (cuerpo vacío) — requerido por `main_window_v2.cpp:401`
+- `durationFramesChanged` signal conservado — requerido por `main_window_v2.cpp:404` para compilación
+- Miembros `timelineGroup_` y `durationSpin_` comentados en header
+
+### Pipeline intacto
+
+Ninguna lambda, conexión de `appState_->setFps()`, `documentChanged`, o `updatingFps_` modificada.
+
+### Commits
+
+```
+e124074 fix: FPS spinbox NoButtons + explicit button text + remove duplicate SEQUENCE/DURATION from PropertyEditor
+```
+
+154/154 tests pass. Build: 0 errors, 0 warnings.

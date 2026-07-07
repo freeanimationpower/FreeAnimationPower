@@ -193,7 +193,7 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 **Duration control**:
 - `SequenceTrackWidget::paintEvent()` renders cells up to `durationFrames_` (empty cells beyond `totalFrames_`)
 - `updateScrollBarRange()` uses `durationFrames_` for horizontal scroll max
-- PropertyEditorV2: SEQUENCE group with DURATION spinbox (1-10000 frames)
+- Duration lived in PropertyEditorV2 SEQUENCE group → **migrated to Timeline-only** (Jul 2026 UI cleanup)
 - `+` button auto-expands `durationFrames_` when reaching the boundary
 
 **Audio transport sync**:
@@ -213,6 +213,8 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 **AppState bridges** (centralized pipeline, all emit `documentChanged()`):
 - `setWorkAreaStart(frame)` / `setWorkAreaEnd(frame)` / `setDurationFrames(count)` / `setFps(fps)`
 - FPS: `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) → `appState_->setFps(fps ± 1)` clamped [1, 120]
+- `fpsSpin_` configured with `setButtonSymbols(QAbstractSpinBox::NoButtons)` — clean, no native arrows
+- FPS buttons styled with dark theme (`#1E2130` bg, `#FF6B4A` hover border, 20x22 fixed size)
 - `documentChanged` listener syncs `fpsSpin_` + timer interval + `setPlaybackRate(fps/24.0)`
 
 **Frame Content Detection — O(1) hasContent_ flag**:
