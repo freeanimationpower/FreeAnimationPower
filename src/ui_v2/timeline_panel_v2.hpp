@@ -70,6 +70,8 @@ private:
     void updateLabels();
     void onPlayPause();
     void onStop();
+    void onToggleLoop();
+    void updateLoopStyle();
     void onPrevFrame();
     void onNextFrame();
     void onFPSChanged(int fps);
@@ -86,6 +88,7 @@ private:
 
     QPushButton* playBtn_ = nullptr;
     QPushButton* stopBtn_ = nullptr;
+    QPushButton* loopBtn_ = nullptr;
     QPushButton* prevBtn_ = nullptr;
     QPushButton* nextBtn_ = nullptr;
     QSpinBox* fpsSpin_ = nullptr;

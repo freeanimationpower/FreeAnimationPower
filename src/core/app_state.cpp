@@ -176,6 +176,14 @@ void AppState::setFps(int fps) {
     emit documentChanged();
 }
 
+void AppState::setLooping(bool looping) {
+    activeSequence().setLooping(looping);
+}
+
+bool AppState::isLooping() const {
+    return activeSequence().looping();
+}
+
 void AppState::moveSequence(int from, int to) {
     document_->moveSequence(static_cast<size_t>(from), static_cast<size_t>(to));
     emit documentChanged();

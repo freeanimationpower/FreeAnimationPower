@@ -653,6 +653,14 @@ void TimelinePanelV2::setupUI()
     topBar->addWidget(playBtn_);
     stopBtn_ = makeBtn(":/icons/timeline/stop.png", "Stop");
     topBar->addWidget(stopBtn_);
+
+    loopBtn_ = new QPushButton(QString::fromUtf8("\u27F3"), this);
+    loopBtn_->setFixedSize(26, 22);
+    loopBtn_->setToolTip("Loop Work Area");
+    updateLoopStyle();
+    connect(loopBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onToggleLoop);
+    topBar->addWidget(loopBtn_);
+
     nextBtn_ = makeBtn(":/icons/timeline/next_frame.png", "Next Frame (.)");
     topBar->addWidget(nextBtn_);
 
@@ -1021,6 +1029,29 @@ void TimelinePanelV2::onStop()
         at->syncToFrame(0, fps_, false);
         at->update();
     }
+}
+
+void TimelinePanelV2::onToggleLoop()
+{
+    if (!appState_) return;
+    bool current = appState_->isLooping();
+    appState_->setLooping(!current);
+    updateLoopStyle();
+}
+
+void TimelinePanelV2::updateLoopStyle()
+{
+    bool looping = appState_ && appState_->isLooping();
+    QColor color = looping ? kAccentColor : kBtnText;
+    loopBtn_->setStyleSheet(QString(
+        "QPushButton { background:%1; color:%2; border:none; border-radius:3px; "
+        "font-size:14px; }"
+        "QPushButton:hover { background:%3; }"
+        "QPushButton:pressed { background:%4; color:#fff; }")
+        .arg(kBtnBg.name(), color.name(), kBtnHover.name(), kBtnPressed.name()));
+    loopBtn_->setToolTip(looping
+        ? "Loop: ON \u2014 Work Area will loop"
+        : "Loop: OFF \u2014 Click to loop Work Area");
 }
 
 void TimelinePanelV2::onPrevFrame()
