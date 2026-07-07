@@ -176,4 +176,43 @@ Las celdas iniciales del timeline (frames 0, 1, 2) se pintaban en `kCellFilled` 
 
 ---
 
+## 7. FPS Bridge Centralizado (Jul 2026)
+
+### Problema
+
+El control de FPS estaba acoplado a `onFPSChanged()` sin un bridge en `AppState` como `setWorkAreaStart/End/DurationFrames`. Los botones ±FPS no existian.
+
+### Solucion: Bridge setFps() + Botones ±
+
+| Componente | Cambio |
+|-----------|--------|
+| `AppState::setFps(fps)` | Bridge con guard `if (fps() == fps) return`. Emite `documentChanged()`. |
+| `fpsMinusBtn_` / `fpsPlusBtn_` | Botones ASCII `−`/`+` (20x22) flanqueando `fpsSpin_` en el transport bar. |
+| Lambda `fpsMinusBtn_` | `appState_->setFps(currentFps - 1)` clamp `> 1` |
+| Lambda `fpsPlusBtn_` | `appState_->setFps(currentFps + 1)` clamp `< 120` |
+| `documentChanged` listener | `if (fps_ != seqFps)` sync: spinbox `setValue()` + timer interval + `setPlaybackRate(fps/24.0)` |
+| `onFPSChanged` | Simplificado a 5 lineas: solo llama `appState_->setFps(clamped)` |
+
+### Flujo unidireccional
+
+```
+fpsMinusBtn_/fpsPlusBtn_ → lambda → appState_->setFps(±1)
+fpsSpin_                  → onFPSChanged → appState_->setFps(valor)
+                                        ↓
+                              AppState::setFps() → emit documentChanged()
+                                        ↓
+                  connect(documentChanged) → sync fpsSpin_, timer, playbackRate
+```
+
+### Commits
+
+```
+e4f30e8 feat: centralized FPS bridge + +/- buttons — unidirectional pipeline
+089850c fix: O(1) frameHasContent + waveform layout sync + hasContent_ lifecycle
+b7c6410 docs: comprehensive v2.4 architecture docs
+7319298 feat: Timeline v2.4 — Real FPS, Work Area In/Out, Duration Control, Transport Sync
+```
+
+---
+
 ### Estado final: Estable, listo para produccion.

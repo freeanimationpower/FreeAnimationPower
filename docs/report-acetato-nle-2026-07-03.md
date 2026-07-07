@@ -469,3 +469,40 @@ El motor de brochas escribe directamente sobre `pixelSpan()` via QPainter, por e
 ### Waveform layout fix
 
 `rebuildTracks()` añade `tracksLayout_->update()` sincrono despues de `addStretch()`, asegurando geometria correcta para `AudioTrackWidget::paintEvent()`.
+
+---
+
+## 13. FPS Bridge Centralizado — Pipeline Unidireccional (Jul 2026)
+
+### Problema
+
+El control de FPS estaba acoplado al `QSpinBox` via `onFPSChanged()` sin un bridge en `AppState`, a diferencia de `setWorkAreaStart/End/DurationFrames`. Los botones ± no existian.
+
+### Solucion
+
+| Componente | Cambio |
+|-----------|--------|
+| `AppState::setFps(fps)` | Bridge con guard `if (fps() == fps) return`. `emit documentChanged()`. |
+| `fpsMinusBtn_` (−) | 20x22, conexion lambda: `appState_->setFps(currentFps - 1)` clamp `> 1` |
+| `fpsPlusBtn_` (+) | Idem: `appState_->setFps(currentFps + 1)` clamp `< 120` |
+| `documentChanged` listener | `if (fps_ != seqFps)` guard → sync spinbox + timer + `setPlaybackRate(fps/24.0)` |
+| `onFPSChanged` | Simplificado a llamar solo `appState_->setFps(clamped)` |
+
+### Flujo
+
+```
+fpsMinusBtn_/fpsPlusBtn_ → lambda → appState_->setFps(±1)
+fpsSpin_                  → onFPSChanged → appState_->setFps(valor)
+                                        ↓
+                              AppState::setFps() → emit documentChanged()
+                                        ↓
+                  connect(documentChanged) → sync fpsSpin_, timer, playbackRate
+```
+
+### Commits
+
+```
+e4f30e8 feat: centralized FPS bridge + +/- buttons — unidirectional pipeline
+089850c fix: O(1) frameHasContent + waveform layout sync + hasContent_ lifecycle
+7319298 feat: Timeline v2.4 — Real FPS, Work Area In/Out, Duration Control, Transport Sync
+```

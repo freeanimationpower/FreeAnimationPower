@@ -152,6 +152,7 @@ All mutations go through `AppState` → `emit documentChanged()`:
 - `setWorkAreaStart(frame)` → `activeSequence().setWorkAreaStart()` 
 - `setWorkAreaEnd(frame)` → `activeSequence().setWorkAreaEnd()`
 - `setDurationFrames(count)` → `activeSequence().setDurationFrames()`
+- `setFps(fps)` → `activeSequence().setFPS(fps)` (guard: no-op if same value)
 
 ### Display pipeline updates
 
@@ -177,6 +178,15 @@ All mutations go through `AppState` → `emit documentChanged()`:
 | Ruler click during playback | `togglePlayback()` → pauses before moving playhead |
 
 Guard: `updatingFps_` flag prevents signal feedback loop on `fpsSpin_` ↔ `onFPSChanged`.
+
+### FPS — unidirectional pipeline
+
+| Trigger | Action |
+|---------|--------|
+| `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) | Lambda → `appState_->setFps(fps ± 1)` clamped [1, 120] |
+| `fpsSpin_` → `onFPSChanged` | → `appState_->setFps(value)` |
+| `AppState::setFps()` → `emit documentChanged()` | → lambda syncs `fpsSpin_` + timer interval + `setPlaybackRate(fps/24.0)` |
+| `documentChanged` listener | `if (fps_ != seqFps)` guard — prevents re-entrant spinbox update |
 
 ### Keyboard shortcuts
 

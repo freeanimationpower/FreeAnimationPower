@@ -211,7 +211,9 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 | `Shift+O` | Set Work Area Out to current frame + 1 |
 
 **AppState bridges** (centralized pipeline, all emit `documentChanged()`):
-- `setWorkAreaStart(frame)` / `setWorkAreaEnd(frame)` / `setDurationFrames(count)`
+- `setWorkAreaStart(frame)` / `setWorkAreaEnd(frame)` / `setDurationFrames(count)` / `setFps(fps)`
+- FPS: `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) → `appState_->setFps(fps ± 1)` clamped [1, 120]
+- `documentChanged` listener syncs `fpsSpin_` + timer interval + `setPlaybackRate(fps/24.0)`
 
 **Frame Content Detection — O(1) hasContent_ flag**:
 - `RasterLayer::hasContent_` tracks non-transparent pixel presence
