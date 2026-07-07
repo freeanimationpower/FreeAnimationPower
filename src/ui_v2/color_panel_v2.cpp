@@ -86,57 +86,12 @@ ColorPanelV2::ColorPanelV2(QWidget* parent) : QWidget(parent) {
 
     layout->addLayout(paletteRow);
 
-    auto* rgbaLayout = new QHBoxLayout();
-    rgbaLayout->setSpacing(4);
-
-    auto makeSpin = [this, &rgbaLayout](const QString& label, int max, int def) {
-        auto* lbl = new QLabel(label);
-        lbl->setStyleSheet(
-            QString("color:%1;font-size:10px;font-family:'Consolas','Courier New',monospace;").arg(kMutedColor));
-        lbl->setFixedWidth(12);
-
-        auto* spin = new QSpinBox();
-        spin->setRange(0, max);
-        spin->setValue(def);
-        spin->setFixedWidth(48);
-        spin->setStyleSheet(
-            QString("QSpinBox{background:%1;color:%2;border:1px solid %3;border-radius:3px;padding:2px 4px;font-size:10px;font-family:'Consolas','Courier New',monospace;}")
-                .arg(kInputBg, kTextColor, kBorderColor) +
-            QString("QSpinBox:focus{border-color:%1;}")
-                .arg("#FF6B4A"));
-
-        QObject::connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), [this](int) {
-            QColor c(r_spin_->value(), g_spin_->value(), b_spin_->value(), a_spin_->value());
-            current_color_ = c;
-            updateSwatch();
-            emit colorChanged(c);
-        });
-
-        rgbaLayout->addWidget(lbl);
-        rgbaLayout->addWidget(spin);
-        return spin;
-    };
-
-    r_spin_ = makeSpin("R", 255, 0);
-    g_spin_ = makeSpin("G", 255, 0);
-    b_spin_ = makeSpin("B", 255, 0);
-    a_spin_ = makeSpin("A", 255, 255);
-
-    layout->addLayout(rgbaLayout);
-    layout->addStretch();
-
     updatePalette();
     setColor(Qt::black);
 }
 
 void ColorPanelV2::setColor(const QColor& color) {
     current_color_ = color;
-    blockSpinSignals(true);
-    r_spin_->setValue(color.red());
-    g_spin_->setValue(color.green());
-    b_spin_->setValue(color.blue());
-    a_spin_->setValue(color.alpha());
-    blockSpinSignals(false);
     updateSwatch();
 
     auto it = std::find(palette_colors_.begin(), palette_colors_.end(), color);
@@ -180,13 +135,6 @@ void ColorPanelV2::updatePalette() {
 
 void ColorPanelV2::emitColorChanged() {
     emit colorChanged(current_color_);
-}
-
-void ColorPanelV2::blockSpinSignals(bool block) {
-    r_spin_->blockSignals(block);
-    g_spin_->blockSignals(block);
-    b_spin_->blockSignals(block);
-    a_spin_->blockSignals(block);
 }
 
 } // namespace fap

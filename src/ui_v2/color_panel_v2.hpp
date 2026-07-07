@@ -24,13 +24,8 @@ private:
     void updateSwatch();
     void updatePalette();
     void emitColorChanged();
-    void blockSpinSignals(bool block);
 
     QPushButton* swatch_ = nullptr;
-    QSpinBox* r_spin_ = nullptr;
-    QSpinBox* g_spin_ = nullptr;
-    QSpinBox* b_spin_ = nullptr;
-    QSpinBox* a_spin_ = nullptr;
     QColor current_color_ = Qt::black;
 
     std::vector<QPushButton*> palette_circles_;
