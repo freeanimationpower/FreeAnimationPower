@@ -1,8 +1,46 @@
 # Handoff Report: FreeAnimation2dStyle
 
-**Fecha:** 2026-06-18
+**Fecha:** 2026-06-18 (actualizado 2026-07-07)
 **Stack:** C++20, Qt 6.5+ Widgets, CMake 3.20+, GoogleTest
-**Build:** Release | **Tests:** 54/54 pass | **Branch:** master (sin commits)
+**Build:** Release | **Tests:** 54/54 pass | **Branch:** master
+
+---
+
+## 0. Estado Actual (Jul 2026)
+
+### Commit: `ef692a0` — feat: add Import Image to layer panel with right-click context menu
+
+### Lo que funciona
+- **V2 UI completa**: MainWindowV2 con todos los paneles dockables (Toolbox, Layers, Color, Properties, Timeline)
+- **Dibujo raster**: Brush y Eraser sobre RasterLayer con undo/redo (PaintCommandV2)
+- **Sistema de capas**: Capas por frame independientes (Document::frames_), visibilidad, bloqueo, blend modes
+- **Timeline**: Thumbnails con preview, playback controls, FPS, scroll, scrubbing, onion skin
+- **PropertyEditorV2**: Size, Opacity, Hardness, Shape, Stabilizer, Pressure checkboxes
+- **Blend modes**: 12 modos aplicados en composicion de capas via QPainter::setCompositionMode
+- **Onion skin**: Frames prev/next con tintes rojo/azul y opacidad configurable
+- **Tablet support**: InputManager traduce eventos Qt tablet (presion, tilt)
+- **Formato .fap**: Save/load con JSON + PNG por frame
+- **Exportacion**: MP4 y GIF via FFmpeg
+
+### Archivos clave V2
+```
+src/ui_v2/
+├── main_window_v2.hpp/.cpp     # Ventana principal V2 con docks
+├── canvas_widget_v2.hpp/.cpp   # Canvas de dibujo central
+├── toolbox_panel_v2.hpp/.cpp   # Panel de herramientas (izquierda)
+├── layer_panel_v2.hpp/.cpp     # Panel de capas + blend mode
+├── color_panel_v2.hpp/.cpp     # Selector de color
+├── property_editor_v2.hpp/.cpp # Propiedades de pincel (derecha)
+├── timeline_panel_v2.hpp/.cpp  # Timeline con thumbnails + playback
+├── layer_lock_button.hpp/.cpp  # Boton de candado reutilizable
+```
+
+### Build command
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+.\build\Release\free-animation-2d-style.exe
+```
 
 ---
 

@@ -1,4 +1,4 @@
-# Free Animation Power — Build Instructions
+# Free Animation Power — Build Instructions (v0.2.0-dev)
 
 ## Prerequisites
 
@@ -6,13 +6,30 @@
 |-------------|-----------------|-------|
 | CMake | 3.20+ | |
 | Qt | 6.5+ | Components: Core, Gui, Widgets, OpenGL, Multimedia |
-| FFmpeg | 4.0+ | Required for video export |
+| FFmpeg | 4.0+ | Required for video export (optional for core build) |
 | C++ Compiler | C++20 support | MSVC 2022+, GCC 11+, Clang 14+ |
 | GoogleTest | 1.12+ | Only if `FAP_BUILD_TESTS=ON` (default) |
 
-### Optional
-- **Skia** — For advanced raster backend (set `FAP_RENDERER_SKIA=ON`)
-- **OpenGL** — Hardware-accelerated canvas (set `FAP_RENDERER_OPENGL=ON`, default ON)
+---
+
+## Quick Build (all platforms)
+
+```bash
+# Configure
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+# Build
+cmake --build build --config Release
+
+# Run
+./build/Release/free-animation-2d-style.exe    # Windows
+./build/free-animation-2d-style                # Linux/macOS
+
+# Tests
+cmake --build build --target fap-tests
+./build/Release/fap-tests.exe                  # Windows
+./build/fap-tests                              # Linux/macOS
+```
 
 ---
 

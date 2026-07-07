@@ -4,6 +4,18 @@
 
 2D animation software with hybrid vector + raster engine. Built with C++20 and Qt 6.
 
+## Current State (ef692a0)
+
+V2 UI is the primary interface (`src/ui_v2/`). MainWindowV2 uses dockable panels:
+- **ToolboxPanelV2** — Tool palette, color swatch, onion skin, canvas resize
+- **LayerPanelV2** — Layer list with visibility/lock/blend mode
+- **ColorPanelV2** — Color picker
+- **PropertyEditorV2** — Brush size/opacity/hardness/shape/stabilizer/pressure
+- **TimelinePanelV2** — Frame thumbnails, playback controls
+- **CanvasWidgetV2** — Central drawing canvas with raster brush/eraser
+
+All panels connect to `AppState` (central state) via Qt signals/slots.
+
 ## Build Commands
 
 ```bash
@@ -11,6 +23,9 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ctest --test-dir build
 ```
+
+Executable: `build/Release/free-animation-2d-style.exe`
+Test executable: `build/Release/fap-tests.exe`
 
 ## Project Structure
 
@@ -46,176 +61,6 @@ ctest --test-dir build
 - `diagnose` — Bug diagnosis
 - `review` — Code review
 - `setup-pre-commit` — Pre-commit hooks
-
-## Display Pipeline Architecture (Jul 2026)
-
-**Solution implemented** — 4-buffer CPU rendering pipeline with strict DATA/DISPLAY separation:
-
-| Buffer | Domain | Contents |
-|--------|--------|----------|
-| `RasterLayer::pixelBuffer_` | DATA | Per-layer strokes, transparent bg, source of truth |
-| `strokeBuffer_` | DATA | Isolated current stroke, transparent ARGB32 |
-| `backgroundCache_` | DISPLAY | Pre-composited: white bg + onion skin + all layers |
-| `paintEvent` | DISPLAY | Composes cache + stroke overlay + grid + UI overlays |
-
-Key invariants:
-- `mouseReleaseEvent` NEVER reads from display buffers (only `strokeBuffer_` and `pixelBuffer_`)
-- Dabs written to isolated `strokeBuffer_` during stroke, composited onto `pixelBuffer_` on commit
-- `buildBackgroundCache(rect)` supports both full and partial (offset-aware dirty rect) rebuilds
-- Dynamic padding: `brushSize/2 + 1` to cover dab feathering edges
-- Layers with `originX_`, `originY_` offsets use `rect.translated(-originX, -originY)` — no forced FULL rebuild
-
-**Session report**: `docs/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session, rollback, and final architecture solution.
-
-## Timeline Panel Architecture (v2.3 — Jul 2026)
-
-**Non-destructive rebuild + free track movement** in `src/ui_v2/timeline_panel_v2.cpp`:
-
-| Component | Domain | Rebuild behavior |
-|-----------|--------|-----------------|
-| `SequenceTrackWidget` | Core (`Document::sequences()`) | Destroyed & recreated from `AppState` |
-| `AudioTrackWidget` | UI-only (`audioTrackWidgets_`) | Extracted, preserved, reinserted (no delete) |
-
-### Key invariants
-
-- `rebuildTracks()` NEVER calls `delete` on `AudioTrackWidget*` — uses `removeWidget` + `addWidget` cycle
-- `onMoveAudioTrack()` uses `takeAt`/`insertItem` for free layout movement (no zone restriction, no separator)
-- `QTimer::singleShot(0, ...)` defers all sequence mutations before `rebuildTracks()`
-- `QApplication::focusWidget()->clearFocus()` protects `QLineEdit` from focus-loss crashes
-- `tracksLayout_->update()` called before `widget->update()` — forces synchronous geometry before waveform repaint
-- `ScrollBarAlwaysOn` for vertical scrolling, horizontal handled by `sharedScrollOffset_` + custom `hScrollBar_`
-
-### Layout structure
-```
-Top bar (fixed) → Ruler (fixed)
-  → QScrollArea [tracksContainer_ with QVBoxLayout]
-    → SequenceTrackWidget[]  (from Document, index order)
-    → AudioTrackWidget[]     (preserved, freely movable)
-    → QSpacerItem (stretch)
-  → QScrollBar horizontal (fixed)
-```
-
-**Session report**: `docs/session-report-2026-07-03.md` — non-destructive rebuild, free audio movement, waveform fix.
-
-### Waveform Decoding Architecture (Jul 2026)
-
-**QAudioDecoder** in `AudioTrackWidget::decodeAudio()` — adaptive 5-branch handler:
-
-| Buffer format | Backend | Handling |
-|--------------|---------|----------|
-| Float | WMF (MP3), FFmpeg | `std::abs(samples[i])` |
-| Int32 | WMF (24-bit WAV) | `abs / 2147483648.0f` |
-| Int16 | DirectSound, some WAV codecs | `abs / 32768.0f` |
-| UInt8 | Legacy codecs | `(sample - 128.0f) / 128.0f` |
-| Unknown (else) | Any | `peak = 0.2f` (visible fallback) |
-
-**Key invariant**: `decoder->setAudioFormat()` is NEVER called. The decoder uses its backend's native format. Forcing Int16 on WMF silently blocks bufferReady emission for MP3.
-
-**Guards**:
-- `if (w <= hdrW) return;` in drawWaveform — prevents division-by-zero during takeAt/insertItem layout moves
-- `if (!buffer.isValid() || buffer.sampleCount() == 0) return;` in bufferReady
-- `decodeError_` flag sets paintEvent message to "Decoder error" vs "No waveform data"
-
-## Timeline Panel Architecture (v2.4 — Jul 2026)
-
-**Real FPS + Work Area + Duration Control + Transport Sync** in `src/ui_v2/timeline_panel_v2.cpp`:
-
-### Sequence model extensions (`src/core/sequence.hpp`)
-
-| Member | Default | Purpose |
-|--------|---------|---------|
-| `workAreaStart_` | 0 | In point for loop/playback (frame index) |
-| `workAreaEnd_` | 0 | Out point (0 = use `totalFrames_` as end) |
-| `durationFrames_` | = totalFrames_ | Absolute timeline scrollable width |
-
-Key methods:
-- `effectiveWorkAreaEnd()` — `workAreaEnd_ > 0 ? min(workAreaEnd_, totalFrames_) : totalFrames_`
-- `advanceFrame()` — advances 1 frame within work area bounds, wraps to `workAreaStart_` at end. Qt-free, engine-level.
-- `clone()` preserves all 3 new fields.
-
-### RulerWidget interactivity (`timeline_panel_v2.cpp`)
-
-| Interaction | Behavior |
-|------------|----------|
-| Hover ±5px of WA edge | Cursor changes to `SizeHorCursor` |
-| Click ±5px of In/Out edge | Start drag for respective WA boundary |
-| Click elsewhere | Playhead click (sets frame) + drag = scrubbing |
-| Drag WA In edge | Resize in real-time, clamp `[0, waEnd-1]` |
-| Drag WA Out edge | Resize in real-time, clamp `[waStart+1, totalFrames]` |
-| Click during playback | Auto-pauses playback + audio before moving playhead |
-
-Work area bar: 4px fill `QColor(255, 107, 74, 80)` with 1px border lines `QColor(255, 107, 74, 180)` at in/out boundaries.
-
-### AppState bridges (centralized state pipeline)
-
-All mutations go through `AppState` → `emit documentChanged()`:
-- `setWorkAreaStart(frame)` → `activeSequence().setWorkAreaStart()` 
-- `setWorkAreaEnd(frame)` → `activeSequence().setWorkAreaEnd()`
-- `setDurationFrames(count)` → `activeSequence().setDurationFrames()`
-- `setFps(fps)` → `activeSequence().setFPS(fps)` (guard: no-op if same value)
-
-### Display pipeline updates
-
-| Component | Change |
-|-----------|--------|
-| `RulerWidget::paintEvent()` | WA shading bar between in/out points |
-| `SequenceTrackWidget::paintEvent()` | Cells render up to `durationFrames_` (empty beyond `totalFrames_`) |
-| `updateScrollBarRange()` | Horizontal scroll uses `durationFrames_` instead of `totalFrames_ + 1` |
-| `onPlaybackTick()` | Calls `Sequence::advanceFrame()` for WA-aware looping |
-| `PropertyEditorV2` | SEQUENCE + DURATION group **removed** (Jul 2026 UI cleanup) — now Timeline-only |
-
-### Audio transport sync
-
-| Trigger | Action |
-|---------|--------|
-| Play | `setPlaybackRate(fps/24.0)` + `syncToFrame()` + `play()` |
-| Pause (||) | `playbackTimer_->stop()` + `player()->pause()` on all audio tracks |
-| Stop (■) | `player()->stop()` + position reset to 0 |
-| FPS change | `setPlaybackRate(fps/24.0)` on all tracks, timer interval `1000/fps` |
-| WA loop (looping=true) | `syncToFrame(waStart)` — re-syncs audio position |
-| WA end (looping=false) | Auto-stop: timer stop + `player()->pause()` + stay at last WA frame |
-| Sequence switch | `setPlaybackRate(newFps/24.0)` on all tracks |
-| Ruler click during playback | `togglePlayback()` → pauses before moving playhead |
-
-Guard: `updatingFps_` flag prevents signal feedback loop on `fpsSpin_` ↔ `onFPSChanged`.
-
-### FPS — unidirectional pipeline
-
-| Trigger | Action |
-|---------|--------|
-| `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) | Lambda → `appState_->setFps(fps ± 1)` clamped [1, 120]. Styled: dark theme, 20x22 fixed. |
-| `fpsSpin_` → `onFPSChanged` | → `appState_->setFps(value)`. `NoButtons` — no native arrow overlays. |
-| `AppState::setFps()` → `emit documentChanged()` | → lambda syncs `fpsSpin_` + timer interval + `setPlaybackRate(fps/24.0)` |
-| `documentChanged` listener | `if (fps_ != seqFps)` guard — prevents re-entrant spinbox update |
-
-### Keyboard shortcuts
-
-| Key | Action |
-|-----|--------|
-| `Shift+I` | Set Work Area In point to current frame |
-| `Shift+O` | Set Work Area Out point to current frame + 1 |
-
-**Session report**: `docs/session-report-2026-07-04.md` — v2.4 full feature spec, WA interactivity, audio transport sync.
-
-### Frame Content Detection — O(1) `hasContent_` flag (Jul 2026)
-
-**RasterLayer** now carries a `hasContent_` boolean that tracks whether the layer contains non-transparent pixels:
-
-| Operation | `hasContent_` behavior |
-|-----------|----------------------|
-| `setPixel()` with alpha > 0 | Set to `true` |
-| `blendPixel()` with result alpha > 0 | Set to `true` |
-| `clear()` | Reset to `false` |
-| `clone()` | Preserved |
-| `commitStroke()` / `doText()` / `commitMove()` / `commitFloatingSelection()` | Set to `true` at commit time |
-
-**Key invariant**: `hasContent_` is NOT set in per-pixel hot paths (`setPixel`/`blendPixel`) because the brush engine writes directly to `pixelSpan()` via QPainter, bypassing those methods. Instead, the flag is set at stroke **commit time** in `CanvasWidgetV2::commitStroke()` and sibling methods.
-
-`SequenceTrackWidget::frameHasContent()` reads `rl->hasContent()` in O(1) — no pixel buffer scan.
-
-### Waveform layout invariant
-
-`rebuildTracks()` now calls `tracksLayout_->update()` synchronously after `addStretch()` — matching the same guard already in `refreshTimelineLayout()`. This ensures `AudioTrackWidget::paintEvent()` receives correct `width()` for waveform rendering.
 
 ## Testing
 

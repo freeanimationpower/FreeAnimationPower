@@ -13,7 +13,7 @@ endif()
 
 option(FAP_BUILD_TESTS "Build tests" ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGL OpenGLWidgets Multimedia Svg)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Svg)
 
 include(FetchContent)
 
@@ -198,8 +198,6 @@ target_link_libraries(free-animation-2d-style PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
-    Qt6::OpenGL
-    Qt6::OpenGLWidgets
     Qt6::Multimedia
     Qt6::Svg
     miniz
