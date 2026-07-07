@@ -6,17 +6,14 @@
 #include <QSlider>
 #include <QLabel>
 #include <QFileInfo>
-#include <QAudioDecoder>
-#include <QAudioFormat>
 #include <QDebug>
-#include <QUrl>
 #include <QPainter>
 #include <QResizeEvent>
 #include <QIcon>
-#include <QFile>
-#include <QTimer>
 #include <algorithm>
 #include <cmath>
+
+#include "engine/animation/audio_file_decoder.hpp"
 
 namespace fap {
 
@@ -173,103 +170,37 @@ void AudioTrackWidget::decodeAudio()
     QFileInfo fi(filepath_);
     qDebug() << "decodeAudio — starting:" << filepath_
              << "exists:" << fi.exists() << "size:" << fi.size()
-             << "suffix:" << fi.suffix();
+             << "suffix:" << fi.suffix().toLower();
 
     if (!fi.exists()) {
         qWarning() << "decodeAudio — file not found:" << filepath_;
         decoded_ = true;
         decodeError_ = true;
+        lastError_ = "File not found";
         update();
         return;
     }
 
-    auto* decoder = new QAudioDecoder(this);
-    decoder->setSource(QUrl::fromLocalFile(filepath_));
+    auto result = decodeAudioFile(filepath_.toStdString());
 
-    auto handled = std::make_shared<bool>(false);
-
-    QObject::connect(decoder, &QAudioDecoder::bufferReady, this, [this, decoder]() {
-        auto buffer = decoder->read();
-        if (!buffer.isValid() || buffer.sampleCount() == 0) return;
-
-        float peak = 0.0f;
-        const int count = buffer.sampleCount();
-        QAudioFormat::SampleFormat fmt = buffer.format().sampleFormat();
-
-        if (fmt == QAudioFormat::Float) {
-            const auto* samples = buffer.constData<float>();
-            for (int i = 0; i < count; ++i)
-                peak = std::max(peak, std::abs(samples[i]));
-        } else if (fmt == QAudioFormat::Int32) {
-            const auto* samples = buffer.constData<qint32>();
-            for (int i = 0; i < count; ++i)
-                peak = std::max(peak, std::abs(static_cast<float>(samples[i]) / 2147483648.0f));
-        } else if (fmt == QAudioFormat::Int16) {
-            const auto* samples = buffer.constData<qint16>();
-            for (int i = 0; i < count; ++i)
-                peak = std::max(peak, std::abs(static_cast<float>(samples[i]) / 32768.0f));
-        } else if (fmt == QAudioFormat::UInt8) {
-            const auto* samples = buffer.constData<quint8>();
-            for (int i = 0; i < count; ++i)
-                peak = std::max(peak, std::abs((static_cast<float>(samples[i]) - 128.0f) / 128.0f));
-        } else {
-            peak = 0.2f;
-        }
-
-        waveformPicks_.push_back(peak);
-
-        if (waveformPicks_.size() % 10 == 0) {
-            qDebug() << "bufferReady — peaks:" << waveformPicks_.size()
-                     << "fmt:" << fmt;
-            update();
-        }
-    });
-
-    QObject::connect(decoder, &QAudioDecoder::finished, this, [this, decoder, handled]() {
-        if (*handled) return;
-        *handled = true;
-
-        auto err = decoder->error();
-        decoderFormat_ = decoder->audioFormat();
-        qDebug() << "finished — peaks:" << waveformPicks_.size()
-                 << "duration:" << decoder->duration() << "ms"
-                 << "format:" << decoder->audioFormat()
-                 << "error:" << err << decoder->errorString();
-
-        if (err != QAudioDecoder::NoError) {
-            decodeError_ = true;
-            lastError_ = decoder->errorString().toStdString();
-            qWarning() << "decodeAudio — decoder error:" << lastError_.c_str();
-        }
-
-        decoded_ = true;
-        durationMs_ = decoder->duration();
-        decoder->deleteLater();
-        update();
-    });
-
-    QObject::connect(decoder, QOverload<QAudioDecoder::Error>::of(&QAudioDecoder::error),
-                     this, [this, decoder, handled](QAudioDecoder::Error err) {
-        if (*handled) return;
-        *handled = true;
-        lastError_ = decoder->errorString().toStdString();
-        qWarning() << "decodeAudio — error signal:" << lastError_.c_str();
+    if (!result.success) {
+        qWarning() << "decodeAudio — failed to decode:" << filepath_;
         decoded_ = true;
         decodeError_ = true;
-        decoder->deleteLater();
+        lastError_ = "Unsupported format or corrupted file";
         update();
-    });
+        return;
+    }
 
-    auto* timeout = new QTimer(this);
-    connect(timeout, &QTimer::timeout, this, [decoder, handled]() {
-        if (*handled) return;
-        qWarning() << "decodeAudio — TIMEOUT after 10s, isDecoding:"
-                     << decoder->isDecoding();
-    });
-    timeout->start(10000);
+    waveformPicks_ = std::move(result.peaks);
+    durationMs_ = result.durationMs;
+    decoded_ = true;
 
-    decoder->start();
-    qDebug() << "decodeAudio — started, isDecoding:" << decoder->isDecoding();
+    qDebug() << "decodeAudio — success: peaks:" << waveformPicks_.size()
+             << "channels:" << result.channels
+             << "sampleRate:" << result.sampleRate
+             << "durationMs:" << result.durationMs;
+    update();
 }
 
 void AudioTrackWidget::drawWaveform(QPainter& p)
@@ -342,9 +273,7 @@ void AudioTrackWidget::paintEvent(QPaintEvent*)
                 ? QString("Decoder error")
                 : QString::fromStdString("Error: " + lastError_);
         } else {
-            msg = QString("No waveform data    [%1 Hz, %2 ch]")
-                .arg(decoderFormat_.sampleRate())
-                .arg(decoderFormat_.channelCount());
+            msg = QString("No waveform data");
         }
         p.drawText(QRect(hdrW + 8, 0, w - hdrW - 16, h),
                    Qt::AlignVCenter | Qt::AlignLeft, msg);

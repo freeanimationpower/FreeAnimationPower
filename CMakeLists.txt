@@ -96,6 +96,7 @@ set(ENGINE_HEADERS
     src/engine/animation/audio_engine.hpp
     src/engine/animation/tween_engine.hpp
     src/engine/animation/frame_thumbnail.hpp
+    src/engine/animation/audio_file_decoder.hpp
 )
 
 set(ENGINE_SOURCES
@@ -110,6 +111,7 @@ set(ENGINE_SOURCES
     src/engine/animation/audio_engine.cpp
     src/engine/animation/tween_engine.cpp
     src/engine/animation/frame_thumbnail.cpp
+    src/engine/animation/audio_file_decoder.cpp
     src/engine/brush/brush_engine.cpp
     src/engine/brush/brush_preset.cpp
     src/engine/brush/paper_texture.cpp

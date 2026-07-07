@@ -3,9 +3,9 @@
 #include <QWidget>
 #include <QMediaPlayer>
 #include <QAudioOutput>
-#include <QAudioFormat>
 #include <vector>
 #include <memory>
+#include <string>
 
 class QLineEdit;
 class QPushButton;
@@ -56,7 +56,6 @@ private:
     bool muted_ = false;
     bool decodeError_ = false;
     std::string lastError_;
-    QAudioFormat decoderFormat_;
 
     QLineEdit* nameEdit_ = nullptr;
     QPushButton* upBtn_ = nullptr;
