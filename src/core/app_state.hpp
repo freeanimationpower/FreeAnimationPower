@@ -82,6 +82,7 @@ public:
     void setWorkAreaStart(int frame);
     void setWorkAreaEnd(int frame);
     void setDurationFrames(int count);
+    void setFps(int fps);
     void moveSequence(int from, int to);
 
     bool isModified() const;

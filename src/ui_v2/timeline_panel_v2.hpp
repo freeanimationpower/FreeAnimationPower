@@ -89,6 +89,8 @@ private:
     QPushButton* prevBtn_ = nullptr;
     QPushButton* nextBtn_ = nullptr;
     QSpinBox* fpsSpin_ = nullptr;
+    QPushButton* fpsMinusBtn_ = nullptr;
+    QPushButton* fpsPlusBtn_ = nullptr;
     QLabel* frameLabel_ = nullptr;
     QPushButton* newSeqBtn_ = nullptr;
 

@@ -170,6 +170,12 @@ void AppState::setDurationFrames(int count) {
     emit documentChanged();
 }
 
+void AppState::setFps(int fps) {
+    if (activeSequence().fps() == fps) return;
+    activeSequence().setFPS(fps);
+    emit documentChanged();
+}
+
 void AppState::moveSequence(int from, int to) {
     document_->moveSequence(static_cast<size_t>(from), static_cast<size_t>(to));
     emit documentChanged();

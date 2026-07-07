@@ -662,6 +662,17 @@ void TimelinePanelV2::setupUI()
     fpsLabel->setStyleSheet(QString("color:%1; font-size:10px; font-weight:600;").arg(kFrameNumColor.name()));
     topBar->addWidget(fpsLabel);
 
+    fpsMinusBtn_ = new QPushButton("-", this);
+    fpsMinusBtn_->setFixedSize(20, 22);
+    fpsMinusBtn_->setToolTip("Decrease FPS");
+    fpsMinusBtn_->setStyleSheet(QString(
+        "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
+        "font-size:11px; font-weight:bold; }"
+        "QPushButton:hover { background:%4; border-color:%5; }")
+        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
+             kBtnHover.name(), kPlayheadColor.name()));
+    topBar->addWidget(fpsMinusBtn_);
+
     fpsSpin_ = new QSpinBox(this);
     fpsSpin_->setRange(1, 120);
     fpsSpin_->setValue(fps_);
@@ -672,6 +683,12 @@ void TimelinePanelV2::setupUI()
         "QSpinBox:focus { border-color:%4; }")
         .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(), kPlayheadColor.name()));
     topBar->addWidget(fpsSpin_);
+
+    fpsPlusBtn_ = new QPushButton("+", this);
+    fpsPlusBtn_->setFixedSize(20, 22);
+    fpsPlusBtn_->setToolTip("Increase FPS");
+    fpsPlusBtn_->setStyleSheet(fpsMinusBtn_->styleSheet());
+    topBar->addWidget(fpsPlusBtn_);
 
     topBar->addSpacing(16);
 
@@ -750,6 +767,39 @@ void TimelinePanelV2::setupUI()
     connect(fpsSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &TimelinePanelV2::onFPSChanged);
     connect(hScrollBar_, &QScrollBar::valueChanged, this, &TimelinePanelV2::onScrollChanged);
+
+    connect(fpsMinusBtn_, &QPushButton::clicked, this, [this]() {
+        if (!appState_) return;
+        int currentFps = appState_->activeSequence().fps();
+        if (currentFps > 1) {
+            appState_->setFps(currentFps - 1);
+        }
+    });
+
+    connect(fpsPlusBtn_, &QPushButton::clicked, this, [this]() {
+        if (!appState_) return;
+        int currentFps = appState_->activeSequence().fps();
+        if (currentFps < 120) {
+            appState_->setFps(currentFps + 1);
+        }
+    });
+
+    connect(appState_.get(), &AppState::documentChanged, this, [this]() {
+        int seqFps = appState_->activeSequence().fps();
+        if (fps_ != seqFps) {
+            fps_ = seqFps;
+            fpsSpin_->blockSignals(true);
+            fpsSpin_->setValue(fps_);
+            fpsSpin_->blockSignals(false);
+            if (playbackTimer_->isActive()) {
+                playbackTimer_->setInterval(1000 / fps_);
+            }
+            double rate = static_cast<double>(fps_) / 24.0;
+            for (auto* at : audioTrackWidgets_)
+                at->player()->setPlaybackRate(rate);
+            updateLabels();
+        }
+    });
 
     rebuildTracks();
 }
@@ -983,20 +1033,7 @@ void TimelinePanelV2::onFPSChanged(int fps)
 {
     if (updatingFps_) return;
     updatingFps_ = true;
-
-    fps_ = std::max(1, std::min(120, fps));
-    appState_->document().setFPS(fps_);
-    if (playbackTimer_->isActive()) {
-        playbackTimer_->setInterval(1000 / fps_);
-    }
-
-    double rate = static_cast<double>(fps_) / 24.0;
-    for (auto* at : audioTrackWidgets_)
-        at->player()->setPlaybackRate(rate);
-
-    updateLabels();
-    emit fpsChanged(fps_);
-
+    appState_->setFps(std::max(1, std::min(120, fps)));
     updatingFps_ = false;
 }
 
