@@ -1093,8 +1093,15 @@ void TimelinePanelV2::onPlaybackTick()
         bool looping = appState_->activeSequence().looping();
 
         if (looping) {
-            for (auto* at : audioTrackWidgets_)
-                at->syncToFrame(currentFrame_, fps_, true);
+            qint64 waMs = (fps_ > 0)
+                ? (static_cast<qint64>(currentFrame_) * 1000LL / fps_) : 0;
+            for (auto* at : audioTrackWidgets_) {
+                if (at->player()) {
+                    at->player()->pause();
+                    at->player()->setPosition(waMs);
+                    at->player()->play();
+                }
+            }
         } else {
             int waEnd = appState_->activeSequence().effectiveWorkAreaEnd();
             currentFrame_ = std::max(0, waEnd - 1);
