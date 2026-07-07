@@ -662,7 +662,8 @@ void TimelinePanelV2::setupUI()
     fpsLabel->setStyleSheet(QString("color:%1; font-size:10px; font-weight:600;").arg(kFrameNumColor.name()));
     topBar->addWidget(fpsLabel);
 
-    fpsMinusBtn_ = new QPushButton("-", this);
+    fpsMinusBtn_ = new QPushButton("−", this);
+    fpsMinusBtn_->setText("−");
     fpsMinusBtn_->setFixedSize(20, 22);
     fpsMinusBtn_->setToolTip("Decrease FPS");
     fpsMinusBtn_->setStyleSheet(QString(
@@ -677,6 +678,7 @@ void TimelinePanelV2::setupUI()
     fpsSpin_->setRange(1, 120);
     fpsSpin_->setValue(fps_);
     fpsSpin_->setFixedWidth(56);
+    fpsSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     fpsSpin_->setStyleSheet(QString(
         "QSpinBox { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
         "padding:1px 3px; font-size:12px; font-family:'JetBrains Mono',monospace; }"
@@ -685,6 +687,7 @@ void TimelinePanelV2::setupUI()
     topBar->addWidget(fpsSpin_);
 
     fpsPlusBtn_ = new QPushButton("+", this);
+    fpsPlusBtn_->setText("+");
     fpsPlusBtn_->setFixedSize(20, 22);
     fpsPlusBtn_->setToolTip("Increase FPS");
     fpsPlusBtn_->setStyleSheet(fpsMinusBtn_->styleSheet());

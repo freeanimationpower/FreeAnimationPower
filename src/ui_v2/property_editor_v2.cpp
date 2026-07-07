@@ -86,7 +86,8 @@ void PropertyEditorV2::setupUI()
     mainLayout->setContentsMargins(8, 8, 8, 8);
     mainLayout->setSpacing(8);
 
-    timelineGroup_ = new QWidget(this);
+    // [REMOVED] SEQUENCE + DURATION group — lives exclusively in Timeline panel
+    /* timelineGroup_ = new QWidget(this);
     auto* timelineLayout = new QVBoxLayout(timelineGroup_);
     timelineLayout->setContentsMargins(0, 0, 0, 0);
     timelineLayout->setSpacing(6);
@@ -123,7 +124,7 @@ void PropertyEditorV2::setupUI()
             [this](int val) {
         if (updatingFromState_) return;
         emit durationFramesChanged(val);
-    });
+    }); */
 
     brushGroup_ = new QWidget(this);
     auto* brushLayout = new QVBoxLayout(brushGroup_);
@@ -533,7 +534,7 @@ void PropertyEditorV2::refreshFields()
 {
     if (!appState_) return;
 
-    refreshSequenceFields();
+    // refreshSequenceFields();   // [REMOVED] duration control now lives in Timeline panel
 
     auto tool = appState_->toolState().activeTool();
 
@@ -943,12 +944,8 @@ void PropertyEditorV2::updateColorVariations()
 
 void PropertyEditorV2::refreshSequenceFields()
 {
-    if (!appState_) return;
-
-    updatingFromState_ = true;
-    int dur = appState_->activeSequence().durationFrames();
-    durationSpin_->setValue(dur);
-    updatingFromState_ = false;
+    // No-op: SEQUENCE + DURATION group removed from property panel.
+    // Duration control now lives exclusively in the Timeline panel.
 }
 
 QColor PropertyEditorV2::generateVariation(const QColor& base, int index, int total) const
