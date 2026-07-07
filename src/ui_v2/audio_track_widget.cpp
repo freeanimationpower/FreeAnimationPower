@@ -168,8 +168,21 @@ void AudioTrackWidget::syncToFrame(int frame, int fps, bool playing)
 
 void AudioTrackWidget::decodeAudio()
 {
+    QFileInfo fi(filepath_);
+    qDebug() << "decodeAudio — starting:" << filepath_
+             << "exists:" << fi.exists() << "size:" << fi.size();
+
     auto* decoder = new QAudioDecoder(this);
+
+    QAudioFormat hint;
+    hint.setSampleRate(44100);
+    hint.setChannelCount(2);
+    hint.setSampleFormat(QAudioFormat::Float);
+    decoder->setAudioFormat(hint);
+
     decoder->setSource(QUrl::fromLocalFile(filepath_));
+
+    bool handled = false;
 
     QObject::connect(decoder, &QAudioDecoder::bufferReady, this, [this, decoder]() {
         qDebug() << "bufferReady — peaks so far:" << waveformPicks_.size();
@@ -201,6 +214,7 @@ void AudioTrackWidget::decodeAudio()
                 peak = std::max(peak, std::abs((static_cast<float>(samples[i]) - 128.0f) / 128.0f));
             }
         } else {
+            qDebug() << "bufferReady — unknown format:" << fmt;
             peak = 0.2f;
         }
 
@@ -211,19 +225,39 @@ void AudioTrackWidget::decodeAudio()
         }
     });
 
-    QObject::connect(decoder, &QAudioDecoder::finished, this, [this, decoder]() {
+    QObject::connect(decoder, &QAudioDecoder::finished, this, [this, decoder, &handled]() {
+        if (handled) return;
+        handled = true;
+
+        auto err = decoder->error();
+        qDebug() << "finished — peaks:" << waveformPicks_.size()
+                 << "duration:" << decoder->duration() << "ms"
+                 << "format:" << decoder->audioFormat()
+                 << "error:" << err << decoder->errorString();
+
+        if (err != QAudioDecoder::NoError && waveformPicks_.empty()) {
+            decodeError_ = true;
+        }
+        if (!decodeError_ && waveformPicks_.empty()) {
+            qWarning() << "decodeAudio — no peaks but no error; format:"
+                         << decoder->audioFormat()
+                         << "backend format:" << decoder->audioFormat().sampleFormat()
+                         << "sampleRate:" << decoder->audioFormat().sampleRate()
+                         << "channels:" << decoder->audioFormat().channelCount();
+        }
+
         decoded_ = true;
         durationMs_ = decoder->duration();
         decoder->deleteLater();
-        qDebug() << "finished — peaks:" << waveformPicks_.size()
-                 << "duration:" << durationMs_ << "ms"
-                 << "format:" << decoder->audioFormat();
         update();
     });
 
     QObject::connect(decoder, QOverload<QAudioDecoder::Error>::of(&QAudioDecoder::error),
-                     this, [this, decoder](QAudioDecoder::Error) {
-        qWarning() << "Error decoding audio:" << filepath_ << decoder->errorString();
+                     this, [this, decoder, &handled](QAudioDecoder::Error err) {
+        if (handled) return;
+        handled = true;
+        qWarning() << "Error decoding audio:" << filepath_
+                   << "error:" << err << decoder->errorString();
         decoded_ = true;
         decodeError_ = true;
         decoder->deleteLater();
@@ -231,6 +265,7 @@ void AudioTrackWidget::decodeAudio()
     });
 
     decoder->start();
+    qDebug() << "decodeAudio — started, isDecoding:" << decoder->isDecoding();
 }
 
 void AudioTrackWidget::drawWaveform(QPainter& p)
