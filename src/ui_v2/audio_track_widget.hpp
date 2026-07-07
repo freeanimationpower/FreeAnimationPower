@@ -54,6 +54,7 @@ private:
     qint64 durationMs_ = 0;
     bool muted_ = false;
     bool decodeError_ = false;
+    std::string lastError_;
 
     QLineEdit* nameEdit_ = nullptr;
     QPushButton* upBtn_ = nullptr;
