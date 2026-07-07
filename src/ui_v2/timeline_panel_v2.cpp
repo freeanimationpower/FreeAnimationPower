@@ -872,6 +872,7 @@ void TimelinePanelV2::rebuildTracks()
     tracksLayout_->update();
     updateScrollBarRange();
     rulerWidget_->update();
+    for (auto* at : audioTrackWidgets_) at->update();
 }
 
 void TimelinePanelV2::refreshTimelineLayout()
@@ -1180,6 +1181,10 @@ void TimelinePanelV2::onImportAudio()
     tracksLayout_->insertWidget(insertPos, track);
     audioTrackWidgets_.push_back(track);
     track->positionHeader();
+
+    QTimer::singleShot(0, track, [track]() {
+        track->update();
+    });
 }
 
 void TimelinePanelV2::removeAudioTrack(AudioTrackWidget* track)
