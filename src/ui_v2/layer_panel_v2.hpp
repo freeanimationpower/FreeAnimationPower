@@ -37,7 +37,6 @@ protected:
 
 private:
     void addRasterLayer();
-    void addVectorLayer();
     void duplicateLayer();
     void moveLayerUp();
     void moveLayerDown();

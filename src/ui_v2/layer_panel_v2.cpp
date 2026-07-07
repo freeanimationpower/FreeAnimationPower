@@ -98,11 +98,6 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
         "New Raster Layer\nCreate a new pixel-based layer for drawing and painting.");
     QObject::connect(addRasterBtn, &QPushButton::clicked, this, &LayerPanelV2::addRasterLayer);
     headerRow->addWidget(addRasterBtn);
-
-    auto* addVecBtn = makeIconButton(":/icons/layers/new_vector.png",
-        "New Vector Layer\nCreate a new resolution-independent vector layer for clean lines and shapes.");
-    QObject::connect(addVecBtn, &QPushButton::clicked, this, &LayerPanelV2::addVectorLayer);
-    headerRow->addWidget(addVecBtn);
     layout->addLayout(headerRow);
 
     list_ = new QListWidget();
@@ -288,20 +283,6 @@ void LayerPanelV2::addRasterLayer() {
     root.addLayer(std::make_unique<RasterLayer>(
         "Layer " + std::to_string(n),
         doc.width(), doc.height()));
-    doc.setModified(true);
-    refreshLayerList();
-    int idx = static_cast<int>(root.layerCount()) - 1;
-    list_->setCurrentRow(idx);
-    appState_->setActiveLayerIndex(idx);
-    emit layerDisplayPropertiesChanged();
-    emit layerChanged(idx);
-}
-
-void LayerPanelV2::addVectorLayer() {
-    auto& doc = appState_->document();
-    GroupLayer& root = doc.rootLayerForFrame(currentFrame_);
-    int n = static_cast<int>(root.layerCount()) + 1;
-    root.addLayer(std::make_unique<VectorLayer>("Vector " + std::to_string(n)));
     doc.setModified(true);
     refreshLayerList();
     int idx = static_cast<int>(root.layerCount()) - 1;
