@@ -101,6 +101,7 @@ static LONG WINAPI unhandledExceptionFilter(EXCEPTION_POINTERS* info) {
 #endif
 
 int main(int argc, char* argv[]) {
+    qputenv("QT_MEDIA_BACKEND", "ffmpeg");
     qInstallMessageHandler(globalLogHandler);
 
     QApplication app(argc, argv);

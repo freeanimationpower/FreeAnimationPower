@@ -230,6 +230,7 @@ void AudioTrackWidget::decodeAudio()
         *handled = true;
 
         auto err = decoder->error();
+        decoderFormat_ = decoder->audioFormat();
         qDebug() << "finished — peaks:" << waveformPicks_.size()
                  << "duration:" << decoder->duration() << "ms"
                  << "format:" << decoder->audioFormat()
@@ -333,13 +334,18 @@ void AudioTrackWidget::paintEvent(QPaintEvent*)
                    "Decoding audio...");
     } else if (waveformPicks_.empty()) {
         p.setPen(kTrackNameText);
-        QFont f("Inter", 9);
+        QFont f("Inter", 8);
         p.setFont(f);
-        QString msg = decodeError_
-            ? (lastError_.empty()
+        QString msg;
+        if (decodeError_) {
+            msg = lastError_.empty()
                 ? QString("Decoder error")
-                : QString::fromStdString("Error: " + lastError_))
-            : "No waveform data";
+                : QString::fromStdString("Error: " + lastError_);
+        } else {
+            msg = QString("No waveform data    [%1 Hz, %2 ch]")
+                .arg(decoderFormat_.sampleRate())
+                .arg(decoderFormat_.channelCount());
+        }
         p.drawText(QRect(hdrW + 8, 0, w - hdrW - 16, h),
                    Qt::AlignVCenter | Qt::AlignLeft, msg);
     } else {
