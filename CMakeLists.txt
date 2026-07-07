@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(FreeAnimation2dStyle VERSION 2.0.0 LANGUAGES CXX)
+project(FreeAnimationPower VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -183,9 +183,9 @@ set(ALL_SOURCES
     resources/resources.qrc
 )
 
-add_executable(free-animation-2d-style ${ALL_SOURCES})
+add_executable(free-animation-power ${ALL_SOURCES})
 
-target_include_directories(free-animation-2d-style PRIVATE
+target_include_directories(free-animation-power PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/core
     ${CMAKE_SOURCE_DIR}/src/engine
@@ -194,7 +194,7 @@ target_include_directories(free-animation-2d-style PRIVATE
     ${CMAKE_SOURCE_DIR}/src/platform
 )
 
-target_link_libraries(free-animation-2d-style PRIVATE
+target_link_libraries(free-animation-power PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -203,9 +203,9 @@ target_link_libraries(free-animation-2d-style PRIVATE
     miniz
 )
 
-target_compile_definitions(free-animation-2d-style PRIVATE
+target_compile_definitions(free-animation-power PRIVATE
     FAP_VERSION="2.0.0"
-    FAP_APP_NAME="FreeAnimation2dStyle"
+    FAP_APP_NAME="Free Animation Power"
 )
 
 if(FAP_BUILD_TESTS)
@@ -251,13 +251,13 @@ if(WIN32)
     get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
     if(WINDEPLOYQT_EXECUTABLE)
-        add_custom_command(TARGET free-animation-2d-style POST_BUILD
-            COMMAND "${WINDEPLOYQT_EXECUTABLE}" "$<TARGET_FILE:free-animation-2d-style>"
+        add_custom_command(TARGET free-animation-power POST_BUILD
+            COMMAND "${WINDEPLOYQT_EXECUTABLE}" "$<TARGET_FILE:free-animation-power>"
             COMMENT "Deploying Qt DLLs..."
             VERBATIM
         )
     endif()
 endif()
 
-install(TARGETS free-animation-2d-style DESTINATION bin)
-install(DIRECTORY resources/ DESTINATION share/free-animation-2d-style)
+install(TARGETS free-animation-power DESTINATION bin)
+install(DIRECTORY resources/ DESTINATION share/free-animation-power)

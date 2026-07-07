@@ -85,10 +85,11 @@ Document
 | `src/engine/compositor/` | Layer compositing with blend modes, node graph |
 | `src/engine/deformation/` | Mesh deformation for puppet animation |
 | `src/ui_v2/` | Qt 6 widgets — Canvas, panels, MainWindow (active version) |
-| `src/ui/` | Legacy V1 UI (not compiled in current build) |
+| `src/ui/` | Legacy V1 UI (placeholder, not compiled) |
 | `src/io/` | File format (.fap), video export, document I/O |
 | `src/platform/` | Input handling, tablet (Wacom) support |
 | `docs/` | Architecture docs, build instructions, handoffs |
+| `docs/archive/` | Archived handoffs, old session reports |
 | `tests/` | GoogleTest suite (154 tests) |
 
 ### Layer Types
@@ -170,7 +171,7 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - **5 memory safety guards**: `clearFocus()`, `QTimer::singleShot(0)`, null-check on `takeAt`, bounds on `insertWidget`, and dynamic index lookup via `std::find` in move button lambdas
 - **AudioTrackWidget**: now has 4 header buttons (▲▼ 🔊 ✕), `Q_OBJECT` signals `moveUpRequested`/`moveDownRequested`, and `setTrackIndex()` for reindexing after removal
 
-**Session report**: `docs/session-report-2026-07-03.md`  
+**Session report**: `docs/archive/session-report-2026-07-03.md`  
 **Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Section 9)
 
 ### Timeline Panel v2.4 — Real FPS, Work Area & Duration Control (Jul 2026)
@@ -224,7 +225,7 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - `frameHasContent()` reads `rl->hasContent()` in O(1) — no pixel buffer scan in `paintEvent`
 - Waveform: `tracksLayout_->update()` sync in `rebuildTracks()` ensures correct geometry
 
-**Session report**: `docs/session-report-2026-07-04.md`  
+**Session report**: `docs/archive/session-report-2026-07-04.md`  
 **Architecture report**: `docs/report-acetato-nle-2026-07-03.md` (Sections 11-12)
 
 ### UI Layout
@@ -506,7 +507,7 @@ After 41 commits and a full rollback to commit `1f5f4dc`, a different approach w
 **Performance**: `paintEvent` draws 1 `backgroundCache_` image instead of iterating N layers with N `drawImage` calls. Dirty rect partial rebuilds limit recomposition to the stroke area on commit.
 
 **Files**: `src/ui_v2/canvas_widget_v2.hpp`, `src/ui_v2/canvas_widget_v2.cpp`  
-**Session report**: `docs/session-report-2026-07-02.md`
+**Session report**: `docs/archive/session-report-2026-07-02.md`
 
 ---
 
@@ -578,7 +579,7 @@ After:   caretPos(caretX, caretY - fm.ascent())          → tip-to-tail coverag
 ```powershell
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
-.\build\Release\free-animation-2d-style.exe
+.\build\Release\free-animation-power.exe
 ```
 
 ### Run Tests
@@ -623,7 +624,8 @@ For detailed build instructions per platform (Linux, macOS), see `docs/build-ins
 
 - `docs/architecture.md` — Full architecture document with data flow diagrams
 - `docs/build-instructions.md` — Detailed build instructions for all platforms
-- `docs/handoff-canvas-state-machine.md` — Canvas state machine handoff notes
+- `docs/INFORME_COMPLETO_FAP.md` — Complete project report (Spanish)
+- `docs/archive/` — Archived handoffs and session reports
 - `AGENTS.md` — AI agent instructions for code navigation
 
 ---

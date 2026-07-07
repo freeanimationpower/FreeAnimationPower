@@ -19,12 +19,14 @@ ctest --test-dir build
 - `src/engine/vector/` — Bezier path vector engine
 - `src/engine/brush/` — Brush engine with paper texture
 - `src/engine/animation/` — Timeline playback, onion skinning
-- `src/ui/` — Qt widgets (Canvas, panels, MainWindow)
+- `src/ui_v2/` — Qt widgets (Canvas, panels, MainWindow) — active version
+- `src/ui/` — Legacy V1 UI (placeholder, not compiled)
 - `src/io/` — File format (.fap), video export
 - `src/platform/` — Input handling, tablet support
-- `src_py/` — Python prototype (reference implementation)
+- `src_py/` — Python prototype (DEPRECATED, historical reference only)
 - `tests/` — GoogleTest test files
 - `docs/` — Architecture and build documentation
+- `docs/archive/` — Archived handoffs, old session reports
 - `resources/` — Brush tips, palettes, paper textures
 
 ## Code Conventions
@@ -34,7 +36,7 @@ ctest --test-dir build
 - Headers use `#pragma once`
 - Engine code is Qt-independent (no QObject/Qt types in engine/)
 - UI code uses Qt 6 Widgets with dark theme (#2d2d30 background, #d4782a accent)
-- No external dependencies beyond Qt, FFmpeg, and GoogleTest
+- No external dependencies beyond Qt, FFmpeg, GoogleTest, and miniz (zlib compression)
 
 ## Skills Available
 
@@ -65,7 +67,7 @@ Key invariants:
 - Dynamic padding: `brushSize/2 + 1` to cover dab feathering edges
 - Layers with `originX_`, `originY_` offsets use `rect.translated(-originX, -originY)` — no forced FULL rebuild
 
-**Session report**: `docs/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session, rollback, and final architecture solution.
+**Session report**: `docs/archive/session-report-2026-07-02.md` — full post-mortem of the 2-day debugging session, rollback, and final architecture solution.
 
 ## Timeline Panel Architecture (v2.3 — Jul 2026)
 
@@ -95,7 +97,7 @@ Top bar (fixed) → Ruler (fixed)
   → QScrollBar horizontal (fixed)
 ```
 
-**Session report**: `docs/session-report-2026-07-03.md` — non-destructive rebuild, free audio movement, waveform fix.
+**Session report**: `docs/archive/session-report-2026-07-03.md` — non-destructive rebuild, free audio movement, waveform fix.
 
 ### Waveform Decoding Architecture (Jul 2026)
 
@@ -195,7 +197,13 @@ Guard: `updatingFps_` flag prevents signal feedback loop on `fpsSpin_` ↔ `onFP
 | `Shift+I` | Set Work Area In point to current frame |
 | `Shift+O` | Set Work Area Out point to current frame + 1 |
 
-**Session report**: `docs/session-report-2026-07-04.md` — v2.4 full feature spec, WA interactivity, audio transport sync.
+**Session report**: `docs/archive/session-report-2026-07-04.md` — v2.4 full feature spec, WA interactivity, audio transport sync.
+
+### Consolidated architecture report
+`docs/report-acetato-nle-2026-07-03.md` — comprehensive report covering all v2.2-v2.4 features (multi-sequence, audio, waveform, non-destructive rebuild, WA, FPS, duration).
+
+### Complete project report (Spanish)
+`docs/INFORME_COMPLETO_FAP.md` — exhaustive architecture documentation, data model, engine layer, display pipeline, UI V2, IO, tests, bug history.
 
 ### Frame Content Detection — O(1) `hasContent_` flag (Jul 2026)
 
@@ -225,3 +233,16 @@ Test files use GoogleTest framework. Run with:
 cmake --build build --target fap-tests
 ./build/fap-tests
 ```
+
+## Language Policy
+
+| Scope | Language |
+|-------|----------|
+| Source code (comments, identifiers) | English |
+| `docs/architecture.md` | English |
+| `AGENTS.md` | English |
+| `README.md` | Spanish |
+| `docs/INFORME_COMPLETO_FAP.md` | Spanish |
+| `docs/report-acetato-nle-2026-07-03.md` | Spanish |
+| `docs/build-instructions.md` | English |
+| `CHANGELOG.md` | Spanish |

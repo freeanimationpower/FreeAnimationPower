@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         qWarning() << "Failed to load bundled JetBrainsMono font";
     }
 
-    app.setApplicationName("FreeAnimation2dStyle");
+    app.setApplicationName("Free Animation Power");
     app.setApplicationVersion("2.0.0");
     app.setOrganizationName("FAP");
 
@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
     g_logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
 
     qInfo() << "==============================";
-    qInfo() << "FreeAnimation2dStyle v2.0.0 started";
+    qInfo() << "Free Animation Power v2.0.0 started";
     qInfo() << "Log:" << logPath;
 
     QCommandLineParser parser;
