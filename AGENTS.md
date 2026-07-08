@@ -21,7 +21,11 @@ ctest --test-dir build
 - `src/engine/animation/` — Timeline playback, onion skinning
 - `src/ui_v2/` — Qt widgets (Canvas, panels, MainWindow) — active version
 - `src/ui/` — Legacy V1 UI (placeholder, not compiled)
-- `src/io/` — File format (.fap), video export
+- `src/io/` — File format (.fap binary ZIP), video/SVG export
+  - `document_manager.cpp` — Atomic save/load via miniz (ZIP renamed to .fap)
+  - `file_format.cpp` — Legacy directory-based .fap (v1/v2/v3 backward compat)
+  - `video_export.cpp` — FFmpeg MP4/GIF export
+  - `svg_export.cpp` — SVG export (single frame + multi-frame)
 - `src/platform/` — Input handling, tablet support
 - `src_py/` — Python prototype (DEPRECATED, historical reference only)
 - `tests/` — GoogleTest test files
@@ -246,3 +250,35 @@ cmake --build build --target fap-tests
 | `docs/report-acetato-nle-2026-07-03.md` | Spanish |
 | `docs/build-instructions.md` | English |
 | `CHANGELOG.md` | Spanish |
+
+## Audio Decoder Architecture (Jul 2026)
+
+**dr_libs** (David Reid) — Public domain native decoders replacing broken QAudioDecoder:
+
+| Library | Format | API |
+|---------|--------|-----|
+| `dr_wav.h` | WAV (PCM, ADPCM, Float) | `drwav_open_file_and_read_pcm_frames_f32` |
+| `dr_mp3.h` | MP3 (MPEG1/2 Layer 1-3) | `drmp3_open_file_and_read_pcm_frames_f32` |
+| `dr_flac.h` | FLAC + Ogg/FLAC | `drflac_open_file_and_read_pcm_frames_f32` |
+
+Wrapper: `src/engine/animation/audio_file_decoder.cpp` — `decodeAudioFile(path, targetPeaks=800)`.
+Synchronous, ~10ms for 3-min song. Returns `AudioDecodeResult { peaks, sampleRate, channels, durationMs }`.
+
+## File Format Architecture (.fap v2 — Jul 2026)
+
+**Binary ZIP format** via `DocumentManager` in `src/io/document_manager.cpp`:
+
+```
+.fap file (renamed .zip)
+├── manifest.json       — version, canvas size, active_sequence, viewport (zoom/offset)
+├── timeline.json       — per-sequence: frames[], layers[] with pixel_file/meta_file paths
+└── layers/S{seq}/frame_{f}/layer_{ll}.png + .json
+```
+
+Key features:
+- Atomic save: write to .tmp, rename on success
+- Pixel deduplication: shared `pixelBuffer_` pointers detected via `unordered_set`
+- ViewState (zoom, offsetX, offsetY) persisted in manifest
+- 11 metadata fields per sequence: name, fps, totalFrames, visible, opacity, locked, workAreaStart/End, durationFrames, looping, currentFrame
+- Layer metadata: origin_x/y, hasContent, opacity, blendMode, locked
+- Backward compatible: legacy directory format v1/v2/v3 still loadable via `file_format.cpp`

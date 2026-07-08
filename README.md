@@ -99,23 +99,25 @@ Document
 - **GroupLayer**: Recursive layer composition with blend modes
 - **AudioLayer**: Audio clip timeline
 
-### File Format (.fap)
+### File Format (.fap) — v2 (Jul 2026)
 
-Directory-based format:
+Binary format — single ZIP file renamed to `.fap`:
 ```
-project.fap/
-├── document.json    # Metadata + layer tree (JSON)
-└── frames/
-    ├── L0_0000.png  # Layer 0, frame 0
-    ├── L0_0001.png  # Layer 0, frame 1
-    └── ...
-```
+project.fap                  <- archivo ZIP unico (atomic save: .tmp -> rename)
+├── manifest.json            <- version, canvas, active_sequence, viewport (zoom/offset)
+├── timeline.json            <- todas las secuencias, frames, capas
+└── layers/
+    ├── S0/frame_0/
+    │   ├── layer_00.png     <- pixeles raster comprimidos (PNG)
+    │   └── layer_00.json    <- metadata (origin_x/y, has_content, opacity...)
+    └── S1/frame_0/...
 
-Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, color_burn, color_dodge, soft_light, hard_light.
+Se guarda por secuencia: name, fps, totalFrames, visible, opacity, locked,
+workAreaStart/End, durationFrames, looping. Viewport (zoom/offset) persistido.
 
 ---
 
-## Current State (v2.4.0)
+## Current State (v2.5.0)
 
 ### What Works
 - All 11 tools: Brush, Eraser, Pick Color, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand
@@ -124,33 +126,24 @@ Blend modes: normal, multiply, screen, overlay, add, subtract, darken, lighten, 
 - Timeline with frame navigation, playback, onion skinning
 - Undo/Redo with full pixel restoration (isolated per-sequence)
 - Multi-sequence timeline with per-sequence opacity, reordering, deep copy
-- Audio tracks with waveform visualization, mute, volume, scrubbing, free movement
-- Color picker with RGBA/Hex, recent colors palette
-- Canvas view: zoom, pan, fit, flip horizontal, rotate, grid
-- Video export (MP4 via FFmpeg), GIF export
-- File save/open (.fap format)
+- Audio tracks with waveform visualization (dr_libs native decoders: MP3, WAV, FLAC)
+- Color picker with swatch and recent colors palette
+- Canvas view: zoom, pan, fit (centered), flip horizontal, rotate +/-15deg, grid
+- Video export (MP4 via FFmpeg), GIF export, SVG export (single frame + all frames)
+- File save/open: binary .fap format (ZIP compressed, atomic save, multi-sequence)
 - 154 unit tests, all passing
 - Keyboard shortcuts for all tools and operations
-- **Work Area (In/Out points)** with interactive RulerWidget drag + Shift+I/O shortcuts
-- **Duration Control** with explicit `durationFrames_` per sequence + SEQUENCE panel in PropertyEditor
+- **Work Area (In/Out points)** with loop button + interactive RulerWidget drag + Shift+I/O shortcuts
+- **Duration Control** with explicit `durationFrames_` per sequence
 - **Real FPS** with `setPlaybackRate(fps/24.0)` on all audio tracks
+- **Loop button** (toggle) with orange accent when active — WA-aware playback start + audio re-sync
+- **Viewport persistence**: zoom/pan saved in .fap, restored on open; fit() centers document
 
-### Audio Track Support (v2.2)
-
-- **Import**: MP3, WAV, OGG, FLAC via QFileDialog from `[+ Track ▾]` dropdown
-- **Waveform**: Async QAudioDecoder with adaptive 5-format buffer handler
-  - Progressive rendering: cyan `#00D4AA` waveform drawn as it decodes (every 5 buffers)
-  - Detects native buffer format dynamically: Float, Int32, Int16, UInt8 — no forced conversion
-  - Visible fallback (20% amplitude) when backend reports Unknown format
-  - Error handling with `qWarning` + `decodeError_` flag + "Decoder error" UI message
-  - **Key fix**: `decoder->setAudioFormat(Int16)` removed — WMF backend on Windows rejects forced conversions. Decoder now uses native format.
-- **Playback**: QMediaPlayer + QAudioOutput synchronized with timeline playback
-  - Anti-stutter: setPosition() called once on play, never during active playback
-  - Scrubbing: seeks position without playing (only when timeline is paused)
-  - Volume slider 0-100% mapped to linear QAudioOutput::setVolume()
-  - Mute toggle with speaker emoji (🔊/🔇)
-- **Track management**: pointer-based removal via removeAudioTrack(track) — no index collisions
-- **Guard**: `if (w <= hdrW) return` in drawWaveform — protects against division-by-zero during layout moves (takeAt/insertItem)
+### Audio Track Support (v2.5)
+- **Decoding**: dr_wav/dr_mp3/dr_flac native decoders (header-only, public domain) — replaced broken QAudioDecoder
+- **Waveform**: synchronous decode to 800 downsampled peaks, progressive render, cyan #00D4AA
+- **Playback**: QMediaPlayer + QAudioOutput synced with timeline, anti-stutter, scrubbing
+- **Volume/Mute**: slider 0-100%, toggle button, free track movement
 
 ### Timeline Panel v2.3 — Non-Destructive Rebuild & Free Audio Movement (Jul 2026)
 
