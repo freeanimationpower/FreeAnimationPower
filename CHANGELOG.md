@@ -1,5 +1,13 @@
 # Changelog — Free Animation Power
 
+## [v2.5.1] — 2026-07-08
+
+### Bug Fix — Pixel Offset on Load
+- **Diagnostico**: Al abrir un .fap, el contenido aparecia en (0,0) ignorando su posicion original
+- **Causa**: `ensureContains(..., true)` en `readLayerData()` expandia el buffer con guard band (2px) + growth pad (512px), desplazando el origen. La copia PNG sobrescribia desde fila 0 del buffer expandido en vez de respetar el offset.
+- **Solucion**: `pad=false` en `ensureContains()` dentro de `readLayerData()` — evita expansion innecesaria. `setOrigin()` ya restauraba el origen desde el JSON correctamente.
+- **Cambio**: `src/io/document_manager.cpp:617` — 1 caracter (`true` → `false`)
+
 ## [v2.5.0] — 2026-07-08
 
 ### File Format — Binary .fap (ZIP)

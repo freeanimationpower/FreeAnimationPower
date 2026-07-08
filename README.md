@@ -566,6 +566,39 @@ After:   caretPos(caretX, caretY - fm.ascent())          → tip-to-tail coverag
 
 ---
 
+### 16. Pixel Offset Shift on Load — ensureContains() guard band (Jul 2026)
+
+**Problem**: Al guardar y reabrir un proyecto `.fap`, el contenido dibujado aparecía anclado en la esquina superior izquierda del canvas (0,0), ignorando la posición original. Incluso un trazo dibujado en el centro (960,540 en 1920×1080) se desplazaba hacia arriba a la izquierda.
+
+**Root cause**: `DocumentManager::readLayerData()` llamaba a `ensureContains(...)` con el parámetro por defecto `pad=true`. Esto añadía `kGuardBand=2px` + `kGrowthPad=512px` agresivamente en cada carga:
+
+1. `ensureContains(0, 0, 1920, 1080, true)` → `reqLeft=-2`, `reqTop=-2`
+2. El guard band de 2px excedía el origen actual → disparaba growth pad de 512px
+3. Buffer expandido a ~2948×~1598 con nuevo origen (-514, -514)
+4. `relocatePixels()` movía correctamente los datos cero del buffer original
+5. La copia del PNG sobrescribía desde fila 0 del buffer expandido, colocando píxeles en canvas y=-514 en vez de y=0
+
+El JSON de metadata sí restauraba `origin_x`/`origin_y` correctamente vía `layerMetadataFromJson()` → `rl->setOrigin(x, y)`. El `buildBackgroundCache()` del pipeline de display también usaba correctamente `originX()`/`originY()`. El único eslabón roto era `ensureContains(true)` en `readLayerData()`.
+
+**Solution**: Pasar `pad=false` en la llamada a `ensureContains()` dentro de `readLayerData()`:
+
+```cpp
+// Antes (document_manager.cpp:617)
+rl->ensureContains(rl->originX(), rl->originY(),
+                   converted.width(), converted.height());
+
+// Después
+rl->ensureContains(rl->originX(), rl->originY(),
+                   converted.width(), converted.height(), false);
+```
+
+Con `pad=false`, cuando el PNG encaja exactamente en el buffer (caso normal), `ensureContains` es un no-op — no expande ni modifica el origen. Solo expandiría si el PNG fuera más grande de lo esperado, sin guard band. El `setOrigin()` desde el JSON de metadata + el PNG copiado en buffer sin expansión = contenido en la posición correcta.
+
+**Files**: `src/io/document_manager.cpp` (1 línea, 1 carácter)
+**Session report**: `docs/archive/session-report-2026-07-08.md`
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)

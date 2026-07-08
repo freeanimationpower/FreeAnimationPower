@@ -282,3 +282,17 @@ Key features:
 - 11 metadata fields per sequence: name, fps, totalFrames, visible, opacity, locked, workAreaStart/End, durationFrames, looping, currentFrame
 - Layer metadata: origin_x/y, hasContent, opacity, blendMode, locked
 - Backward compatible: legacy directory format v1/v2/v3 still loadable via `file_format.cpp`
+
+## Pixel Offset Bug — Load Path (v2.5.1 — Jul 2026)
+
+**Symptom**: Content drawn at canvas center appears at top-left corner (0,0) after save→reopen.
+
+**Root cause**: `readLayerData()` in `document_manager.cpp` called `ensureContains()` with default `pad=true`. This added `kGuardBand` (2px) + `kGrowthPad` (512px), expanding the buffer and shifting the origin on every load. The subsequent PNG pixel copy wrote at row 0 of the expanded buffer, placing all pixels at the wrong canvas offset.
+
+**Fix**: Pass `pad=false` in the load path (`document_manager.cpp:617`). The save path already writes correct `origin_x`/`origin_y` via `layerMetadataToJson()`. The load path already restores them via `layerMetadataFromJson()` → `setOrigin(x,y)`. The only missing piece was preventing unnecessary buffer re-expansion during load.
+
+**Invariant**: `ensureContains(..., false)` is a no-op when the PNG fits within existing buffer dimensions. Guard band is only needed during active drawing (dab feathering).
+
+**Files affected**: `src/io/document_manager.cpp` (1 line, 1 character change).
+**Session report**: `docs/archive/session-report-2026-07-08.md`
+**Tests**: 154/154 pass.
