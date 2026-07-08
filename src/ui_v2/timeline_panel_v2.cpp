@@ -654,7 +654,9 @@ void TimelinePanelV2::setupUI()
     stopBtn_ = makeBtn(":/icons/timeline/stop.png", "Stop");
     topBar->addWidget(stopBtn_);
 
-    loopBtn_ = new QPushButton(QString::fromUtf8("\u27F3"), this);
+    loopBtn_ = new QPushButton(this);
+    loopBtn_->setIcon(QIcon(":/icons/timeline/loop.png"));
+    loopBtn_->setIconSize(QSize(22, 18));
     loopBtn_->setFixedSize(26, 22);
     loopBtn_->setToolTip("Loop Work Area");
     updateLoopStyle();
@@ -707,6 +709,28 @@ void TimelinePanelV2::setupUI()
     frameLabel_->setStyleSheet(QString(
         "color:%1; font-size:11px; font-family:'JetBrains Mono',monospace;").arg(kBtnText.name()));
     topBar->addWidget(frameLabel_);
+
+    auto* minusFrameBtn = new QPushButton(this);
+    minusFrameBtn->setIcon(QIcon(":/icons/timeline/remove_frame.png"));
+    minusFrameBtn->setIconSize(QSize(22, 18));
+    minusFrameBtn->setFixedSize(26, 22);
+    minusFrameBtn->setToolTip("Remove Frame");
+    minusFrameBtn->setStyleSheet(QString(
+        "QPushButton { background:%1; border:none; border-radius:3px; }"
+        "QPushButton:hover { background:%2; }"
+        "QPushButton:pressed { background:%3; }")
+        .arg(kBtnBg.name(), kBtnHover.name(), kBtnPressed.name()));
+    connect(minusFrameBtn, &QPushButton::clicked, this, &TimelinePanelV2::deleteFrame);
+    topBar->addWidget(minusFrameBtn);
+
+    auto* plusFrameBtn = new QPushButton(this);
+    plusFrameBtn->setIcon(QIcon(":/icons/timeline/add_frame.png"));
+    plusFrameBtn->setIconSize(QSize(22, 18));
+    plusFrameBtn->setFixedSize(26, 22);
+    plusFrameBtn->setToolTip("Add Frame");
+    plusFrameBtn->setStyleSheet(minusFrameBtn->styleSheet());
+    connect(plusFrameBtn, &QPushButton::clicked, this, &TimelinePanelV2::addFrame);
+    topBar->addWidget(plusFrameBtn);
 
     topBar->addStretch();
 
@@ -1042,13 +1066,12 @@ void TimelinePanelV2::onToggleLoop()
 void TimelinePanelV2::updateLoopStyle()
 {
     bool looping = appState_ && appState_->isLooping();
-    QColor color = looping ? kAccentColor : kBtnText;
+    QColor bg = looping ? kAccentDim : kBtnBg;
     loopBtn_->setStyleSheet(QString(
-        "QPushButton { background:%1; color:%2; border:none; border-radius:3px; "
-        "font-size:14px; }"
-        "QPushButton:hover { background:%3; }"
-        "QPushButton:pressed { background:%4; color:#fff; }")
-        .arg(kBtnBg.name(), color.name(), kBtnHover.name(), kBtnPressed.name()));
+        "QPushButton { background:%1; border:none; border-radius:3px; }"
+        "QPushButton:hover { background:%2; }"
+        "QPushButton:pressed { background:%3; }")
+        .arg(bg.name(), kBtnHover.name(), kBtnPressed.name()));
     loopBtn_->setToolTip(looping
         ? "Loop: ON \u2014 Work Area will loop"
         : "Loop: OFF \u2014 Click to loop Work Area");

@@ -226,7 +226,7 @@ void MainWindowV2::setupTopBar()
     rotAct->setToolTip("Rotate +15deg (R)");
     connect(rotAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvas(); canvas_->update(); } });
 
-    auto* rotLAct = toolbar->addAction(QIcon(":/icons/toolbar/rotate.png"), "");
+    auto* rotLAct = toolbar->addAction(QIcon(":/icons/toolbar/rotate_minus.png"), "");
     rotLAct->setToolTip("Rotate -15deg (L)");
     rotLAct->setShortcut(QKeySequence("L"));
     connect(rotLAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvasMinus(); canvas_->update(); } });

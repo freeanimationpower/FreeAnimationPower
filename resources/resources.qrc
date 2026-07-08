@@ -8,6 +8,7 @@
         <file alias="fit_canvas.png">icons/toolbar/fit canvas.png</file>
         <file alias="flip_horizontal.png">icons/toolbar/Flip horizontal.png</file>
         <file alias="rotate.png">icons/toolbar/rotate +15.png</file>
+        <file alias="rotate_minus.png">icons/toolbar/rotate -15.png</file>
         <file alias="toggle_grid.png">icons/toolbar/toggle grid.png</file>
         <file alias="undo.png">icons/toolbar/undo.png</file>
         <file alias="redo.png">icons/toolbar/redo.png</file>
@@ -43,6 +44,9 @@
         <file alias="play_pause.png">icons/timeline/play pause.png</file>
         <file alias="stop.png">icons/timeline/stop.png</file>
         <file alias="next_frame.png">icons/timeline/next frame.png</file>
+        <file alias="loop.png">icons/timeline/loop.png</file>
+        <file alias="add_frame.png">icons/timeline/add_frame.png</file>
+        <file alias="remove_frame.png">icons/timeline/remove_frame.png</file>
     </qresource>
     <qresource prefix="/brushes">
     </qresource>
