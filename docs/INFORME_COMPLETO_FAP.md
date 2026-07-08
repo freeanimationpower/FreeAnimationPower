@@ -110,9 +110,9 @@ FREE ANIMATION POWER/
 │  deformation/, common/                                        │
 │  (Sin dependencia Qt - puro C++20 estándar)                  │
 ├──────────────────────────────────────────────────────────────┤
-│      CORE DATA MODEL (src/core/)                  │
-│  Document, Sequence, Layer, Stroke, Canvas,       │
-│  ToolState, AppState, UndoManager, Types          │
+│                  CORE DATA MODEL (src/core/)                  │
+│  Document, Sequence, Layer, Stroke, Canvas,                  │
+│  ToolState, AppState, UndoManager, Types                     │
 │  (ToolState y AppState usan QObject/Q_PROPERTY)              │
 ├──────────────────────────────────────────────────────────────┤
 │                PLATFORM LAYER (src/platform/)                 │

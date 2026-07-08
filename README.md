@@ -45,30 +45,30 @@ Document
 └────────────────────────────┬─────────────────────────────────────┘
                              │
 ┌────────────────────────────▼─────────────────────────────────────┐
-│                      Engine Layer                                 │
-│  ┌───────────────────┐  ┌──────────────────┐  ┌──────────────────┐ │
-│  │ brush/             │  │ raster/          │  │ vector/          │ │
-│  │ BrushEngine        │  │ RasterEngine     │  │ VectorEngine     │ │
-│  │ BrushPreset        │  │ RasterStroke     │  │ BezierPath       │ │
-│  │ PaperTexture       │  │                  │  │ VectorStroke     │ │
-│  └───────────────────┘  └──────────────────┘  └──────────────────┘ │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │ animation/  TimelineEngine  OnionSkin  Playback  Tween       │ │
-│  │ compositor/ (experimental)  deform/ (experimental)            │ │
-│  └──────────────────────────────────────────────────────────────┘ │
+│                       Engine Layer                                │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐  │
+│  │ brush/            │ │ raster/          │ │ vector/          │  │
+│  │ BrushEngine       │ │ RasterEngine     │ │ VectorEngine     │  │
+│  │ BrushPreset       │ │ RasterStroke     │ │ BezierPath       │  │
+│  │ PaperTexture      │ │                  │ │ VectorStroke     │  │
+│  └──────────────────┘ └──────────────────┘ └──────────────────┘  │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │ animation/  TimelineEngine  OnionSkin  Playback  Tween     │   │
+│  │ compositor/ (experimental)  deform/ (experimental)          │   │
+│  └────────────────────────────────────────────────────────────┘   │
 └────────────────────────────┬─────────────────────────────────────┘
                              │
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                     Core Data Model                               │
 │  Document  Sequence  Layer (Raster/Vector/Group)  Canvas         │
-│  Project  Stroke  UndoManager  ToolState  AppState               │
-│  Types (Vec2, Color, Rect, StrokePoint, BlendMode, LayerUid)     │
+│  UndoManager  ToolState  AppState  Stroke  Types                 │
+│  (Vec2, Color, Rect, StrokePoint, BlendMode, LayerUid)           │
 └────────────────────────────┬─────────────────────────────────────┘
                              │
 ┌────────────────────────────▼─────────────────────────────────────┐
-│                       Platform Layer                              │
-│  IO: document_manager  video_export  file_format (.fap legacy)  │
-│  Input: tablet_handler  input_manager                            │
+│                      Platform Layer                               │
+│  IO: document_manager  video_export  file_format (.fap legacy)   │
+│  Input: tablet_handler  input_manager                             │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -222,29 +222,29 @@ workAreaStart/End, durationFrames, looping. Viewport (zoom/offset) persistido.
 
 ### UI Layout
 ```
-┌────────────────────────┬──────────────────────────┬──────────────────┐
-│ Top Bar                │                          │  Layers Panel    │
-│ [New][Open][Save] |    │     CanvasWidgetV2       │  - Layer list    │
-│ [Export] | [View] |    │     (central widget)      │  - Visibility    │
-│ [Undo][Redo] |         │                          │  - Blend modes   │
-│ Onion Skin |           │     Drawing canvas       │  - Opacity       │
-│ Canvas Size | [?]      │                          │  - Add/Dup/Del   │
-├────────────────────────┤                          ├──────────────────┤
-│  ToolboxPanel          │                          │  Color Panel     │
-│  - 11 tool buttons     │                          │  - Swatch        │
-│  - Color swatch        │                          │  - MRU palette   │
-│  - Onion Skin          │                          │                  │
-│  - Canvas Size         │                          │                  │
-├────────────────────────┴──────────────────────────┴──────────────────┤
-│  Timeline Panel (multi-track NLE)                                    │
-│  [<][>][▶][■]  FPS [24]  Frame: 1/24              [+ Track ▾]       │
-│  ┌────────┬─────────────────────────────────────────────────────┐    │
-│  │ Seq 1  │ ▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓               [+]  │    │
-│  │ 🎵 A1  │ ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈   │    │
-│  │ Seq 2  │ ░░░░▓▓▓▓░░░░░░▓▓▓▓▒░░░▓▓▓▓                 [+]  │    │
-│  └────────┴─────────────────────────────────────────────────────┘    │
-│  ◄═══════════════════════▓████═══════════════════════════════►       │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────┬────────────────────────┬───────────────────┐
+│ Top Bar              │                        │  Layers Panel     │
+│ [New][Open][Save]    │   CanvasWidgetV2       │  - Layer list     │
+│ [Export Video/GIF]   │   (central widget)     │  - Visibility     │
+│ [Undo] [Redo] [Fit]  │                        │  - Blend modes    │
+│ [Flip H] [Rotate ±]  │   Drawing canvas       │  - Opacity        │
+│ [Grid]  [Help]       │                        │  - Add/Dup/Del    │
+├──────────────────────┤                        ├───────────────────┤
+│ ToolboxPanel         │                        │  Color Panel      │
+│  - 11 tool buttons   │                        │  - Swatch         │
+│  - Color swatch      │                        │  - MRU palette    │
+│  - Onion Skin        │                        │                   │
+│  - Canvas Size       │                        │                   │
+├──────────────────────┴────────────────────────┴───────────────────┤
+│ Timeline Panel (multi-track NLE)                                   │
+│ [<][>][▶][■]  FPS [24]  Frame: 1/24             [+ Track ▾]       │
+│ ┌──────┬──────────────────────────────────────────────────────┐    │
+│ │ Seq1 │ ▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓                [+]  │    │
+│ │  A1  │ ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈  │    │
+│ │ Seq2 │ ░░░░▓▓▓▓░░░░░░▓▓▓▓▒░░░▓▓▓▓                  [+]  │    │
+│ └──────┴──────────────────────────────────────────────────────┘    │
+│ ◄═════════════════════▓████══════════════════════════════►        │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
