@@ -2,10 +2,16 @@
 
 ## [v2.5.1] — 2026-07-08
 
+### Bug Fix — Eraser Tool on Load
+- **Diagnostico**: Al abrir un .fap, el pincel se comportaba como goma de borrar al dibujar en una nueva capa. El toolbox mostraba Brush seleccionado, pero `tool_state_->activeTool()` devolvia Eraser.
+- **Causa**: `resetDocument()` llamaba a `tool_state_->resetToDefaults()` que seteaba `setActiveTool(Eraser)`, emitiendo `activeToolChanged` sin que nadie lo escuchara para sincronizar el QButtonGroup del toolbox.
+- **Solucion**: `toolbox_panel_->setActiveTool(0)` al finalizar `openProject()` — sincroniza el UI y restaura Brush como herramienta activa.
+- **Cambio**: `src/ui_v2/main_window_v2.cpp:575` — 1 linea.
+
 ### Bug Fix — Pixel Offset on Load
 - **Diagnostico**: Al abrir un .fap, el contenido aparecia en (0,0) ignorando su posicion original
 - **Causa**: `ensureContains(..., true)` en `readLayerData()` expandia el buffer con guard band (2px) + growth pad (512px), desplazando el origen. La copia PNG sobrescribia desde fila 0 del buffer expandido en vez de respetar el offset.
-- **Solucion**: `pad=false` en `ensureContains()` dentro de `readLayerData()` — evita expansion innecesaria. `setOrigin()` ya restauraba el origen desde el JSON correctamente.
+- **Solucion**: `pad=false` en `ensureContains()` dentro de `readLayerData()` — evita expansion innecesaria.
 - **Cambio**: `src/io/document_manager.cpp:617` — 1 caracter (`true` → `false`)
 
 ## [v2.5.0] — 2026-07-08

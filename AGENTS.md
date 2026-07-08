@@ -296,3 +296,14 @@ Key features:
 **Files affected**: `src/io/document_manager.cpp` (1 line, 1 character change).
 **Session report**: `docs/archive/session-report-2026-07-08.md`
 **Tests**: 154/154 pass.
+
+## Tool State Desync on Load (v2.5.1 — Jul 2026)
+
+**Symptom**: After opening a .fap file, the brush tool behaves as an eraser on new layers. The toolbox UI shows Brush as selected, but drawing erases instead of painting.
+
+**Root cause**: `MainWindowV2::openProject()` calls `resetDocument()` which calls `tool_state_->resetToDefaults()` → `setActiveTool(ToolType::Eraser)`. The `activeToolChanged` signal is emitted but nothing in MainWindowV2 is connected to sync the toolbox `QButtonGroup`. The canvas reads `appState_->toolState().activeTool()` directly on each mouse event, so it picks up Eraser while the UI shows Brush.
+
+**Fix**: Call `toolbox_panel_->setActiveTool(0)` at the end of `openProject()` success branch. This syncs both the UI button group and the ToolState back to Brush.
+
+**Files affected**: `src/ui_v2/main_window_v2.cpp` (1 line).
+**Invariant**: Canvas queries `appState_->toolState().activeTool()` directly, not from a cached variable. Toolbox UI must be explicitly synced after any programmatic ToolState changes.
