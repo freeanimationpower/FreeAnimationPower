@@ -5,8 +5,8 @@
 
 namespace fap {
 
-const char* LayerLockButton::kUnlockedIcon = ":/icons/layers/unlock.png";
-const char* LayerLockButton::kLockedIcon   = ":/icons/layers/lock.png";
+const char* LayerLockButton::kUnlockedIcon = ":/icons/svg/lock_open.svg";
+const char* LayerLockButton::kLockedIcon   = ":/icons/svg/lock_closed.svg";
 const char* LayerLockButton::kNeutralColor = "#C8CCD8";
 const char* LayerLockButton::kLockedColor  = "#FF0000";
 const char* LayerLockButton::kHoverBg      = "#2D3139";

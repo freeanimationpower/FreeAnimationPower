@@ -65,13 +65,13 @@ static const struct {
 } kTools[] = {
     { "Brush",       "B", ":/icons/tools/brush.png",       "Draw freehand strokes on raster layers." },
     { "Eraser",      "E", ":/icons/tools/eraser.png",      "Erase pixels from raster layers." },
-    { "Pick Color",  "I", ":/icons/tools/pick_color.png",  "Sample a color from the canvas with the eye dropper." },
+    { "Pick Color",  "I", ":/icons/tools/pick_color.png",  "Sample a color from the canvas with the eyedropper." },
     { "Fill",        "G", ":/icons/tools/fill.png",        "Fill a contiguous area with the current foreground color." },
     { "Text",        "T", ":/icons/tools/text.png",        "Place text annotations on the canvas." },
-    { "Line",        "L", ":/icons/tools/line.png",        "Draw straight line segments between two points." },
-    { "Rectangle",   "U", ":/icons/tools/rectangle.png",   "Draw rectangle shapes by dragging." },
-    { "Ellipse",     "Y", ":/icons/tools/ellipse.png",     "Draw ellipse shapes by dragging." },
-    { "Move",        "M", ":/icons/tools/move.png",        "Move or transform selected content on the canvas." },
+    { "Line",        "L", ":/icons/tools/line.png",        "Draw straight line segments." },
+    { "Rectangle",   "U", ":/icons/tools/rectangle.png",   "Draw rectangles by dragging." },
+    { "Ellipse",     "Y", ":/icons/tools/ellipse.png",     "Draw ellipses by dragging." },
+    { "Move",        "M", ":/icons/tools/move.png",        "Move layer content on the canvas." },
     { "Select",      "S", ":/icons/tools/select.png",      "Select a rectangular region of the canvas." },
     { "Hand",        "H", ":/icons/tools/hand.png",        "Pan and scroll the canvas view. Hold Space for quick access." },
 };

@@ -19,15 +19,13 @@ ctest --test-dir build
 - `src/engine/vector/` — Bezier path vector engine
 - `src/engine/brush/` — Brush engine with paper texture
 - `src/engine/animation/` — Timeline playback, onion skinning
-- `src/ui_v2/` — Qt widgets (Canvas, panels, MainWindow) — active version
-- `src/ui/` — Legacy V1 UI (placeholder, not compiled)
+- `src/ui_v2/` — Qt widgets (Canvas, panels, MainWindow)
 - `src/io/` — File format (.fap binary ZIP), video/SVG export
   - `document_manager.cpp` — Atomic save/load via miniz (ZIP renamed to .fap)
   - `file_format.cpp` — Legacy directory-based .fap (v1/v2/v3 backward compat)
   - `video_export.cpp` — FFmpeg MP4/GIF export
   - `svg_export.cpp` — SVG export (single frame + multi-frame)
 - `src/platform/` — Input handling, tablet support
-- `src_py/` — Python prototype (DEPRECATED, historical reference only)
 - `tests/` — GoogleTest test files
 - `docs/` — Architecture and build documentation
 - `docs/archive/` — Archived handoffs, old session reports
@@ -39,7 +37,7 @@ ctest --test-dir build
 - C++20, CMake 3.20+, Qt 6.5+
 - Headers use `#pragma once`
 - Engine code is Qt-independent (no QObject/Qt types in engine/)
-- UI code uses Qt 6 Widgets with dark theme (#2d2d30 background, #d4782a accent)
+- UI code uses Qt 6 Widgets with dark theme (#252830 background, #FF6B4A accent)
 - No external dependencies beyond Qt, FFmpeg, GoogleTest, and miniz (zlib compression)
 
 ## Skills Available
@@ -105,22 +103,11 @@ Top bar (fixed) → Ruler (fixed)
 
 ### Waveform Decoding Architecture (Jul 2026)
 
-**QAudioDecoder** in `AudioTrackWidget::decodeAudio()` — adaptive 5-branch handler:
-
-| Buffer format | Backend | Handling |
-|--------------|---------|----------|
-| Float | WMF (MP3), FFmpeg | `std::abs(samples[i])` |
-| Int32 | WMF (24-bit WAV) | `abs / 2147483648.0f` |
-| Int16 | DirectSound, some WAV codecs | `abs / 32768.0f` |
-| UInt8 | Legacy codecs | `(sample - 128.0f) / 128.0f` |
-| Unknown (else) | Any | `peak = 0.2f` (visible fallback) |
-
-**Key invariant**: `decoder->setAudioFormat()` is NEVER called. The decoder uses its backend's native format. Forcing Int16 on WMF silently blocks bufferReady emission for MP3.
+**dr_libs** native decoders (see Audio Decoder Architecture below). `decodeAudio()` calls `decodeAudioFile()` which returns `AudioDecodeResult { peaks, sampleRate, channels, durationMs }`. Synchronous, ~10ms for 3-min song.
 
 **Guards**:
 - `if (w <= hdrW) return;` in drawWaveform — prevents division-by-zero during takeAt/insertItem layout moves
-- `if (!buffer.isValid() || buffer.sampleCount() == 0) return;` in bufferReady
-- `decodeError_` flag sets paintEvent message to "Decoder error" vs "No waveform data"
+- `decodeError_` flag sets paintEvent message to "Unsupported format" vs "No waveform data"
 
 ## Timeline Panel Architecture (v2.4 — Jul 2026)
 
@@ -371,4 +358,4 @@ struct AudioTrackData {
 
 **Invariant**: Both `openProject()` and `newProject()` MUST call `toolbox_panel_->setActiveTool(0)` after `resetDocument()`. `ToolState::resetToDefaults()` sets active tool to `Eraser`, and the `QButtonGroup` in the toolbox is not automatically synced from `activeToolChanged` signal. The canvas reads `toolState().activeTool()` directly on each mouse event, so it picks up Eraser while the UI shows Brush.
 
-**Files affected**: `src/ui_v2/main_window_v2.cpp` — lines 575 (openProject) and 522 (newProject).
+**Files affected**: `src/ui_v2/main_window_v2.cpp` — lines 582 (openProject) and 522 (newProject).

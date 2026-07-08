@@ -307,7 +307,7 @@ public:
             nameEdit_->setCursorPosition(0);
         });
 
-        lockBtn_ = new QPushButton(QIcon(":/icons/layers/unlock.png"), "", this);
+        lockBtn_ = new QPushButton(QIcon(":/icons/svg/lock_open.svg"), "", this);
         lockBtn_->setFixedSize(28, 28);
         lockBtn_->setIconSize(QSize(20, 20));
         lockBtn_->setCheckable(true);
@@ -320,13 +320,13 @@ public:
         connect(lockBtn_, &QPushButton::clicked, this, [this](bool checked) {
             if (appState_) {
                 appState_->setSequenceLocked(seqIndex_, checked);
-                lockBtn_->setIcon(QIcon(checked ? ":/icons/layers/lock.png"
-                                                : ":/icons/layers/unlock.png"));
+                lockBtn_->setIcon(QIcon(checked ? ":/icons/svg/lock_closed.svg"
+                                                : ":/icons/svg/lock_open.svg"));
                 updateNameStyle();
             }
         });
 
-        dupBtn_ = new QPushButton(QIcon(":/icons/layers/duplicate.png"), "", this);
+        dupBtn_ = new QPushButton(QIcon(":/icons/svg/duplicate.svg"), "", this);
         dupBtn_->setFixedSize(28, 28);
         dupBtn_->setIconSize(QSize(20, 20));
         dupBtn_->setToolTip("Duplicate Sequence");
@@ -337,21 +337,21 @@ public:
             .arg(kBtnHover.name(), kPlayheadColor.name()));
         connect(dupBtn_, &QPushButton::clicked, this, [this]() { panel_->onDupTrack(seqIndex_); });
 
-        delBtn_ = new QPushButton(QIcon(":/icons/layers/delete.png"), "", this);
+        delBtn_ = new QPushButton(QIcon(":/icons/svg/delete.svg"), "", this);
         delBtn_->setFixedSize(28, 28);
         delBtn_->setIconSize(QSize(20, 20));
         delBtn_->setToolTip("Delete Sequence");
         delBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(delBtn_, &QPushButton::clicked, this, [this]() { panel_->onDelTrack(seqIndex_); });
 
-        upBtn_ = new QPushButton(QIcon(":/icons/layers/move_up.png"), "", this);
+        upBtn_ = new QPushButton(QIcon(":/icons/svg/move_up.svg"), "", this);
         upBtn_->setFixedSize(28, 28);
         upBtn_->setIconSize(QSize(20, 20));
         upBtn_->setToolTip("Move Up");
         upBtn_->setStyleSheet(dupBtn_->styleSheet());
         connect(upBtn_, &QPushButton::clicked, this, [this]() { panel_->onMoveTrack(seqIndex_, -1); });
 
-        downBtn_ = new QPushButton(QIcon(":/icons/layers/move_down.png"), "", this);
+        downBtn_ = new QPushButton(QIcon(":/icons/svg/move_down.svg"), "", this);
         downBtn_->setFixedSize(28, 28);
         downBtn_->setIconSize(QSize(20, 20));
         downBtn_->setToolTip("Move Down");
@@ -382,8 +382,8 @@ public:
         if (appState_) {
             bool initLocked = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_)).locked();
             lockBtn_->setChecked(initLocked);
-            lockBtn_->setIcon(QIcon(initLocked ? ":/icons/layers/lock.png"
-                                               : ":/icons/layers/unlock.png"));
+            lockBtn_->setIcon(QIcon(initLocked ? ":/icons/svg/lock_closed.svg"
+                                               : ":/icons/svg/lock_open.svg"));
         }
 
         positionHeader();

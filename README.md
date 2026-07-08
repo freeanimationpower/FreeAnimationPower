@@ -8,7 +8,7 @@ Free Animation Power is a professional 2D animation tool combining bitmap (raste
 
 **Key philosophy**: Every brush stroke can be rendered as pixels (raster), as a vector path, or as both simultaneously — allowing artists to use the strengths of each pipeline without switching tools.
 
-### Multi-Sequence Architecture (v2.1)
+### Multi-Sequence Architecture
 
 Free Animation Power supports multiple independent timelines ("Sequences") within a single document, similar to tracks in Adobe Premiere:
 
@@ -54,8 +54,7 @@ Document
 │  └──────────────┘  └──────────────┘  └──────────────────────┘   │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │ animation/  TimelineEngine  OnionSkin  Playback  Tween   │   │
-│  │ compositor/ NodeGraph  Compositor                         │   │
-│  │ deformation/ DeformationMesh  DeformationEngine           │   │
+│  │ compositor/ (experimental)  deform/ (experimental)        │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └────────────────────────────┬─────────────────────────────────────┘
                              │
@@ -68,7 +67,7 @@ Document
                              │
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                       Platform Layer                              │
-│  IO: document_io  video_export  file_format (.fap)               │
+│  IO: document_manager  video_export  file_format (.fap legacy)  │
 │  Input: tablet_handler  input_manager                            │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -82,10 +81,9 @@ Document
 | `src/engine/vector/` | Bezier path engine — curve evaluation, flattening, path construction |
 | `src/engine/brush/` | Brush engine — presets, dynamics, paper texture, ABR import |
 | `src/engine/animation/` | Timeline playback, onion skinning, audio, tween |
-| `src/engine/compositor/` | Layer compositing with blend modes, node graph |
-| `src/engine/deformation/` | Mesh deformation for puppet animation |
-| `src/ui_v2/` | Qt 6 widgets — Canvas, panels, MainWindow (active version) |
-| `src/ui/` | Legacy V1 UI (placeholder, not compiled) |
+| `src/engine/compositor/` | Node graph compositor (experimental, not in active pipeline) |
+| `src/engine/deformation/` | Mesh deformation (experimental, not yet active) |
+| `src/ui_v2/` | Qt 6 widgets — Canvas, panels, MainWindow |
 | `src/io/` | File format (.fap), video export, document I/O |
 | `src/platform/` | Input handling, tablet (Wacom) support |
 | `docs/` | Architecture docs, build instructions, handoffs |
@@ -97,7 +95,8 @@ Document
 - **RasterLayer**: Pixel buffer with per-frame PNG storage
 - **VectorLayer**: Bezier stroke collection
 - **GroupLayer**: Recursive layer composition with blend modes
-- **AudioLayer**: Audio clip timeline
+
+> Note: Audio tracks are handled via `AudioTrackData` in Document + `AudioTrackWidget` UI widgets, not as `Layer` subclasses.
 
 ### File Format (.fap) — v2 (Jul 2026)
 
@@ -117,7 +116,7 @@ workAreaStart/End, durationFrames, looping. Viewport (zoom/offset) persistido.
 
 ---
 
-## Current State (v2.5.0)
+## Current State (v2.5.1)
 
 ### What Works
 - All 11 tools: Brush, Eraser, Pick Color, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand
@@ -139,7 +138,7 @@ workAreaStart/End, durationFrames, looping. Viewport (zoom/offset) persistido.
 - **Loop button** (toggle) with orange accent when active — WA-aware playback start + audio re-sync
 - **Viewport persistence**: zoom/pan saved in .fap, restored on open; fit() centers document
 
-### Audio Track Support (v2.5)
+### Audio Track Support (v2.5.1)
 - **Decoding**: dr_wav/dr_mp3/dr_flac native decoders (header-only, public domain) — replaced broken QAudioDecoder
 - **Waveform**: synchronous decode to 800 downsampled peaks, progressive render, cyan #00D4AA
 - **Playback**: QMediaPlayer + QAudioOutput synced with timeline, anti-stutter, scrubbing

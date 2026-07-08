@@ -1,7 +1,7 @@
 # INFORME COMPLETO: Free Animation Power
 
 > **Versión:** 2.0.0 | **Fecha:** Julio 2026 | **Autor:** Eduardo Fierro Duque  
-> **Licencia:** GPLv3 | **Lenguaje:** C++20 | **Framework:** Qt 6.5+ | **Tests:** 139/139
+> **Licencia:** GPLv3 | **Lenguaje:** C++20 | **Framework:** Qt 6.5+ | **Tests:** 154/154
 
 ---
 
@@ -35,7 +35,7 @@ Free Animation Power (FAP) es un **software de animación 2D de código abierto*
 | Característica | Estado |
 |----------------|--------|
 | Herramientas de dibujo | 11 (Brush, Eraser, ColorPicker, Fill, Text, Line, Rectangle, Ellipse, Move, Select, Hand) |
-| Herramientas especializadas | 6 adicionales (PencilRetouch, RulerLine, RulerEllipse, DeformMesh, TweenEdit, Audio) |
+| Herramientas especializadas | 5 adicionales (PencilRetouch, RulerLine, RulerEllipse, DeformMesh, TweenEdit) — sin UI activa |
 | Tipos de capa | 5 (Raster, Vector, Group, Audio, Camera) |
 | Modos de blending | 12 (Normal, Multiply, Screen, Overlay, Add, Subtract, Darken, Lighten, ColorBurn, ColorDodge, SoftLight, HardLight) |
 | Presets de pincel | 5 built-in (Round Soft, Round Hard, Flat, Calligraphy, Eraser) |
@@ -70,12 +70,10 @@ FREE ANIMATION POWER/
 │   │   ├── animation/        # AudioEngine, TweenEngine, FrameThumbnail, OnionSkin, Playback, TimelineEngine
 │   │   ├── compositor/       # Compositor, NodeGraph
 │   │   └── deformation/      # DeformationEngine, DeformationMesh
-│   ├── ui/                   # LEGACY V1 - no compilado actualmente (10 archivos)
-│   ├── ui_v2/                # ACTIVO - 16 archivos (8 widgets + 8 implementaciones)
-│   ├── io/                   # 5 archivos - File format, DocumentManager, VideoExport, Serialization
+│   ├── ui_v2/                # ACTIVO - 18 archivos (9 widgets + 9 implementaciones)
+│   ├── io/                   # 9 archivos - DocumentManager, VideoExport, SVGExport, FileFormat (legacy), Serialization
 │   └── platform/             # 4 archivos - InputManager, TabletHandler
-├── src_py/                   # 9 archivos - Prototipo Python (referencia)
-├── tests/                    # 17 archivos - 139 tests GoogleTest
+├── tests/                    # 17 archivos - 154 tests GoogleTest
 ├── docs/                     # Documentación técnica
 ├── resources/                # Brushes, fuentes, iconos, paletas, texturas
 ├── icons/                    # Iconos de barra superior/toolbox/paneles
@@ -86,9 +84,9 @@ FREE ANIMATION POWER/
 
 | Métrica | Valor |
 |---------|-------|
-| Archivos fuente (.cpp/.hpp) | ~60 en src/ |
+| Archivos fuente (.cpp/.hpp) | ~100+ en src/ |
 | Archivos de test | 17 |
-| Tests pasando | 139/139 |
+| Tests pasando | 154/154 |
 | Líneas de código (estimado) | ~18,000 en src/ |
 | Documentación | 10+ archivos Markdown |
 | Rama activa | `master` (tras revertir 41 commits de la sesión de julio 2026) |
@@ -1888,7 +1886,7 @@ add_executable(free-animation-2d-style
 )
 ```
 
-**NOTA:** `src/ui/` (legacy V1) **NO** está en el build actual.
+**NOTA:** `src/ui/` (legacy V1) y `src_py/` (prototipo Python) han sido eliminados (Jul 2026). Todo el código UI activo está en `src/ui_v2/`.
 
 **Target de tests:**
 ```cmake
@@ -1995,7 +1993,7 @@ El **pipeline de 4 buffers CPU** descrito en la Sección 5. Se eliminó toda dep
 - `AudioEngine`, `TweenEngine`, `DeformationEngine` están implementados en engine pero sin UI
 - `NodeGraph` está implementado pero no expuesto en la UI
 - El formato FA2D (ZIP) tiene código duplicado con file_format.cpp (FAP directory-based)
-- `src/ui/` legacy V1 sigue en el repositorio pero no se compila
+- `src/ui/` (V1) y `src_py/` (prototipo Python) eliminados (Jul 2026) — solo `src/ui_v2/` activo
 
 ---
 
@@ -2025,7 +2023,7 @@ El **pipeline de 4 buffers CPU** descrito en la Sección 5. Se eliminó toda dep
 | `test_abr_importer.cpp` | ~6 | IsAbrFile false, load invalid file, empty brushes, invalid index handling, max values |
 | `test_memory_stress.cpp` | ~15 | Large canvas, many layers, many frames, COW stress, rapid undo/redo, 10000 strokes, buffer expansion, origin offset extremes, concurrent buffer access, memory limit boundaries |
 
-**Total: 139 tests en 29 test suites, todos pasando (~663ms total).**
+**Total: 154 tests en ~31 test suites, todos pasando.**
 
 ### 11.2 Ejecución
 
@@ -2131,12 +2129,16 @@ src/
 │   └── deformation/
 │       ├── deformation_engine.hpp  ├── deformation_engine.cpp
 │       └── deformation_mesh.hpp    ├── deformation_mesh.cpp
-├── ui/           [LEGACY V1 - NO COMPILADO]
-│   ├── main_window.hpp/cpp, canvas_widget.hpp/cpp, timeline_panel.hpp/cpp
-│   ├── opengl_canvas_widget.hpp/cpp, toolbox_panel.hpp/cpp
-│   ├── undo_commands.hpp/cpp, icons.hpp
-│   ├── layer_panel.hpp/cpp, color_panel.hpp/cpp, property_editor.hpp/cpp
-├── ui_v2/        [ACTIVO]
+├── ui_v2/        [ACTIVO - única UI]
+│   ├── canvas_widget_v2.hpp/cpp
+│   ├── main_window_v2.hpp/cpp
+│   ├── timeline_panel_v2.hpp/cpp
+│   ├── layer_panel_v2.hpp/cpp
+│   ├── property_editor_v2.hpp/cpp
+│   ├── toolbox_panel_v2.hpp/cpp
+│   ├── color_panel_v2.hpp/cpp
+│   ├── audio_track_widget.hpp/cpp
+│   └── layer_lock_button.hpp/cpp
 │   ├── canvas_widget_v2.hpp/cpp  (3052 líneas)
 │   ├── main_window_v2.hpp/cpp    (629 líneas)
 │   ├── timeline_panel_v2.hpp/cpp (591 líneas)
@@ -2160,10 +2162,10 @@ src/
 |---------|-------|
 | Archivos .hpp | ~28 |
 | Archivos .cpp | ~32 |
-| Archivos en engine/ | 25 |
-| Archivos en core/ | 10 |
-| Archivos en ui_v2/ | 16 |
-| Archivos en io/ | 7 |
+| Archivos en engine/ | ~42 |
+| Archivos en core/ | 19 |
+| Archivos en ui_v2/ | 18 |
+| Archivos en io/ | 9 |
 | Archivos en platform/ | 4 |
 | Widgets Qt | 8 |
 | Clases del modelo | 15+ |
@@ -2281,7 +2283,7 @@ src/
 - **El engine es totalmente independiente de Qt** y podría reutilizarse con otras UI toolkits
 - **La separación DATA/DISPLAY** es la lección arquitectónica más importante aprendida durante el desarrollo
 - **Los 41 commits revertidos** representan ~16 horas de trabajo que resultaron ser innecesarios una vez identificada la causa raíz
-- **139 tests** garantizan que el pipeline de renderizado, el modelo de datos, y los motores funcionan correctamente
+- **154 tests** garantizan que el pipeline de renderizado, el modelo de datos, y los motores funcionan correctamente
 
 ---
 

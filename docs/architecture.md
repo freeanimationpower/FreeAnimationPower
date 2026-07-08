@@ -13,8 +13,8 @@ The core philosophy is a **hybrid engine architecture**: every brush stroke can 
 ```
 +------------------------------------------------------------------+
 |                          UI Layer (Qt 6)                         |
-|  main_window | canvas_widget | timeline_panel | toolbox_panel    |
-|  color_panel | layer_panel   | property_editor                   |
+|  main_window_v2 | canvas_widget_v2 | timeline_panel_v2 | toolbox_panel_v2  |
+|  color_panel_v2 | layer_panel_v2   | property_editor_v2 | audio_track_widget|
 +------------------------------------------------------------------+
                                 |
                                 v
@@ -57,12 +57,13 @@ The core philosophy is a **hybrid engine architecture**: every brush stroke can 
 | File | Description |
 |------|-------------|
 | `types.hpp` / `types.cpp` | Fundamental types: `Vec2`, `Color`, `Rect`, `StrokePoint`, enums (`LayerType`, `BlendMode`, `BrushMode`), and utility base classes (`NonCopyable`, `NonMovable`). |
-| `document.hpp` / `document.cpp` | The top-level `Document` class. Holds canvas dimensions, FPS, frame count, modification state, and the root `GroupLayer`. |
-| `timeline.hpp` / `timeline.cpp` | `Timeline` manages the current frame, frame range, playback state, looping, and per-layer keyframe tracking via a `vector<vector<bool>>`. |
+| `document.hpp` / `document.cpp` | `Document` holds canvas dimensions, sequence list, modification state, and audio track metadata. Delegates layer/frame operations to active `Sequence`. |
+| `sequence.hpp` / `sequence.cpp` | `Sequence` manages per-sequence frames, playback state, looping, Work Area boundaries, duration frames, per-layer keyframe tracking, and per-sequence undo manager. |
 | `layer.hpp` / `layer.cpp` | Layer hierarchy: abstract `Layer` base, `RasterLayer` (with pixel dimensions), `VectorLayer` (stroke collection), and `GroupLayer` (composite with children). |
 | `stroke.hpp` / `stroke.cpp` | Stroke data container for brush input points. |
-| `canvas.hpp` / `canvas.cpp` | `Canvas` manages the viewport transform, zoom, pan, and rotation. |
-| `project.hpp` / `project.cpp` | `Project` aggregates `Document`, open file paths, and recent files. |
+| `canvas.hpp` / `canvas.cpp` | `Canvas` manages the viewport transform: zoom, pan, rotation, and horizontal/vertical flip. |
+| `tool_state.hpp` / `tool_state.cpp` | `ToolState` (QObject) centralizes 37 brush/tool/onion-skin properties with change signals. |
+| `app_state.hpp` / `app_state.cpp` | `AppState` (QObject) is the central state hub owning Document, ToolState, and all engine subsystems. |
 
 ### `src/engine/brush/` — Brush Engine
 
@@ -100,25 +101,31 @@ The core philosophy is a **hybrid engine architecture**: every brush stroke can 
 | `onion_skin.cpp` | Onion skinning: renders previous/next frames with configurable opacity and tint for traditional animation workflows. |
 | `playback.cpp` | Real-time playback loop with frame timing and vsync integration. |
 
-### `src/ui/` — User Interface (Qt 6 Widgets)
+### `src/ui_v2/` — User Interface (Qt 6 Widgets)
 
 | File | Description |
 |------|-------------|
-| `main_window.hpp` / `.cpp` | Application main window with menu bar, toolbars, dock widgets, and central canvas. |
-| `canvas_widget.hpp` / `.cpp` | OpenGL-accelerated canvas widget for drawing input and frame display. |
-| `timeline_panel.hpp` / `.cpp` | Timeline panel showing frame thumbnails, keyframe dots, and playback controls. |
-| `toolbox_panel.hpp` / `.cpp` | Tool palette: brush, eraser, fill, selection, eyedropper, pan, zoom. |
-| `color_panel.hpp` / `.cpp` | Color picker with HSV wheel, sliders, palette presets, and opacity control. |
-| `layer_panel.hpp` / `.cpp` | Layer stack with drag-to-reorder, visibility toggles, opacity sliders, and blend mode dropdowns. |
-| `property_editor.hpp` / `.cpp` | Context-sensitive property editor for brush settings, layer properties, and tool options. |
+| `main_window_v2.hpp` / `.cpp` | Application main window with toolbar, dock widgets, dark theme, and centralized signal wiring. |
+| `canvas_widget_v2.hpp` / `.cpp` | Central drawing surface with 4-buffer CPU rendering pipeline and 16-tool support. |
+| `timeline_panel_v2.hpp` / `.cpp` | Multi-sequence timeline with work area, FPS control, audio tracks, and waveform display. |
+| `toolbox_panel_v2.hpp` / `.cpp` | 11-tool palette, color swatch, onion skin settings, canvas resize controls. |
+| `color_panel_v2.hpp` / `.cpp` | Color swatch with QColorDialog integration and 9-circle MRU palette. |
+| `layer_panel_v2.hpp` / `.cpp` | Layer list with visibility/lock per row, blend mode combo, reorder/duplicate/delete. |
+| `property_editor_v2.hpp` / `.cpp` | Context-sensitive editor: brush controls, color picker, fill options, text font controls. |
+| `audio_track_widget.hpp` / `.cpp` | Audio track row with waveform visualization, QMediaPlayer, mute/volume controls. |
+| `layer_lock_button.hpp` / `.cpp` | Reusable 22x22 lock/unlock toggle button used in layer panel and timeline tracks. |
+| `audio_track_widget.hpp` / `.cpp` | Audio track row with waveform visualization, QMediaPlayer, mute/volume controls. |
 
 ### `src/io/` — Input/Output
 
 | File | Description |
 |------|-------------|
-| `file_format.cpp` | `.fap` format serializer/deserializer. Uses a directory-based format with `document.json` (metadata + layer tree) and a `frames/` subdirectory with per-layer PNG frame images. |
-| `document_io.cpp` | High-level document save/open with format detection and recent-files management. |
-| `video_export.cpp` | Export animation to video files (MP4, GIF) using FFmpeg. |
+| `document_manager.cpp` | Primary `.fap` format (binary ZIP via miniz). Atomic save/load with pixel deduplication, audio embedding, multi-sequence support. |
+| `file_format.cpp` | Legacy directory-based `.fap` format (v1/v2/v3) for backward compatibility. |
+| `document_io.cpp` | High-level document save/open with format detection. |
+| `video_export.cpp` | Export animation to MP4/GIF/PNG sequence using FFmpeg. |
+| `svg_export.cpp` | Export frames to SVG format (single frame and multi-frame). |
+| `serialization_common.cpp` | Shared enum/string conversion helpers for layer types and blend modes. |
 
 ### `src/platform/` — Platform Abstraction
 
@@ -156,12 +163,12 @@ RasterStroke          VectorStroke  (with BezierPath)
              |
              v
         GroupLayer (compositing with blend modes)
-             |
-             v
-        Canvas Display (OpenGL texture)
-             |
-             v
-        Main Window (Qt QOpenGLWidget)
+              |
+              v
+        CanvasWidgetV2 (4-buffer CPU pipeline)
+              |
+              v
+        MainWindowV2 (Qt QWidget, dark theme)
 ```
 
 ### Stroke Pipeline Details
@@ -177,56 +184,26 @@ RasterStroke          VectorStroke  (with BezierPath)
 
 ---
 
-## File Format (.fap)
+## File Format (.fap v2)
 
-A `.fap` project is a **directory** (not a single file) containing:
+A `.fap` project is a **binary ZIP** (renamed `.zip` file). Managed by `DocumentManager` in `src/io/document_manager.cpp`.
 
 ```
-project.fap/
-├── document.json         # Project metadata and layer tree
-└── frames/
-    ├── L0_0000.png       # Layer 0, frame 0000
-    ├── L0_0001.png       # Layer 0, frame 0001
-    ├── L1_0000.png       # Layer 1, frame 0000
-    └── ...
+project.fap (ZIP renamed)
+├── manifest.json       — version, canvas size, active_sequence, viewport (zoom/offset)
+├── timeline.json       — per-sequence: frames[], layers[], audio[] array
+├── audio/track_N.ext   — embedded audio files
+└── layers/S{seq}/frame_{f}/layer_{ll}.png + .json
 ```
 
-### `document.json` Schema
-
-```json
-{
-  "version": 1,
-  "canvas_w": 1920,
-  "canvas_h": 1080,
-  "fps": 24,
-  "total_frames": 60,
-  "layers": [
-    {
-      "name": "Background",
-      "type": "raster",
-      "visible": true,
-      "opacity": 1.0,
-      "blend_mode": "normal",
-      "locked": false,
-      "width": 1920,
-      "height": 1080
-    },
-    {
-      "name": "Line Art",
-      "type": "vector",
-      "visible": true,
-      "opacity": 1.0,
-      "blend_mode": "normal",
-      "locked": false
-    },
-    {
-      "name": "Effects",
-      "type": "group",
-      "visible": true,
-      "opacity": 1.0,
-      "blend_mode": "normal",
-      "locked": false,
-      "children": [ ... ]
+Key features:
+- **Atomic save**: write to .tmp, rename on success
+- **Pixel deduplication**: shared `pixelBuffer_` pointers detected via `unordered_set`
+- **ViewState**: zoom, offsetX, offsetY persisted in manifest
+- **11 metadata fields** per sequence: name, fps, totalFrames, visible, opacity, locked, workAreaStart/End, durationFrames, looping, currentFrame
+- **Layer metadata**: origin_x/y, hasContent, opacity, blendMode, locked
+- **Audio embedding**: audio files stored as ZIP entries, extracted to temp on load
+- **Backward compatible**: legacy directory format v1/v2/v3 still loadable via `file_format.cpp`
     }
   ]
 }
@@ -246,18 +223,28 @@ The project uses CMake 3.20+ with the following structure:
 - **Include path**: `src/` is added as a private include directory, allowing includes like `"core/document.hpp"`.
 - **CMake options**:
   - `FAP_BUILD_TESTS` (ON/OFF) — enables test build with GoogleTest
-  - `FAP_RENDERER_SKIA` (ON/OFF) — enables Skia graphics backend
-  - `FAP_RENDERER_OPENGL` (ON/OFF) — enables OpenGL backend
 
 ### Test Build
 
-Tests are built as a separate executable `fap-tests` using `GTest::gtest_main` and linked against `Qt6::Core` and `Qt6::Gui`. Test discovery is done via `gtest_discover_tests()`.
+Tests are built as a separate executable `fap-tests` using `GTest::gtest_main`. Test discovery via `gtest_discover_tests()`. 154 tests across 17 files.
 
 Test files (in `tests/`):
-- `test_document.cpp` — Document, Timeline, Layer tests
-- `test_timeline.cpp` — Timeline-specific tests
-- `test_brush_engine.cpp` — Brush engine and preset tests
-- `test_bezier.cpp` — Bezier path geometry tests
-- `test_file_format.cpp` — Save/load round-trip tests
+- `test_document.cpp` — Document, Sequence, Layer tests
+- `test_layer.cpp` — Raster/Vector layer pixel operations
+- `test_compositor.cpp` — Layer compositing, blend modes, opacity
+- `test_undo.cpp` — Undo/redo, max entries, UID preservation
+- `test_brush_engine.cpp` — Brush engine presets and stroke lifecycle
+- `test_bezier.cpp` — Bezier path geometry, flattening
+- `test_file_format.cpp` — Save/load round-trip
+- `test_audio_engine.cpp` — Audio tracks, keyframes, time conversion
+- `test_deformation.cpp` — Deformation mesh and engine
+- `test_node_graph.cpp` — Node graph DAG, blend/filter/transform nodes
+- `test_ruler_guide.cpp` — Linear/Radial/Mirror/Perspective snap
+- `test_tween_engine.cpp` — Easing functions, keyframe interpolation
+- `test_pencil_retouch.cpp` — Pencil retouch modes and brush
+- `test_abr_importer.cpp` — ABR brush file detection and load
+- `test_layer_memory.cpp` — UID, epoch, CoW, pointer stability
+- `test_timeline.cpp` — Playback state, frame navigation
+- `test_memory_stress.cpp` — 4K layer stress, undo stack stress
 
 **Note**: For tests to link correctly, all relevant `.cpp` implementation files from `src/` must be compiled and linked into the test executable. See `docs/build-instructions.md` for details on ensuring proper linkage.

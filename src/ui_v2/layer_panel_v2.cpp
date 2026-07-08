@@ -94,7 +94,7 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     headerRow->addWidget(titleLabel);
     headerRow->addStretch();
 
-    auto* addRasterBtn = makeIconButton(":/icons/layers/new_raster.png",
+    auto* addRasterBtn = makeIconButton(":/icons/svg/new_layer.svg",
         "New Raster Layer\nCreate a new pixel-based layer for drawing and painting.");
     QObject::connect(addRasterBtn, &QPushButton::clicked, this, &LayerPanelV2::addRasterLayer);
     headerRow->addWidget(addRasterBtn);
@@ -117,22 +117,22 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     auto* btnRow = new QHBoxLayout();
     btnRow->setSpacing(4);
 
-    auto* dupBtn = makeIconButton(":/icons/layers/duplicate.png",
+    auto* dupBtn = makeIconButton(":/icons/svg/duplicate.svg",
         "Duplicate Layer\nCreate an identical copy of the selected layer.");
     QObject::connect(dupBtn, &QPushButton::clicked, this, &LayerPanelV2::duplicateLayer);
     btnRow->addWidget(dupBtn);
 
-    auto* upBtn = makeIconButton(":/icons/layers/move_up.png",
+    auto* upBtn = makeIconButton(":/icons/svg/move_up.svg",
         "Move Layer Up\nMove the selected layer one position higher in the stack.");
     QObject::connect(upBtn, &QPushButton::clicked, this, &LayerPanelV2::moveLayerUp);
     btnRow->addWidget(upBtn);
 
-    auto* downBtn = makeIconButton(":/icons/layers/move_down.png",
+    auto* downBtn = makeIconButton(":/icons/svg/move_down.svg",
         "Move Layer Down\nMove the selected layer one position lower in the stack.");
     QObject::connect(downBtn, &QPushButton::clicked, this, &LayerPanelV2::moveLayerDown);
     btnRow->addWidget(downBtn);
 
-    auto* delBtn = makeIconButton(":/icons/layers/delete.png",
+    auto* delBtn = makeIconButton(":/icons/svg/delete.svg",
         "Delete Layer\nRemove the selected layer permanently. Cannot delete the last remaining layer.");
     delBtn->setStyleSheet(
         QString("QPushButton{background:%1;color:%2;border:1px solid %3;border-radius:3px;font-size:13px;}")
@@ -194,7 +194,7 @@ QWidget* LayerPanelV2::createLayerRow(int index, const Layer* layer) {
     visBtn->setFixedSize(22, 22);
     visBtn->setCheckable(true);
     visBtn->setChecked(visible);
-    visBtn->setIcon(QIcon(visible ? ":/icons/layers/visibility_on.png" : ":/icons/layers/visibility_off.png"));
+    visBtn->setIcon(QIcon(visible ? ":/icons/svg/eye_visible.svg" : ":/icons/svg/eye_hidden.svg"));
     visBtn->setIconSize(QSize(18, 18));
     visBtn->setToolTip(visible ? "Hide this layer" : "Show this layer");
     visBtn->setCursor(Qt::PointingHandCursor);

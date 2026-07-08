@@ -50,6 +50,17 @@
     </qresource>
     <qresource prefix="/brushes">
     </qresource>
+    <qresource prefix="/icons/svg">
+        <file alias="delete.svg">icons/delete.svg</file>
+        <file alias="duplicate.svg">icons/duplicate.svg</file>
+        <file alias="eye_visible.svg">icons/eye_visible.svg</file>
+        <file alias="eye_hidden.svg">icons/eye_hidden.svg</file>
+        <file alias="lock_open.svg">icons/lock_open.svg</file>
+        <file alias="lock_closed.svg">icons/lock_closed.svg</file>
+        <file alias="move_up.svg">icons/move_up.svg</file>
+        <file alias="move_down.svg">icons/move_down.svg</file>
+        <file alias="new_layer.svg">icons/new_layer.svg</file>
+    </qresource>
     <qresource prefix="/fonts">
         <file alias="JetBrainsMono-Regular.ttf">fonts/JetBrainsMono-Regular.ttf</file>
         <file alias="JetBrainsMono-Bold.ttf">fonts/JetBrainsMono-Bold.ttf</file>

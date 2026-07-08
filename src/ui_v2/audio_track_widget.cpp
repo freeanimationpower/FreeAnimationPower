@@ -67,7 +67,7 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
         updateMuteStyle();
     });
 
-    upBtn_ = new QPushButton(QIcon(":/icons/layers/move_up.png"), "", this);
+    upBtn_ = new QPushButton(QIcon(":/icons/svg/move_up.svg"), "", this);
     upBtn_->setFixedSize(28, 28);
     upBtn_->setIconSize(QSize(20, 20));
     upBtn_->setToolTip("Move Audio Track Up");
@@ -78,7 +78,7 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
         .arg(kBtnHover.name(), kPlayheadColor.name()));
     connect(upBtn_, &QPushButton::clicked, this, [this]() { emit moveUpRequested(); });
 
-    downBtn_ = new QPushButton(QIcon(":/icons/layers/move_down.png"), "", this);
+    downBtn_ = new QPushButton(QIcon(":/icons/svg/move_down.svg"), "", this);
     downBtn_->setFixedSize(28, 28);
     downBtn_->setIconSize(QSize(20, 20));
     downBtn_->setToolTip("Move Audio Track Down");
