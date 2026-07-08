@@ -57,6 +57,7 @@ public:
     void fit();
     void flipH();
     void rotateCanvas();
+    void rotateCanvasMinus();
     void toggleGrid();
 
     void resizeCanvas(int w, int h);

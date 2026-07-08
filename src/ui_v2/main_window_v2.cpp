@@ -227,9 +227,9 @@ void MainWindowV2::setupTopBar()
     connect(rotAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvas(); canvas_->update(); } });
 
     auto* rotLAct = toolbar->addAction(QIcon(":/icons/toolbar/rotate.png"), "");
-    rotLAct->setToolTip("Rotate +15deg (L)");
+    rotLAct->setToolTip("Rotate -15deg (L)");
     rotLAct->setShortcut(QKeySequence("L"));
-    connect(rotLAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvas(); canvas_->update(); } });
+    connect(rotLAct, &QAction::triggered, [this]() { if (canvas_) { canvas_->rotateCanvasMinus(); canvas_->update(); } });
 
     auto* gridAct = toolbar->addAction(QIcon(":/icons/toolbar/toggle_grid.png"), "");
     gridAct->setToolTip("Toggle Grid (')");

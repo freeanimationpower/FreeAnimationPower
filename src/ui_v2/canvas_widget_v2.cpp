@@ -247,6 +247,13 @@ void CanvasWidgetV2::rotateCanvas()
     update();
 }
 
+void CanvasWidgetV2::rotateCanvasMinus()
+{
+    rotationAngle_ -= 15.0f;
+    if (rotationAngle_ < 0.0f) rotationAngle_ += 360.0f;
+    update();
+}
+
 void CanvasWidgetV2::toggleGrid()
 {
     showGrid_ = !showGrid_;
