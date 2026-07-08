@@ -227,8 +227,10 @@ void CanvasWidgetV2::fit()
     float sx = static_cast<float>(width()) / static_cast<float>(doc.width());
     float sy = static_cast<float>(height()) / static_cast<float>(doc.height());
     zoom_ = std::min(sx, sy) * 0.9f;
-    offsetX_ = 0.0f;
-    offsetY_ = 0.0f;
+    float viewW = static_cast<float>(width()) / zoom_;
+    float viewH = static_cast<float>(height()) / zoom_;
+    offsetX_ = (static_cast<float>(doc.width()) - viewW) * 0.5f;
+    offsetY_ = (static_cast<float>(doc.height()) - viewH) * 0.5f;
     rotationAngle_ = 0.0f;
     flippedH_ = false;
     update();
@@ -313,6 +315,13 @@ void CanvasWidgetV2::render(QPainter* painter)
             painter->setRenderHint(QPainter::Antialiasing, false);
             painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
             painter->drawImage(QPoint(rl.originX(), rl.originY()), display);
+            static int renderLogCount = 0;
+            if (renderLogCount < 3) {
+                qDebug() << "RENDER layer" << rl.name().c_str()
+                         << "origin:" << rl.originX() << "," << rl.originY()
+                         << "img:" << display.width() << "x" << display.height();
+                ++renderLogCount;
+            }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
             painter->setRenderHint(QPainter::Antialiasing, true);
         }

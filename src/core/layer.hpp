@@ -63,6 +63,7 @@ public:
     int height() const { return height_; }
     int originX() const { return originX_; }
     int originY() const { return originY_; }
+    void setOrigin(int x, int y) { originX_ = x; originY_ = y; }
 
     const uint32_t* pixelData() const { return pixelBuffer_->pixels.data(); }
     uint32_t* pixelData() { return pixelBuffer_->pixels.data(); }

@@ -58,6 +58,7 @@ public:
     void setModified(bool m) { modified_ = m; }
 
     const std::string& filepath() const { return filepath_; }
+    void setFilepath(const std::string& fp) { filepath_ = fp; }
 
 private:
     std::string filepath_;

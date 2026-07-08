@@ -60,6 +60,13 @@ public:
     void rotateCanvasMinus();
     void toggleGrid();
 
+    float viewZoom() const { return zoom_; }
+    float viewOffsetX() const { return offsetX_; }
+    float viewOffsetY() const { return offsetY_; }
+    void setViewState(float zoom, float offsetX, float offsetY) {
+        zoom_ = zoom; offsetX_ = offsetX; offsetY_ = offsetY; update();
+    }
+
     void resizeCanvas(int w, int h);
     void shiftFrameData(int fromFrame, int delta);
     void removeFrameData(int frameIdx);

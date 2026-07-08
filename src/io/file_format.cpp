@@ -83,8 +83,11 @@ static QJsonObject layerToJson(const Layer& layer) {
 
     if (layer.type() == LayerType::Raster) {
         const auto& rl = static_cast<const RasterLayer&>(layer);
-        obj["width"]  = rl.width();
-        obj["height"] = rl.height();
+        obj["width"]       = rl.width();
+        obj["height"]      = rl.height();
+        obj["origin_x"]    = rl.originX();
+        obj["origin_y"]    = rl.originY();
+        obj["has_content"] = rl.hasContent();
     }
 
     if (layer.type() == LayerType::Group) {
@@ -114,6 +117,9 @@ static std::unique_ptr<Layer> layerFromJson(const QJsonObject& obj) {
             int w = obj["width"].toInt(1920);
             int h = obj["height"].toInt(1080);
             layer = std::make_unique<RasterLayer>(name.toStdString(), w, h);
+            auto* rl = static_cast<RasterLayer*>(layer.get());
+            rl->setOrigin(obj["origin_x"].toInt(0), obj["origin_y"].toInt(0));
+            rl->setHasContent(obj["has_content"].toBool(false));
             break;
         }
         case LayerType::Vector:
@@ -161,16 +167,14 @@ static bool saveFrame(const QImage& image, const QString& path) {
 bool loadFAP(const QString& path, Document& doc) {
     QFileInfo fi(path);
     if (!fi.isDir()) {
-        qWarning("loadFAP: path is not a directory: %s",
-                 qPrintable(path));
+        qWarning("loadFAP: path is not a directory: %s", qPrintable(path));
         return false;
     }
 
     QString jsonPath = fi.filePath() + "/document.json";
     QFile file(jsonPath);
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning("loadFAP: cannot open document.json: %s",
-                 qPrintable(jsonPath));
+        qWarning("loadFAP: cannot open document.json: %s", qPrintable(jsonPath));
         return false;
     }
 
@@ -180,26 +184,83 @@ bool loadFAP(const QString& path, Document& doc) {
     QJsonParseError err;
     QJsonDocument jdoc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError) {
-        qWarning("loadFAP: JSON parse error: %s",
-                 qPrintable(err.errorString()));
+        qWarning("loadFAP: JSON parse error: %s", qPrintable(err.errorString()));
         return false;
     }
 
     QJsonObject root = jdoc.object();
-
     int version = root["version"].toInt(1);
 
-    doc.setCanvasSize(root["canvas_w"].toInt(1920),
-                      root["canvas_h"].toInt(1080));
-    doc.setFPS(root["fps"].toInt(24));
-    doc.setTotalFrames(root["total_frames"].toInt(1));
+    doc.setCanvasSize(root["canvas_w"].toInt(1920), root["canvas_h"].toInt(1080));
 
-    if (version >= 2) {
+    if (version >= 3) {
+        QJsonArray seqArr = root["sequences"].toArray();
+        for (int si = 0; si < seqArr.size(); ++si) {
+            QJsonObject seqObj = seqArr[si].toObject();
+            std::string sname = seqObj["name"].toString("Sequence").toStdString();
+            int sfps = seqObj["fps"].toInt(24);
+            int sframeCount = seqObj["total_frames"].toInt(1);
+            auto& seq = (si == 0) ? doc.activeSequence() : doc.addSequence(sname);
+            seq.setName(sname);
+            seq.setFPS(sfps);
+            seq.setTotalFrames(sframeCount);
+            seq.setCurrentFrame(seqObj["current_frame"].toInt(0));
+            seq.setVisible(seqObj["visible"].toBool(true));
+            seq.setOpacity(static_cast<float>(seqObj["opacity"].toDouble(1.0)));
+            seq.setLocked(seqObj["locked"].toBool(false));
+            seq.setWorkAreaStart(seqObj["work_area_start"].toInt(0));
+            seq.setWorkAreaEnd(seqObj["work_area_end"].toInt(0));
+            seq.setDurationFrames(seqObj["duration_frames"].toInt(sframeCount));
+            seq.setLooping(seqObj["looping"].toBool(false));
+
+            QJsonArray framesArr = seqObj["frames"].toArray();
+            for (const auto& frameVal : framesArr) {
+                QJsonObject frameObj = frameVal.toObject();
+                int frameIdx = frameObj["index"].toInt(0);
+                auto& frameRoot = seq.rootLayerForFrame(frameIdx);
+                while (frameRoot.layerCount() > 0)
+                    frameRoot.removeLayer(0);
+                QJsonArray layersArr = frameObj["layers"].toArray();
+                int li = 0;
+                for (const auto& layerVal : layersArr) {
+                    auto layer = layerFromJson(layerVal.toObject());
+                    if (layer) {
+                        if (layer->type() == LayerType::Raster) {
+                            auto* rl = static_cast<RasterLayer*>(layer.get());
+                            QString pngName = QString("F%1_S%2_L%3.png")
+                                .arg(frameIdx).arg(si).arg(li, 2, 10, QLatin1Char('0'));
+                            QString pngPath = fi.filePath() + "/frames/" + pngName;
+                            QImage png(pngPath);
+                            if (!png.isNull()) {
+                                png = png.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+                                int copyW = std::min(png.width(), rl->width());
+                                int copyH = std::min(png.height(), rl->height());
+                                for (int y = 0; y < copyH; ++y) {
+                                    const uint32_t* src = reinterpret_cast<const uint32_t*>(png.constScanLine(y));
+                                    uint32_t* dst = rl->pixelData() + static_cast<size_t>(y) * rl->width();
+                                    if (src && dst) std::copy(src, src + copyW, dst);
+                                }
+                            }
+                        }
+                        frameRoot.addLayer(std::move(layer));
+                    }
+                    ++li;
+                }
+            }
+        }
+        int activeIdx = root["active_sequence"].toInt(0);
+        doc.setActiveSequence(static_cast<size_t>(activeIdx));
+    } else if (version >= 2) {
+        auto& seq = doc.activeSequence();
+        seq.setFPS(root["fps"].toInt(24));
+        seq.setTotalFrames(root["total_frames"].toInt(1));
         QJsonArray framesArr = root["frames"].toArray();
         for (const auto& frameVal : framesArr) {
             QJsonObject frameObj = frameVal.toObject();
             int frameIdx = frameObj["index"].toInt(0);
-            auto& frameRoot = doc.rootLayerForFrame(frameIdx);
+            auto& frameRoot = seq.rootLayerForFrame(frameIdx);
+            while (frameRoot.layerCount() > 0)
+                frameRoot.removeLayer(0);
             QJsonArray layersArr = frameObj["layers"].toArray();
             int li = 0;
             for (const auto& layerVal : layersArr) {
@@ -217,9 +278,8 @@ bool loadFAP(const QString& path, Document& doc) {
                             int copyH = std::min(png.height(), rl->height());
                             for (int y = 0; y < copyH; ++y) {
                                 const uint32_t* src = reinterpret_cast<const uint32_t*>(png.constScanLine(y));
-                                uint32_t* dst = rl->pixelData() + y * rl->width();
-                                if (src && dst)
-                                    std::copy(src, src + copyW, dst);
+                                uint32_t* dst = rl->pixelData() + static_cast<size_t>(y) * rl->width();
+                                if (src && dst) std::copy(src, src + copyW, dst);
                             }
                         }
                     }
@@ -235,10 +295,16 @@ bool loadFAP(const QString& path, Document& doc) {
             auto layer = layerFromJson(layerVal.toObject());
             if (layer) templateLayers.push_back(std::move(layer));
         }
-        int total = doc.totalFrames();
+        int fps = root["fps"].toInt(24);
+        int total = root["total_frames"].toInt(1);
+        auto& seq = doc.activeSequence();
+        seq.setFPS(fps);
+        seq.setTotalFrames(total);
         int w = doc.width(), h = doc.height();
         for (int f = 0; f < total; ++f) {
-            auto& frameRoot = doc.rootLayerForFrame(f);
+            auto& frameRoot = seq.rootLayerForFrame(f);
+            while (frameRoot.layerCount() > 0)
+                frameRoot.removeLayer(0);
             for (auto& tl : templateLayers) {
                 auto clone = std::make_unique<RasterLayer>(tl->name(), w, h);
                 clone->setVisible(tl->visible());
@@ -253,7 +319,7 @@ bool loadFAP(const QString& path, Document& doc) {
                     for (int y = 0; y < std::min(png.height(), h); ++y) {
                         const uint32_t* src = reinterpret_cast<const uint32_t*>(png.constScanLine(y));
                         if (src) {
-                            uint32_t* dst = clone->pixelData() + y * w;
+                            uint32_t* dst = clone->pixelData() + static_cast<size_t>(y) * w;
                             std::copy(src, src + std::min(png.width(), w), dst);
                         }
                     }
@@ -271,60 +337,74 @@ bool saveFAP(const QString& path, const Document& doc) {
     QDir dir(path);
     if (!dir.exists()) {
         if (!dir.mkpath(".")) {
-            qWarning("saveFAP: cannot create directory: %s",
-                     qPrintable(path));
+            qWarning("saveFAP: cannot create directory: %s", qPrintable(path));
             return false;
         }
     }
 
     QJsonObject root;
-    root["version"]      = kFormatVersion;
-    root["canvas_w"]     = doc.width();
-    root["canvas_h"]     = doc.height();
-    root["fps"]          = doc.fps();
-    root["total_frames"] = doc.totalFrames();
-
-    QJsonArray framesArr;
-    int total = doc.totalFrames();
-    int w = doc.width();
-    int h = doc.height();
+    root["version"]          = 3;
+    root["canvas_w"]         = doc.width();
+    root["canvas_h"]         = doc.height();
+    root["active_sequence"]  = static_cast<int>(doc.activeSequenceIndex());
 
     QString framesDirPath = dir.filePath("frames");
     QDir framesDir(framesDirPath);
-    if (!framesDir.exists()) {
-        framesDir.mkpath(".");
-    }
+    if (!framesDir.exists()) framesDir.mkpath(".");
 
-    for (int frame = 0; frame < total; ++frame) {
-        const auto& frameRoot = doc.rootLayerForFrame(frame);
-        QJsonObject frameObj;
-        frameObj["index"] = frame;
-        QJsonArray layersArr;
-        for (size_t li = 0; li < frameRoot.layerCount(); ++li) {
-            const Layer* layer = frameRoot.layers()[li].get();
-            layersArr.append(layerToJson(*layer));
-            if (layer->type() == LayerType::Raster) {
-                const auto& rl = static_cast<const RasterLayer&>(*layer);
-                QImage layerImage(reinterpret_cast<const uchar*>(rl.pixelData()),
-                                  rl.width(), rl.height(),
-                                  rl.width() * static_cast<int>(sizeof(uint32_t)),
-                                  QImage::Format_ARGB32_Premultiplied);
-                QString frameName = QString("F%1_L%2.png")
-                    .arg(frame).arg(li, 2, 10, QLatin1Char('0'));
-                saveFrame(layerImage.copy(), framesDir.filePath(frameName));
+    QJsonArray seqArr;
+    for (size_t si = 0; si < doc.sequenceCount(); ++si) {
+        const auto& seq = doc.sequenceAt(si);
+        QJsonObject seqObj;
+        seqObj["name"]            = QString::fromStdString(seq.name());
+        seqObj["fps"]             = seq.fps();
+        seqObj["total_frames"]    = seq.totalFrames();
+        seqObj["current_frame"]   = seq.currentFrame();
+        seqObj["visible"]         = seq.visible();
+        seqObj["opacity"]         = static_cast<double>(seq.opacity());
+        seqObj["locked"]          = seq.locked();
+        seqObj["work_area_start"] = seq.workAreaStart();
+        seqObj["work_area_end"]   = seq.workAreaEnd();
+        seqObj["duration_frames"] = seq.durationFrames();
+        seqObj["looping"]         = seq.looping();
+
+        QJsonArray framesArr;
+        int total = seq.totalFrames();
+
+        for (int frame = 0; frame < total; ++frame) {
+            const auto* root = seq.peekRootLayerForFrame(frame);
+            if (!root) continue;
+
+            QJsonObject frameObj;
+            frameObj["index"] = frame;
+            QJsonArray layersArr;
+            for (size_t li = 0; li < root->layerCount(); ++li) {
+                const Layer* layer = root->layers()[li].get();
+                layersArr.append(layerToJson(*layer));
+                if (layer->type() == LayerType::Raster) {
+                    const auto& rl = static_cast<const RasterLayer&>(*layer);
+                    QImage layerImage(reinterpret_cast<const uchar*>(rl.pixelData()),
+                                      rl.width(), rl.height(),
+                                      rl.width() * static_cast<int>(sizeof(uint32_t)),
+                                      QImage::Format_ARGB32_Premultiplied);
+                    QString frameName = QString("F%1_S%2_L%3.png")
+                        .arg(frame).arg(si).arg(li, 2, 10, QLatin1Char('0'));
+                    saveFrame(layerImage.copy(), framesDir.filePath(frameName));
+                }
             }
+            frameObj["layers"] = layersArr;
+            framesArr.append(frameObj);
         }
-        frameObj["layers"] = layersArr;
-        framesArr.append(frameObj);
+        seqObj["frames"] = framesArr;
+        seqArr.append(seqObj);
     }
-    root["frames"] = framesArr;
+    root["sequences"] = seqArr;
 
     QJsonDocument jdoc(root);
     QString jsonPath = dir.filePath("document.json");
     QFile file(jsonPath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        qWarning("saveFAP: cannot write document.json: %s",
-                 qPrintable(jsonPath));
+        qWarning("saveFAP: cannot write document.json: %s", qPrintable(jsonPath));
         return false;
     }
     file.write(jdoc.toJson(QJsonDocument::Indented));

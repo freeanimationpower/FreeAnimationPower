@@ -17,10 +17,16 @@ class Document;
 class Layer;
 class RasterLayer;
 
+struct ViewState {
+    float zoom = 0.0f;
+    float offsetX = 0.0f;
+    float offsetY = 0.0f;
+};
+
 class DocumentManager {
 public:
-    static constexpr int kFormatVersion = 1;
-    static constexpr const char* kExtension = ".fa2d";
+    static constexpr int kFormatVersion = 2;
+    static constexpr const char* kExtension = ".fap";
 
     explicit DocumentManager();
     ~DocumentManager();
@@ -28,9 +34,10 @@ public:
     DocumentManager(const DocumentManager&) = delete;
     DocumentManager& operator=(const DocumentManager&) = delete;
 
-    bool save(const Document& doc, const QString& path);
+    bool save(const Document& doc, const QString& path, const ViewState& vs = {});
     bool load(Document& doc, const QString& path);
 
+    ViewState viewState() const { return viewState_; }
     QString lastError() const;
     bool isBusy() const;
 
@@ -48,16 +55,17 @@ private:
 
     static QJsonObject layerMetadataToJson(const Layer& layer);
     static std::unique_ptr<Layer> layerMetadataFromJson(const QJsonObject& obj);
-    static QJsonObject documentToJson(const Document& doc);
-    static bool documentFromJson(const QJsonObject& root, Document& doc);
+    QJsonObject documentToJson(const Document& doc);
+    bool documentFromJson(const QJsonObject& root, Document& doc);
 
-    static QString buildLayerPath(int frameIdx, int layerModelIdx, const char* ext);
+    static QString buildLayerPath(int frameIdx, int seqIdx, int layerIdx, const char* ext);
     static constexpr const char* kManifestEntry = "manifest.json";
     static constexpr const char* kTimelineEntry  = "timeline.json";
 
     mutable QMutex mutex_;
     QString lastError_;
     bool busy_ = false;
+    ViewState viewState_;
 };
 
 } // namespace fap

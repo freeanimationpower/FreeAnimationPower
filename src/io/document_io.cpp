@@ -46,6 +46,7 @@ bool loadDocument(Document& doc, const QString& path) {
     if (fmt == DocumentFormat::FAP) {
         bool ok = loadFAP(path, doc);
         if (ok) {
+            doc.setFilepath(path.toStdString());
             doc.setModified(false);
             return true;
         }

@@ -15,6 +15,7 @@
 #include <QtCore/QProcess>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryDir>
+#include <QtCore/QTimer>
 #include <QtGui/QAction>
 #include <QtGui/QKeySequence>
 #include <QtGui/QPainter>
@@ -29,11 +30,9 @@
 #include "core/document.hpp"
 #include "core/undo_manager.hpp"
 #include "io/svg_export.hpp"
+#include "io/document_manager.hpp"
 
 namespace fap {
-
-extern bool loadDocument(Document& doc, const QString& path);
-extern bool saveDocument(const Document& doc, const QString& path);
 
 static const char* kTheme = R"(
 QMainWindow { background:#0F1115; }
@@ -521,7 +520,7 @@ void MainWindowV2::openProjectDialog()
 {
     QString path = QFileDialog::getOpenFileName(
         this, "Open Project", QString(),
-        "FAP Projects (*.fap *.fa2d);;All Files (*)");
+        "Free Animation Power (*.fap);;All Files (*)");
     if (!path.isEmpty())
         openProject(path);
 }
@@ -540,22 +539,37 @@ void MainWindowV2::openProject(const QString& path)
     }
 
     appState_->resetDocument(1920, 1080, 24, 1);
-    if (loadDocument(appState_->document(), path)) {
+    DocumentManager dm;
+    if (dm.load(appState_->document(), path)) {
+        appState_->document().setFilepath(path.toStdString());
+        appState_->document().setModified(false);
         setWindowTitle(QString("Free Animation Power - %1").arg(path));
         layer_panel_->refreshLayerList();
+        auto& doc = appState_->document();
+        auto& seq = doc.activeSequence();
         if (canvas_) {
-            canvas_->setCurrentFrame(0);
-            canvas_->setTotalFrames(appState_->document().totalFrames());
+            canvas_->setCurrentFrame(seq.currentFrame());
+            canvas_->setTotalFrames(seq.totalFrames());
             canvas_->setCurrentLayer(0);
-            canvas_->fit();
-            canvas_->update();
+            ViewState vs = dm.viewState();
+            qDebug() << "RESTORE viewState zoom:" << vs.zoom
+                     << "offsetX:" << vs.offsetX << "offsetY:" << vs.offsetY;
+            QTimer::singleShot(0, canvas_, [this, vs]() {
+                if (!canvas_) return;
+                if (vs.zoom > 0) {
+                    canvas_->setViewState(vs.zoom, vs.offsetX, vs.offsetY);
+                } else {
+                    canvas_->fit();
+                }
+            });
         }
         if (timeline_panel_) {
-            timeline_panel_->setTotalFrames(appState_->document().totalFrames());
-            timeline_panel_->setCurrentFrame(0);
-            timeline_panel_->setFPS(appState_->document().fps());
+            timeline_panel_->setTotalFrames(seq.totalFrames());
+            timeline_panel_->setCurrentFrame(seq.currentFrame());
+            timeline_panel_->setFPS(seq.fps());
             timeline_panel_->rebuildTracks();
         }
+        appState_->setActiveSequence(0);
         updateUIState();
         statusBar()->showMessage("Project opened: " + path, 3000);
     } else {
@@ -570,8 +584,15 @@ void MainWindowV2::saveProject()
         return;
     }
 
-    if (saveDocument(appState_->document(),
-                     QString::fromStdString(appState_->document().filepath()))) {
+    DocumentManager dm;
+    ViewState vs;
+    if (canvas_) {
+        vs.zoom    = canvas_->viewZoom();
+        vs.offsetX = canvas_->viewOffsetX();
+        vs.offsetY = canvas_->viewOffsetY();
+    }
+    if (dm.save(appState_->document(),
+                QString::fromStdString(appState_->document().filepath()), vs)) {
         appState_->document().setModified(false);
         statusBar()->showMessage("Project saved", 3000);
     } else {
@@ -583,11 +604,20 @@ void MainWindowV2::saveProjectAs()
 {
     QString path = QFileDialog::getSaveFileName(
         this, "Save Project As", "untitled.fap",
-        "FAP Projects (*.fap);;FA2D Projects (*.fa2d);;All Files (*)");
+        "Free Animation Power (*.fap);;All Files (*)");
     if (path.isEmpty())
         return;
 
-    if (saveDocument(appState_->document(), path)) {
+    DocumentManager dm;
+    ViewState vs;
+    if (canvas_) {
+        vs.zoom    = canvas_->viewZoom();
+        vs.offsetX = canvas_->viewOffsetX();
+        vs.offsetY = canvas_->viewOffsetY();
+        qDebug() << "SAVE viewState:" << vs.zoom << vs.offsetX << vs.offsetY;
+    }
+    if (dm.save(appState_->document(), path, vs)) {
+        appState_->document().setFilepath(path.toStdString());
         appState_->document().setModified(false);
         setWindowTitle(QString("Free Animation Power - %1").arg(path));
         statusBar()->showMessage("Project saved: " + path, 3000);
