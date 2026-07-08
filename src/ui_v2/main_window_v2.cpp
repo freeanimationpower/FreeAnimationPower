@@ -11,6 +11,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
+#include <QtWidgets/QMenu>
 #include <QtCore/QProcess>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryDir>
@@ -27,6 +28,7 @@
 #include "property_editor_v2.hpp"
 #include "core/document.hpp"
 #include "core/undo_manager.hpp"
+#include "io/svg_export.hpp"
 
 namespace fap {
 
@@ -194,6 +196,21 @@ void MainWindowV2::setupTopBar()
             statusBar()->showMessage("GIF export failed", 5000);
         }
     });
+
+    auto* exportSvgBtn = new QToolButton(this);
+    exportSvgBtn->setIcon(QIcon(":/icons/toolbar/export_video.png"));
+    exportSvgBtn->setToolTip("Export SVG");
+    exportSvgBtn->setPopupMode(QToolButton::InstantPopup);
+    auto* svgMenu = new QMenu(exportSvgBtn);
+    svgMenu->setStyleSheet(QString(
+        "QMenu { background:%1; color:%2; border:1px solid %3; border-radius:4px; padding:4px; }"
+        "QMenu::item { padding:4px 16px; border-radius:3px; }"
+        "QMenu::item:selected { background:#252838; color:#E8ECF0; }")
+        .arg("#1E2130", "#C8CCD8", "#1E2128"));
+    svgMenu->addAction("Current Frame", this, &MainWindowV2::exportSVGCurrentFrame);
+    svgMenu->addAction("All Frames",   this, &MainWindowV2::exportSVGAllFrames);
+    exportSvgBtn->setMenu(svgMenu);
+    toolbar->addWidget(exportSvgBtn);
 
     toolbar->addSeparator();
 
@@ -637,6 +654,40 @@ void MainWindowV2::exportVideo()
         QMessageBox::warning(this, "Error",
             "FFmpeg failed:\n" + QString::fromUtf8(ffmpeg.readAllStandardError()));
         statusBar()->showMessage("Video export failed", 5000);
+    }
+}
+
+void MainWindowV2::exportSVGCurrentFrame()
+{
+    auto& doc = appState_->document();
+    int frame = doc.currentFrame();
+    QString path = QFileDialog::getSaveFileName(
+        this, "Export Current Frame as SVG",
+        QString("frame_%1.svg").arg(frame, 4, 10, QChar('0')),
+        "SVG Files (*.svg);;All Files (*)");
+    if (path.isEmpty()) return;
+
+    if (exportSVGFrame(doc, frame, path)) {
+        statusBar()->showMessage("SVG exported: " + path, 5000);
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to export SVG.");
+    }
+}
+
+void MainWindowV2::exportSVGAllFrames()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+        this, "Export All Frames as SVG");
+    if (dir.isEmpty()) return;
+
+    auto& doc = appState_->document();
+    int total = doc.totalFrames();
+    statusBar()->showMessage("Exporting SVG frames...");
+
+    if (exportSVGFrames(doc, dir)) {
+        statusBar()->showMessage(QString("SVG exported: %1 frames → %2").arg(total).arg(dir), 5000);
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to export some SVG frames.");
     }
 }
 

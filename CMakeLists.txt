@@ -150,6 +150,7 @@ set(UI_SOURCES
 set(IO_HEADERS
     src/io/document_manager.hpp
     src/io/serialization_common.hpp
+    src/io/svg_export.hpp
 )
 
 set(IO_SOURCES
@@ -158,6 +159,7 @@ set(IO_SOURCES
     src/io/file_format.cpp
     src/io/document_manager.cpp
     src/io/serialization_common.cpp
+    src/io/svg_export.cpp
 )
 
 set(PLATFORM_HEADERS

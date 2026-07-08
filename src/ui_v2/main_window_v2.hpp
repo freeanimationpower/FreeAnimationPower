@@ -35,6 +35,8 @@ private:
     void saveProject();
     void saveProjectAs();
     void exportVideo();
+    void exportSVGCurrentFrame();
+    void exportSVGAllFrames();
 
     std::shared_ptr<AppState> appState_;
 
