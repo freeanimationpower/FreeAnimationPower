@@ -47,6 +47,7 @@ public:
     void onMoveTrack(int seqIndex, int delta);
     void onImportAudio();
     void removeAudioTrack(AudioTrackWidget* track);
+    void clearAudioTracks();
     void onTrackFrameClicked(int frame);
     AudioTrackWidget* addAudioTrackFromData(const AudioTrackData& data);
     const std::vector<AudioTrackWidget*>& audioTrackWidgets() const { return audioTrackWidgets_; }

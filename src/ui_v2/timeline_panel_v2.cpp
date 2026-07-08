@@ -1270,6 +1270,15 @@ void TimelinePanelV2::onImportAudio()
     });
 }
 
+void TimelinePanelV2::clearAudioTracks()
+{
+    for (auto* at : audioTrackWidgets_) {
+        tracksLayout_->removeWidget(at);
+        at->deleteLater();
+    }
+    audioTrackWidgets_.clear();
+}
+
 void TimelinePanelV2::removeAudioTrack(AudioTrackWidget* track)
 {
     auto it = std::find(audioTrackWidgets_.begin(), audioTrackWidgets_.end(), track);

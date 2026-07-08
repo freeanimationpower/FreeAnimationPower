@@ -500,6 +500,9 @@ void MainWindowV2::newProject()
 
     appState_->resetDocument(1920, 1080, 24, 24);
     setWindowTitle("Free Animation Power - Untitled.fap");
+    if (timeline_panel_) {
+        timeline_panel_->clearAudioTracks();
+    }
     layer_panel_->refreshLayerList();
     if (canvas_) {
         canvas_->setCurrentFrame(0);
@@ -615,11 +618,38 @@ void MainWindowV2::saveProject()
 
 void MainWindowV2::saveProjectAs()
 {
-    QString path = QFileDialog::getSaveFileName(
-        this, "Save Project As", "untitled.fap",
-        "Free Animation Power (*.fap);;All Files (*)");
-    if (path.isEmpty())
+    // Ask user: single .fap file or project folder?
+    QMessageBox saveChoice(this);
+    saveChoice.setWindowTitle(QString::fromUtf8("Save As..."));
+    saveChoice.setText(QString::fromUtf8(
+        "How do you want to save the project?"));
+    saveChoice.setInformativeText(QString::fromUtf8(
+        "File (.fap) — Everything packed in a single portable file.\n"
+        "Folder — Project folder with .fap and audio files organized."));
+    QPushButton* fileBtn = saveChoice.addButton(QString::fromUtf8("Single .fap File"), QMessageBox::AcceptRole);
+    QPushButton* folderBtn = saveChoice.addButton(QString::fromUtf8("Project Folder"), QMessageBox::ActionRole);
+    saveChoice.addButton(QMessageBox::Cancel);
+    saveChoice.setDefaultButton(fileBtn);
+    saveChoice.exec();
+
+    QString path;
+    bool folderMode = (saveChoice.clickedButton() == folderBtn);
+
+    if (folderMode) {
+        QString dir = QFileDialog::getExistingDirectory(
+            this, "Select Project Folder", QString(),
+            QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+        if (dir.isEmpty()) return;
+        path = dir + "/untitled.fap";
+    } else if (saveChoice.clickedButton() == fileBtn) {
+        path = QFileDialog::getSaveFileName(
+            this, "Save Project As", "untitled.fap",
+            "Free Animation Power (*.fap);;All Files (*)");
+    } else {
         return;
+    }
+
+    if (path.isEmpty()) return;
 
     // Sync audio track state into Document before save
     syncAudioToDocument();
@@ -630,13 +660,28 @@ void MainWindowV2::saveProjectAs()
         vs.zoom    = canvas_->viewZoom();
         vs.offsetX = canvas_->viewOffsetX();
         vs.offsetY = canvas_->viewOffsetY();
-        qDebug() << "SAVE viewState:" << vs.zoom << vs.offsetX << vs.offsetY;
     }
     if (dm.save(appState_->document(), path, vs)) {
         appState_->document().setFilepath(path.toStdString());
         appState_->document().setModified(false);
         setWindowTitle(QString("Free Animation Power - %1").arg(path));
-        statusBar()->showMessage("Project saved: " + path, 3000);
+
+        if (folderMode && !appState_->document().audioTracks().empty()) {
+            // Extract audio files alongside .fap for external access
+            QDir projectDir = QFileInfo(path).absoluteDir();
+            QDir audioDir(projectDir.filePath("audio"));
+            if (!audioDir.exists()) projectDir.mkdir("audio");
+            for (const auto& at : appState_->document().audioTracks()) {
+                QFileInfo fi(QString::fromStdString(at.filepath));
+                if (fi.exists()) {
+                    QString destPath = audioDir.filePath(fi.fileName());
+                    QFile::copy(fi.absoluteFilePath(), destPath);
+                }
+            }
+        }
+
+        statusBar()->showMessage(
+            folderMode ? "Project saved: " + QFileInfo(path).absolutePath() : "Project saved: " + path, 3000);
     } else {
         QMessageBox::warning(this, "Error", "Failed to save project.");
     }
