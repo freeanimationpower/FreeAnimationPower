@@ -572,6 +572,7 @@ void MainWindowV2::openProject(const QString& path)
         appState_->setActiveSequence(0);
         updateUIState();
         statusBar()->showMessage("Project opened: " + path, 3000);
+        toolbox_panel_->setActiveTool(0);
     } else {
         QMessageBox::warning(this, "Error", "Failed to open project:\n" + path);
     }
