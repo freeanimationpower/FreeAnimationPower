@@ -614,7 +614,7 @@ bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
                      << "png:" << converted.width() << "x" << converted.height();
 
             rl->ensureContains(rl->originX(), rl->originY(),
-                                   converted.width(), converted.height());
+                                   converted.width(), converted.height(), false);
 
                 for (int y = 0; y < std::min(converted.height(), rl->height()); ++y) {
                     const uint32_t* src =
