@@ -61,8 +61,8 @@ Free Animation Power (FAP) es un **software de animación 2D de código abierto*
 FREE ANIMATION POWER/
 ├── src/
 │   ├── main.cpp              # Punto de entrada
-│   ├── core/                 # 10 archivos - Modelo de datos puro (sin Qt excepto tool_state)
-│   ├── engine/               # 25 archivos - Motores sin dependencia Qt
+│   ├── core/                 # 19 archivos - Modelo de datos puro (sin Qt excepto tool_state)
+│   ├── engine/               # ~42 archivos - Motores sin dependencia Qt
 │   │   ├── common/           # blend_utils.hpp
 │   │   ├── raster/           # RasterEngine + raster_stroke
 │   │   ├── vector/           # BezierPath + VectorEngine + vector_stroke
@@ -110,9 +110,9 @@ FREE ANIMATION POWER/
 │  deformation/, common/                                        │
 │  (Sin dependencia Qt - puro C++20 estándar)                  │
 ├──────────────────────────────────────────────────────────────┤
-│                  CORE DATA MODEL (src/core/)                  │
-│  Document, Layer, Stroke, Canvas, Timeline, UndoManager,     │
-│  ToolState, AppState, Types                                   │
+│      CORE DATA MODEL (src/core/)                  │
+│  Document, Sequence, Layer, Stroke, Canvas,       │
+│  ToolState, AppState, UndoManager, Types          │
 │  (ToolState y AppState usan QObject/Q_PROPERTY)              │
 ├──────────────────────────────────────────────────────────────┤
 │                PLATFORM LAYER (src/platform/)                 │
@@ -163,7 +163,7 @@ QPainter → Pantalla
 - **COW (Copy-on-Write):** `RasterLayer::pixelBuffer_` es `shared_ptr<PixelBuffer>`, se copia al escribir mediante `ensureUnique()`
 - **UIDs:** `LayerUid` (uint64_t) generados con `std::atomic` `fetch_add`
 - **Epoch:** `buffer_epoch_` (uint64_t) incrementado en cada modificación del buffer para invalidación de cachés
-- **Estilo Qt:** dark theme (#2d2d30 fondo, #d4782a acento naranja)
+- **Estilo Qt:** dark theme (#252830 fondo, #FF6B4A acento naranja)
 - **Sin excepciones:** El engine evita excepciones, usa valores de retorno y asserts
 
 ### 2.5 El AppState central
@@ -1438,21 +1438,31 @@ connect(caretTimer_, &QTimer::timeout, [this]() {
 
 **Estructura de layout:**
 ```
-┌─────────────────────────────────────────────────────┐
-│ Top Bar: Undo, Redo, Fit, Flip H, Rotate, Grid      │
-├──────────┬────────────────────────────┬─────────────┤
-│ Toolbox  │                            │ Property    │
-│ Panel    │     CanvasWidgetV2         │ Editor      │
-│ (izq)    │     (área central)         │ (der)       │
-│          │                            │             │
-├──────────┤                            ├─────────────┤
-│ Color    │                            │             │
-│ Panel    │                            │             │
-├──────────┴────────────────────────────┴─────────────┤
-│ Timeline Panel (inferior)                            │
-├─────────────────────────────────────────────────────┤
-│ Status Bar                                           │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Top Bar: Undo | Redo | Fit | Flip H | Rotate ± | Grid | Help    │
+├──────────────┬──────────────────────────────┬────────────────────┤
+│  Toolbox     │                              │  Property Editor   │
+│  Panel       │                              │                    │
+│  - 11 tools  │      CanvasWidgetV2          │  (contextual)      │
+│  - Color     │      (área central)          │  - Brush controls  │
+│  - Onion     │                              │  - Fill options    │
+│  - Resize    │                              │  - Text font       │
+├──────────────┤                              ├────────────────────┤
+│  Color       │                              │  Layer Panel       │
+│  Panel       │                              │  - Add/Dup/Del     │
+│  - Swatch    │                              │  - Visibility      │
+│  - Palette   │                              │  - Lock            │
+├──────────────┴──────────────────────────────┴────────────────────┤
+│  Timeline Panel (inferior)                                       │
+│  [<][>][▶][■] FPS [24] Frame: 1/24 [+Track▾]                    │
+│  ┌───────┬──────────────────────────────────────────────────┐    │
+│  │ Seq 1 │ ▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓░░░░░░▓▓▓▓▓▓           [+]  │    │
+│  │ 🎵 A1 │ ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈    │    │
+│  │ Seq 2 │ ░░░░▓▓▓▓░░░░░░▓▓▓▓▒░░░▓▓▓▓             [+]  │    │
+│  └───────┴──────────────────────────────────────────────────┘    │
+├──────────────────────────────────────────────────────────────────┤
+│  Status Bar: Ready | Tool info                                   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 **Conexiones principales:**
@@ -2094,7 +2104,7 @@ src/
 │   ├── document.hpp         ├── document.cpp
 │   ├── layer.hpp            ├── layer.cpp
 │   ├── stroke.hpp           ├── stroke.cpp
-│   ├── timeline.hpp         ├── timeline.cpp
+│   ├── sequence.hpp           ├── sequence.cpp
 │   ├── tool_state.hpp       ├── tool_state.cpp
 │   ├── types.hpp            ├── types.cpp
 │   ├── undo_manager.hpp     ├── undo_manager.cpp
@@ -2139,14 +2149,6 @@ src/
 │   ├── color_panel_v2.hpp/cpp
 │   ├── audio_track_widget.hpp/cpp
 │   └── layer_lock_button.hpp/cpp
-│   ├── canvas_widget_v2.hpp/cpp  (3052 líneas)
-│   ├── main_window_v2.hpp/cpp    (629 líneas)
-│   ├── timeline_panel_v2.hpp/cpp (591 líneas)
-│   ├── layer_panel_v2.hpp/cpp    (519 líneas)
-│   ├── property_editor_v2.hpp/cpp (1074 líneas)
-│   ├── toolbox_panel_v2.hpp/cpp  (427 líneas)
-│   ├── color_panel_v2.hpp/cpp    (192 líneas)
-│   └── layer_lock_button.hpp/cpp (71 líneas)
 ├── io/
 │   ├── document_manager.hpp/cpp
 │   ├── serialization_common.hpp/cpp
