@@ -672,16 +672,15 @@ void TimelinePanelV2::setupUI()
     fpsLabel->setStyleSheet(QString("color:%1; font-size:10px; font-weight:600;").arg(kFrameNumColor.name()));
     topBar->addWidget(fpsLabel);
 
-    fpsMinusBtn_ = new QPushButton("−", this);
-    fpsMinusBtn_->setText("−");
+    fpsMinusBtn_ = new QPushButton(this);
+    fpsMinusBtn_->setIcon(QIcon(":/icons/timeline/remove_frame.png"));
+    fpsMinusBtn_->setIconSize(QSize(16, 18));
     fpsMinusBtn_->setFixedSize(20, 22);
     fpsMinusBtn_->setToolTip("Decrease FPS");
     fpsMinusBtn_->setStyleSheet(QString(
-        "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
-        "font-size:11px; font-weight:bold; }"
-        "QPushButton:hover { background:%4; border-color:%5; }")
-        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
-             kBtnHover.name(), kPlayheadColor.name()));
+        "QPushButton { background:%1; border:1px solid %2; border-radius:3px; }"
+        "QPushButton:hover { background:%3; border-color:%4; }")
+        .arg(kBtnBg.name(), kCellBorder.name(), kBtnHover.name(), kPlayheadColor.name()));
     topBar->addWidget(fpsMinusBtn_);
 
     fpsSpin_ = new QSpinBox(this);
@@ -696,8 +695,9 @@ void TimelinePanelV2::setupUI()
         .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(), kPlayheadColor.name()));
     topBar->addWidget(fpsSpin_);
 
-    fpsPlusBtn_ = new QPushButton("+", this);
-    fpsPlusBtn_->setText("+");
+    fpsPlusBtn_ = new QPushButton(this);
+    fpsPlusBtn_->setIcon(QIcon(":/icons/timeline/add_frame.png"));
+    fpsPlusBtn_->setIconSize(QSize(16, 18));
     fpsPlusBtn_->setFixedSize(20, 22);
     fpsPlusBtn_->setToolTip("Increase FPS");
     fpsPlusBtn_->setStyleSheet(fpsMinusBtn_->styleSheet());
