@@ -7,6 +7,7 @@
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
@@ -518,6 +519,7 @@ void MainWindowV2::newProject()
         timeline_panel_->rebuildTracks();
     }
     updateUIState();
+    toolbox_panel_->setActiveTool(0);
     statusBar()->showMessage("New project created", 3000);
 }
 
@@ -640,7 +642,11 @@ void MainWindowV2::saveProjectAs()
             this, "Select Project Folder", QString(),
             QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
         if (dir.isEmpty()) return;
-        path = dir + "/untitled.fap";
+        bool ok = false;
+        QString name = QInputDialog::getText(this, "Project Name",
+            "Project name:", QLineEdit::Normal, "untitled", &ok);
+        if (!ok || name.trimmed().isEmpty()) return;
+        path = dir + "/" + name.trimmed() + ".fap";
     } else if (saveChoice.clickedButton() == fileBtn) {
         path = QFileDialog::getSaveFileName(
             this, "Save Project As", "untitled.fap",
