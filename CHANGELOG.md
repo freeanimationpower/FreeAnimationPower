@@ -2,17 +2,23 @@
 
 ## [v2.5.1] — 2026-07-08
 
-### Bug Fix — Eraser Tool on Load
-- **Diagnostico**: Al abrir un .fap, el pincel se comportaba como goma de borrar al dibujar en una nueva capa. El toolbox mostraba Brush seleccionado, pero `tool_state_->activeTool()` devolvia Eraser.
-- **Causa**: `resetDocument()` llamaba a `tool_state_->resetToDefaults()` que seteaba `setActiveTool(Eraser)`, emitiendo `activeToolChanged` sin que nadie lo escuchara para sincronizar el QButtonGroup del toolbox.
-- **Solucion**: `toolbox_panel_->setActiveTool(0)` al finalizar `openProject()` — sincroniza el UI y restaura Brush como herramienta activa.
-- **Cambio**: `src/ui_v2/main_window_v2.cpp:575` — 1 linea.
+### Audio Persistence — Embedido en .fap ZIP
+- **AudioTrackData** struct en Document (filepath, displayName, zipEntry, muted, volume)
+- **Save**: metadata a `timeline.json` ("audio" array) + bytes a `audio/track_N.ext` en ZIP
+- **Load**: `extractAudio()` descomprime a `%TEMP%/fap_audio_<PID>/` + reconstruye AudioTrackWidgets
+- **UI**: `syncAudioToDocument()` antes de guardar, `addAudioTrackFromData()` al cargar
+- 9 archivos modificados (+225/-1 lineas)
 
-### Bug Fix — Pixel Offset on Load
-- **Diagnostico**: Al abrir un .fap, el contenido aparecia en (0,0) ignorando su posicion original
-- **Causa**: `ensureContains(..., true)` en `readLayerData()` expandia el buffer con guard band (2px) + growth pad (512px), desplazando el origen. La copia PNG sobrescribia desde fila 0 del buffer expandido en vez de respetar el offset.
-- **Solucion**: `pad=false` en `ensureContains()` dentro de `readLayerData()` — evita expansion innecesaria.
-- **Cambio**: `src/io/document_manager.cpp:617` — 1 caracter (`true` → `false`)
+### Save As — Dialogo Carpeta vs Archivo
+- `saveProjectAs()` muestra dialogo con 3 botones: "Single .fap File", "Project Folder", Cancel
+- Modo carpeta: pide directorio + nombre de proyecto, copia audio a `audio/` junto al .fap
+- Modo archivo: mismo comportamiento anterior
+
+### Bug Fixes
+- **Pixel offset on load**: `ensureContains(..., false)` en `readLayerData()` — evita expansion de buffer
+- **Eraser tool on load**: `toolbox_panel_->setActiveTool(0)` en `openProject()` y `newProject()` — restaura Brush
+- **Audio leaking between projects**: `clearAudioTracks()` en `newProject()` antes de `rebuildTracks()`
+- 154/154 tests pasan
 
 ## [v2.5.0] — 2026-07-08
 

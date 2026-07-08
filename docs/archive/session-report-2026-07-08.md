@@ -121,4 +121,83 @@ toolbox_panel_->setActiveTool(0);  // Restore Brush after load
 
 | File | Change |
 |------|--------|
-| `src/ui_v2/main_window_v2.cpp` | Line 575: add `toolbox_panel_->setActiveTool(0);` after load
+| `src/ui_v2/main_window_v2.cpp` | Line 575: add `toolbox_panel_->setActiveTool(0);` after load |
+
+---
+
+## Audio Persistence in .fap ZIP (v2.5.1)
+
+### Symptom
+
+Importing an audio track, saving, and reopening resulted in the audio track disappearing.
+
+### Root cause
+
+Two independent audio systems existed with no connection: engine model (`AudioEngine`) never populated by UI, and UI widgets (`AudioTrackWidget`) never serialized in save/load.
+
+### Solution
+
+**Data model**: `AudioTrackData` struct in `Document` (filepath, displayName, zipEntry, muted, volume).
+
+**Save**: `writeTimeline()` serializes to `"audio"` JSON array. `writeLayerData()` embeds bytes as `audio/track_N.ext` ZIP entries.
+
+**Load**: `readTimeline()` parses array. `extractAudio()` decompresses to `%TEMP%/fap_audio_<PID>/`.
+
+**UI**: `syncAudioToDocument()` collects widget state before save. `addAudioTrackFromData()` reconstructs after load.
+
+| File | Change |
+|------|--------|
+| `src/core/document.hpp` | +`AudioTrackData` struct + `audioTracks_` |
+| `src/io/document_manager.hpp` | +`extractAudio()`, `audioTempDir_` |
+| `src/io/document_manager.cpp` | Serialize/deserialize/embed/extract |
+| `src/ui_v2/audio_track_widget.hpp/.cpp` | +mute/volume getters/setters |
+| `src/ui_v2/timeline_panel_v2.hpp/.cpp` | +`addAudioTrackFromData()` |
+| `src/ui_v2/main_window_v2.hpp/.cpp` | +`syncAudioToDocument()`, restore on open |
+
+---
+
+## Save As — Folder vs File Dialog (v2.5.1)
+
+### Solution
+
+`saveProjectAs()` now shows a 3-button `QMessageBox`: "Single .fap File" (`getSaveFileName`), "Project Folder" (`getExistingDirectory` + project name input), or Cancel. Folder mode also copies audio files to `audio/` subfolder.
+
+| File | Change |
+|------|--------|
+| `src/ui_v2/main_window_v2.cpp` | Rewritten `saveProjectAs()` |
+
+---
+
+## Audio Cleanup + Brush on New Project (v2.5.1)
+
+### Bug 1: Audio leaking between projects
+
+`newProject()` → `rebuildTracks()` preserved old `AudioTrackWidget`s. Saving new project embedded old audio.
+
+**Fix**: `TimelinePanelV2::clearAudioTracks()` called before `rebuildTracks()`.
+
+### Bug 2: Brush as Eraser in new project
+
+Same root cause as `openProject()` tool state bug.
+
+**Fix**: `toolbox_panel_->setActiveTool(0)` at end of `newProject()`.
+
+| File | Change |
+|------|--------|
+| `src/ui_v2/timeline_panel_v2.hpp/.cpp` | +`clearAudioTracks()` |
+| `src/ui_v2/main_window_v2.cpp` | +`clearAudioTracks()`, +`setActiveTool(0)` |
+
+---
+
+## v2.5.1 Summary
+
+| # | Fix | Files | Δ lines |
+|---|-----|-------|----------|
+| 1 | Pixel offset on load (ensureContains pad=false) | 1 | +1/-1 |
+| 2 | Tool state desync on openProject | 1 | +1 |
+| 3 | Audio persistence in .fap ZIP | 9 | +225/-1 |
+| 4 | Clear audio tracks on new project | 2 | +10 |
+| 5 | Save As folder/file dialog | 1 | +35/-6 |
+| 6 | Project name dialog in folder mode | 1 | +4/-1 |
+| 7 | Brush tool on newProject | 1 | +1 |
+| **Total** | **10 files** | | **+276/-9** |

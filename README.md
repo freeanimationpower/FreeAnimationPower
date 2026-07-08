@@ -599,6 +599,30 @@ Con `pad=false`, cuando el PNG encaja exactamente en el buffer (caso normal), `e
 
 ---
 
+### 17. Tool State Desync + Audio Persistence (Jul 2026)
+
+**Bug A — Brush acts as Eraser on open/new project**: Al abrir o crear un proyecto nuevo, el pincel se comportaba como goma de borrar. El toolbox mostraba Brush seleccionado pero `toolState().activeTool()` devolvia Eraser.
+
+**Root cause**: `resetDocument()` llama a `tool_state_->resetToDefaults()` que setea `activeTool_ = Eraser`. El canvas lee `toolState().activeTool()` directamente, pero el `QButtonGroup` del toolbox nunca recibe notificación para actualizarse.
+
+**Fix**: `toolbox_panel_->setActiveTool(0)` al final de `openProject()` y `newProject()`. Sincroniza UI visual + ToolState real.
+
+**Bug B — Audio desaparece al reabrir**: Pistas de audio importadas no se guardaban en el .fap. Al reabrir, el timeline no tenia pistas.
+
+**Root cause**: Dos sistemas de audio independientes sin conexión: modelo `AudioEngine` (nunca populado) y widgets `AudioTrackWidget` (nunca serializados).
+
+**Fix**: `AudioTrackData` en `Document` como source of truth. `writeTimeline()` serializa metadata, `writeLayerData()` embeebe bytes en ZIP. `readTimeline()` parsea, `extractAudio()` descomprime a temp. `syncAudioToDocument()` recolecta estado de widgets antes de save. `addAudioTrackFromData()` reconstruye en load.
+
+**Bug C — Audio se filtra entre proyectos**: Al crear nuevo proyecto, `rebuildTracks()` preservaba los `AudioTrackWidget`s del proyecto anterior.
+
+**Fix**: `clearAudioTracks()` en `newProject()` antes de `rebuildTracks()`.
+
+**Save As mejorado**: Diálogo con 3 botones: "Single .fap File", "Project Folder" (pide nombre), Cancel. Modo carpeta extrae audio a `audio/` junto al .fap.
+
+**Files**: `src/core/document.hpp`, `src/io/document_manager.{hpp,cpp}`, `src/ui_v2/audio_track_widget.{hpp,cpp}`, `timeline_panel_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}` — 10 archivos, +276/-9 líneas.
+
+---
+
 ## Build & Run
 
 ### Quick Start (Windows)

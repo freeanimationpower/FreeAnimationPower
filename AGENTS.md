@@ -307,3 +307,68 @@ Key features:
 
 **Files affected**: `src/ui_v2/main_window_v2.cpp` (1 line).
 **Invariant**: Canvas queries `appState_->toolState().activeTool()` directly, not from a cached variable. Toolbox UI must be explicitly synced after any programmatic ToolState changes.
+
+## Audio Persistence Architecture (v2.5.1 — Jul 2026)
+
+**Audio embedded in .fap ZIP** — import, save, reopen round-trip with full metadata.
+
+### Data model (`src/core/document.hpp`)
+
+```cpp
+struct AudioTrackData {
+    std::string filepath;      // original path or extracted temp path
+    std::string displayName;   // e.g., "song.mp3"
+    std::string zipEntry;      // "audio/track_0.mp3" inside ZIP
+    bool muted = false;
+    int volume = 80;           // 0-100
+};
+// Document owns: std::vector<AudioTrackData> audioTracks_
+```
+
+### Save path (`src/io/document_manager.cpp`)
+
+| Step | Method | What it does |
+|------|--------|-------------|
+| Metadata | `writeTimeline()` | Serializes `"audio"` array in `timeline.json` (filepath, display_name, zip_entry, muted, volume) |
+| Bytes | `writeLayerData()` | Reads audio file from disk, embeds as `audio/track_N.ext` ZIP entry |
+
+### Load path (`src/io/document_manager.cpp`)
+
+| Step | Method | What it does |
+|------|--------|-------------|
+| Metadata | `readTimeline()` | Parses `"audio"` array → `doc.addAudioTrack()` |
+| Extract | `extractAudio()` | Decompresses ZIP entries to `%TEMP%/fap_audio_<PID>/`, updates `filepath` to temp path |
+
+### UI (`src/ui_v2/`)
+
+| Component | Method | Role |
+|-----------|--------|------|
+| `AudioTrackWidget` | `isMuted()`, `setMuted()`, `volume()`, `setVolume()` | State getters/setters for save/restore |
+| `TimelinePanelV2` | `addAudioTrackFromData()` | Creates widget from `AudioTrackData` |
+| `TimelinePanelV2` | `clearAudioTracks()` | Removes all audio widgets (new project cleanup) |
+| `TimelinePanelV2` | `onImportAudio()` | Creates widget + registers with `Document::addAudioTrack()` |
+| `MainWindowV2` | `syncAudioToDocument()` | Collects widget state into Document before save |
+| `MainWindowV2` | `openProject()` | After load: iterates `doc.audioTracks()`, calls `addAudioTrackFromData()` |
+
+### Key invariants
+- Audio files are **fully embedded** in .fap ZIP — portable across machines
+- `extractAudio()` runs AFTER `readLayerData()` and BEFORE `mz_zip_reader_end()`
+- `syncAudioToDocument()` MUST be called before every `dm.save()` to capture live state
+- `clearAudioTracks()` MUST be called in `newProject()` before `rebuildTracks()` to prevent audio leaking between projects
+- `onImportAudio()` registers the track with Document — state survives save/reopen without extra sync
+
+### ZIP structure
+```
+.fap (ZIP renamed)
+├── manifest.json
+├── timeline.json       ← + "audio" array
+├── audio/track_0.mp3   ← embedded audio bytes
+├── audio/track_1.wav
+└── layers/S0/...
+```
+
+## Brush Tool Initialization (v2.5.1 — Jul 2026)
+
+**Invariant**: Both `openProject()` and `newProject()` MUST call `toolbox_panel_->setActiveTool(0)` after `resetDocument()`. `ToolState::resetToDefaults()` sets active tool to `Eraser`, and the `QButtonGroup` in the toolbox is not automatically synced from `activeToolChanged` signal. The canvas reads `toolState().activeTool()` directly on each mouse event, so it picks up Eraser while the UI shows Brush.
+
+**Files affected**: `src/ui_v2/main_window_v2.cpp` — lines 575 (openProject) and 522 (newProject).
