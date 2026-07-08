@@ -150,6 +150,25 @@ void AudioTrackWidget::positionHeader()
     volumeSlider_->setGeometry(40, 38, hdrW - 48, 16);
 }
 
+void AudioTrackWidget::setMuted(bool m)
+{
+    muted_ = m;
+    if (audioOutput_) audioOutput_->setMuted(muted_);
+    updateMuteStyle();
+    update();
+}
+
+void AudioTrackWidget::setVolume(int v)
+{
+    int clamped = std::clamp(v, 0, 100);
+    if (volumeSlider_) {
+        volumeSlider_->blockSignals(true);
+        volumeSlider_->setValue(clamped);
+        volumeSlider_->blockSignals(false);
+    }
+    if (audioOutput_) audioOutput_->setVolume(clamped / 100.0f);
+}
+
 void AudioTrackWidget::syncToFrame(int frame, int fps, bool playing)
 {
     if (!player_) return;

@@ -12,6 +12,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QSlider>
+#include <QtCore/QFileInfo>
 #include <QtWidgets/QMenu>
 #include <QtGui/QPainter>
 #include <QtGui/QMouseEvent>
@@ -1253,6 +1254,17 @@ void TimelinePanelV2::onImportAudio()
     audioTrackWidgets_.push_back(track);
     track->positionHeader();
 
+    // Register with Document for save/load persistence
+    AudioTrackData at;
+    at.filepath    = path.toStdString();
+    at.displayName = QFileInfo(path).fileName().toStdString();
+    at.zipEntry    = QString("audio/track_%1.%2")
+        .arg(audioTrackWidgets_.size() - 1)
+        .arg(QFileInfo(path).suffix().toLower()).toStdString();
+    at.muted  = track->isMuted();
+    at.volume = track->volume();
+    appState_->document().addAudioTrack(at);
+
     QTimer::singleShot(0, track, [track]() {
         track->update();
     });
@@ -1270,6 +1282,41 @@ void TimelinePanelV2::removeAudioTrack(AudioTrackWidget* track)
             audioTrackWidgets_[i]->setTrackIndex(static_cast<int>(i));
         }
     }
+}
+
+AudioTrackWidget* TimelinePanelV2::addAudioTrackFromData(const AudioTrackData& data)
+{
+    auto* track = new AudioTrackWidget(
+        QString::fromStdString(data.filepath),
+        static_cast<int>(audioTrackWidgets_.size()),
+        appState_, this, tracksContainer_);
+
+    track->setMuted(data.muted);
+    track->setVolume(data.volume);
+
+    connect(track, &AudioTrackWidget::moveUpRequested, this, [this, track]() {
+        auto it = std::find(audioTrackWidgets_.begin(), audioTrackWidgets_.end(), track);
+        if (it != audioTrackWidgets_.end()) {
+            onMoveAudioTrack(static_cast<int>(std::distance(audioTrackWidgets_.begin(), it)), -1);
+        }
+    });
+    connect(track, &AudioTrackWidget::moveDownRequested, this, [this, track]() {
+        auto it = std::find(audioTrackWidgets_.begin(), audioTrackWidgets_.end(), track);
+        if (it != audioTrackWidgets_.end()) {
+            onMoveAudioTrack(static_cast<int>(std::distance(audioTrackWidgets_.begin(), it)), 1);
+        }
+    });
+
+    int insertPos = std::max(0, tracksLayout_->count() - 1);
+    tracksLayout_->insertWidget(insertPos, track);
+    audioTrackWidgets_.push_back(track);
+    track->positionHeader();
+
+    QTimer::singleShot(0, track, [track]() {
+        track->update();
+    });
+
+    return track;
 }
 
 void TimelinePanelV2::onMoveAudioTrack(int index, int delta)

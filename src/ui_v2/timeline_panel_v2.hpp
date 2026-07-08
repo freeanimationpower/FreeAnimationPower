@@ -18,6 +18,7 @@ class AppState;
 class SequenceTrackWidget;
 class RulerWidget;
 class AudioTrackWidget;
+struct AudioTrackData;
 
 class TimelinePanelV2 : public QWidget {
     Q_OBJECT
@@ -47,6 +48,8 @@ public:
     void onImportAudio();
     void removeAudioTrack(AudioTrackWidget* track);
     void onTrackFrameClicked(int frame);
+    AudioTrackWidget* addAudioTrackFromData(const AudioTrackData& data);
+    const std::vector<AudioTrackWidget*>& audioTrackWidgets() const { return audioTrackWidgets_; }
 
     static constexpr int kHeaderWidth = 280;
     static constexpr int kCellWidth = 32;

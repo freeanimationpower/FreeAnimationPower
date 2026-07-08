@@ -13,6 +13,8 @@
 #include <QJsonArray>
 #include <QMutexLocker>
 #include <QDebug>
+#include <QDir>
+#include <QCoreApplication>
 
 #include <algorithm>
 #include <cstring>
@@ -339,6 +341,20 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
     }
     root[QStringLiteral("sequences")] = seqArr;
 
+    QJsonArray audioArr;
+    size_t ai = 0;
+    for (const auto& at : doc.audioTracks()) {
+        QJsonObject ao;
+        ao[QStringLiteral("filepath")]     = QString::fromStdString(at.filepath);
+        ao[QStringLiteral("display_name")] = QString::fromStdString(at.displayName);
+        ao[QStringLiteral("zip_entry")]    = QString::fromStdString(at.zipEntry);
+        ao[QStringLiteral("muted")]        = at.muted;
+        ao[QStringLiteral("volume")]       = at.volume;
+        audioArr.append(ao);
+        ++ai;
+    }
+    root[QStringLiteral("audio")] = audioArr;
+
     QJsonDocument jdoc(root);
     QByteArray data = jdoc.toJson(QJsonDocument::Indented);
     if (!mz_zip_writer_add_mem(zip, kTimelineEntry, data.constData(),
@@ -424,6 +440,26 @@ bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
             }
         }
     }
+
+    // Embed audio files into ZIP
+    for (size_t ai = 0; ai < doc.audioTracks().size(); ++ai) {
+        const auto& at = doc.audioTracks()[ai];
+        QFile audioFile(QString::fromStdString(at.filepath));
+        if (audioFile.open(QIODevice::ReadOnly)) {
+            QByteArray audioData = audioFile.readAll();
+            audioFile.close();
+            QByteArray entryPathUtf8 = QByteArray::fromStdString(at.zipEntry);
+            if (!mz_zip_writer_add_mem(zip, entryPathUtf8.constData(),
+                                        audioData.constData(), audioData.size(),
+                                        MZ_DEFAULT_COMPRESSION)) {
+                qWarning() << "Failed to embed audio:" << QString::fromStdString(at.zipEntry);
+            }
+        } else {
+            qWarning() << "Cannot open audio file for embedding:"
+                       << QString::fromStdString(at.filepath);
+        }
+    }
+
     return true;
 }
 
@@ -461,6 +497,9 @@ bool DocumentManager::load(Document& doc, const QString& path) {
         ok = false;
     }
     if (ok && !readLayerData(&zip, doc)) {
+        ok = false;
+    }
+    if (ok && !extractAudio(&zip, doc)) {
         ok = false;
     }
 
@@ -577,6 +616,20 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         }
     }
 
+    // Parse audio tracks
+    QJsonArray audioArr = root[QStringLiteral("audio")].toArray();
+    doc.clearAudioTracks();
+    for (const auto& av : audioArr) {
+        QJsonObject ao = av.toObject();
+        AudioTrackData at;
+        at.filepath    = ao[QStringLiteral("filepath")].toString().toStdString();
+        at.displayName = ao[QStringLiteral("display_name")].toString().toStdString();
+        at.zipEntry    = ao[QStringLiteral("zip_entry")].toString().toStdString();
+        at.muted       = ao[QStringLiteral("muted")].toBool(false);
+        at.volume      = ao[QStringLiteral("volume")].toInt(80);
+        doc.addAudioTrack(at);
+    }
+
     return true;
 }
 
@@ -632,6 +685,44 @@ bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
             }
         }
     }
+    return true;
+}
+
+bool DocumentManager::extractAudio(mz_zip_archive* zip, Document& doc) {
+    auto& tracks = doc.audioTracks();
+    if (tracks.empty()) return true;
+
+    audioTempDir_ = QDir::tempPath() + "/fap_audio_"
+                  + QString::number(QCoreApplication::applicationPid());
+    QDir().mkpath(audioTempDir_);
+
+    for (auto& at : tracks) {
+        if (at.zipEntry.empty()) continue;
+
+        size_t audioSize = 0;
+        QByteArray entryUtf8 = QByteArray::fromStdString(at.zipEntry);
+        void* audioData = mz_zip_reader_extract_file_to_heap(
+            zip, entryUtf8.constData(), &audioSize, 0);
+        if (!audioData) {
+            qWarning() << "Audio entry not found in ZIP:" << QString::fromStdString(at.zipEntry);
+            continue;
+        }
+
+        QString fileName = QString::fromStdString(at.displayName);
+        QString outPath = audioTempDir_ + "/" + fileName;
+        QFile outFile(outPath);
+        if (outFile.open(QIODevice::WriteOnly)) {
+            outFile.write(static_cast<const char*>(audioData),
+                          static_cast<qint64>(audioSize));
+            outFile.close();
+            at.filepath = outPath.toStdString();
+        } else {
+            qWarning() << "Failed to write extracted audio:" << outPath;
+        }
+
+        mz_free(audioData);
+    }
+
     return true;
 }
 

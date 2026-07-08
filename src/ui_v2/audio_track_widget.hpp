@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QMediaPlayer>
 #include <QAudioOutput>
+#include <QSlider>
 #include <vector>
 #include <memory>
 #include <string>
@@ -30,9 +31,15 @@ public:
     void syncToFrame(int frame, int fps, bool playing);
 
     const QString& filepath() const { return filepath_; }
+    const QString& displayName() const { return displayName_; }
     int trackIndex() const { return index_; }
     void setTrackIndex(int i) { index_ = i; }
     QMediaPlayer* player() { return player_; }
+
+    bool isMuted() const { return muted_; }
+    void setMuted(bool m);
+    int volume() const { return volumeSlider_ ? volumeSlider_->value() : 80; }
+    void setVolume(int v);
 
 signals:
     void moveUpRequested();

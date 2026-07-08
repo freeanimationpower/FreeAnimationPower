@@ -9,6 +9,14 @@
 
 namespace fap {
 
+struct AudioTrackData {
+    std::string filepath;      // original path or extracted temp path
+    std::string displayName;   // e.g., "song.mp3"
+    std::string zipEntry;      // "audio/track_0.mp3" inside the ZIP
+    bool muted = false;
+    int volume = 80;           // 0-100
+};
+
 class Document : public NonCopyable {
 public:
     Document();
@@ -60,6 +68,12 @@ public:
     const std::string& filepath() const { return filepath_; }
     void setFilepath(const std::string& fp) { filepath_ = fp; }
 
+    // Audio tracks
+    std::vector<AudioTrackData>& audioTracks() { return audioTracks_; }
+    const std::vector<AudioTrackData>& audioTracks() const { return audioTracks_; }
+    void addAudioTrack(const AudioTrackData& track) { audioTracks_.push_back(track); }
+    void clearAudioTracks() { audioTracks_.clear(); }
+
 private:
     std::string filepath_;
     int width_ = 1920;
@@ -68,6 +82,7 @@ private:
 
     std::vector<std::unique_ptr<Sequence>> sequences_;
     size_t active_sequence_ = 0;
+    std::vector<AudioTrackData> audioTracks_;
 };
 
 } // namespace fap

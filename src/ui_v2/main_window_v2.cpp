@@ -16,6 +16,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTimer>
+#include <QtCore/QFileInfo>
 #include <QtGui/QAction>
 #include <QtGui/QKeySequence>
 #include <QtGui/QPainter>
@@ -26,6 +27,7 @@
 #include "layer_panel_v2.hpp"
 #include "canvas_widget_v2.hpp"
 #include "timeline_panel_v2.hpp"
+#include "audio_track_widget.hpp"
 #include "property_editor_v2.hpp"
 #include "core/document.hpp"
 #include "core/undo_manager.hpp"
@@ -573,6 +575,13 @@ void MainWindowV2::openProject(const QString& path)
         updateUIState();
         statusBar()->showMessage("Project opened: " + path, 3000);
         toolbox_panel_->setActiveTool(0);
+
+        // Restore audio tracks from loaded document
+        if (timeline_panel_) {
+            for (const auto& at : appState_->document().audioTracks()) {
+                timeline_panel_->addAudioTrackFromData(at);
+            }
+        }
     } else {
         QMessageBox::warning(this, "Error", "Failed to open project:\n" + path);
     }
@@ -584,6 +593,9 @@ void MainWindowV2::saveProject()
         saveProjectAs();
         return;
     }
+
+    // Sync audio track state into Document before save
+    syncAudioToDocument();
 
     DocumentManager dm;
     ViewState vs;
@@ -608,6 +620,9 @@ void MainWindowV2::saveProjectAs()
         "Free Animation Power (*.fap);;All Files (*)");
     if (path.isEmpty())
         return;
+
+    // Sync audio track state into Document before save
+    syncAudioToDocument();
 
     DocumentManager dm;
     ViewState vs;
@@ -724,6 +739,25 @@ void MainWindowV2::exportSVGAllFrames()
         statusBar()->showMessage(QString("SVG exported: %1 frames → %2").arg(total).arg(dir), 5000);
     } else {
         QMessageBox::warning(this, "Error", "Failed to export some SVG frames.");
+    }
+}
+
+void MainWindowV2::syncAudioToDocument()
+{
+    auto& doc = appState_->document();
+    doc.clearAudioTracks();
+    if (!timeline_panel_) return;
+    for (auto* w : timeline_panel_->audioTrackWidgets()) {
+        AudioTrackData at;
+        at.filepath    = w->filepath().toStdString();
+        at.displayName = w->displayName().toStdString();
+        at.muted       = w->isMuted();
+        at.volume      = w->volume();
+        QFileInfo fi(w->filepath());
+        at.zipEntry = QString("audio/track_%1.%2")
+            .arg(doc.audioTracks().size())
+            .arg(fi.suffix().toLower()).toStdString();
+        doc.addAudioTrack(at);
     }
 }
 

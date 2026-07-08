@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <memory>
 #include <vector>
+#include <functional>
 
 extern "C" {
 #include <miniz.h>
@@ -16,6 +17,7 @@ namespace fap {
 class Document;
 class Layer;
 class RasterLayer;
+struct AudioTrackData;
 
 struct ViewState {
     float zoom = 0.0f;
@@ -41,7 +43,10 @@ public:
     QString lastError() const;
     bool isBusy() const;
 
-private:
+    // Extracted audio temp dir (valid after load())
+    QString audioTempDir() const { return audioTempDir_; }
+
+private: 
     bool writeManifest(mz_zip_archive* zip, const Document& doc);
     bool writeTimeline(mz_zip_archive* zip, const Document& doc);
     bool writeLayerData(mz_zip_archive* zip, const Document& doc);
@@ -49,6 +54,7 @@ private:
     bool readManifest(mz_zip_archive* zip, Document& doc);
     bool readTimeline(mz_zip_archive* zip, Document& doc);
     bool readLayerData(mz_zip_archive* zip, Document& doc);
+    bool extractAudio(mz_zip_archive* zip, Document& doc);
 
     bool prepareAtomicTarget(const QString& finalPath, QString& tmpPath);
     bool commitAtomic(const QString& tmpPath, const QString& finalPath);
@@ -66,6 +72,7 @@ private:
     QString lastError_;
     bool busy_ = false;
     ViewState viewState_;
+    QString audioTempDir_;
 };
 
 } // namespace fap

@@ -37,6 +37,7 @@ private:
     void exportVideo();
     void exportSVGCurrentFrame();
     void exportSVGAllFrames();
+    void syncAudioToDocument();
 
     std::shared_ptr<AppState> appState_;
 
