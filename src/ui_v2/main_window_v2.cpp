@@ -46,7 +46,7 @@ QToolButton { color:#8B8FA3; border:1px solid transparent; border-radius:6px; pa
 QToolButton:hover { background:#1E2130; color:#E0E2EA; }
 QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF4800,stop:1 #FF6A20); color:#fff; border-color:transparent; }
 QToolButton:disabled { color:#3D4150; background:transparent; }
-QDockWidget { background:#1A1D24; color:#8B8FA3; border:1px solid #2D3139; titlebar-close-icon:none; }
+QDockWidget { background:#1A1D24; border:1px solid #2D3139; titlebar-close-icon:none; }
 QDockWidget::title { background:#1A1D24; padding:6px 10px; border-bottom:1px solid #2D3139; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#FF4800; }
 QStatusBar { background:#14161C; color:#6B7088; border-top:1px solid #2D3139; font-size:11px; padding:2px 8px; }
 QScrollArea { background:transparent; border:none; }
