@@ -339,6 +339,18 @@ void MainWindowV2::setupDocks()
     timeline_panel_ = new TimelinePanelV2(appState_, timelineDock);
     timelineDock->setWidget(timeline_panel_);
     addDockWidget(Qt::BottomDockWidgetArea, timelineDock);
+
+    // Apply orange title color via title bar widget (CSS QDockWidget::title unreliable on Win)
+    const char* kDockTitleStyle =
+        "QLabel { color: #FF4800; font-size: 10px; font-weight: 600;"
+        " text-transform: uppercase; letter-spacing: 1px;"
+        " padding: 6px 10px; background: #1A1D24;"
+        " border-bottom: 1px solid #2D3139; }";
+    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, timelineDock}) {
+        auto* titleLabel = new QLabel(dock->windowTitle());
+        titleLabel->setStyleSheet(kDockTitleStyle);
+        dock->setTitleBarWidget(titleLabel);
+    }
 }
 
 void MainWindowV2::setupStatusBar()
