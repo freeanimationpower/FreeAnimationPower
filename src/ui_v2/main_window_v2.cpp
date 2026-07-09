@@ -58,7 +58,7 @@ QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width:0; }
 QSlider::groove:horizontal { background:#22252F; height:3px; border-radius:2px; }
 QSlider::handle:horizontal { background:#FF6B4A; width:12px; height:12px; margin:-5px 0; border-radius:6px; }
 QSlider::sub-page:horizontal { background:#FF6B4A; border-radius:2px; }
-QSpinBox,QDoubleSpinBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:2px 6px; border-radius:5px; font-size:10px; font-family:'JetBrains Mono',monospace; }
+QSpinBox,QDoubleSpinBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:2px 6px; border-radius:5px; font-size:10px; font-family:'Avenir',sans-serif; }
 QSpinBox:focus { border-color:#FF6B4A; }
 QComboBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:3px 8px; border-radius:5px; font-size:10px; }
 QComboBox:hover { border-color:#3D4150; }

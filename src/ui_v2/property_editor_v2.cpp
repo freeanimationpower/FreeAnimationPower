@@ -39,7 +39,7 @@ static const QString kSpinStyle = QStringLiteral(
     "QSpinBox {"
     "  background:#1E2130; color:#C8CCD8; border:1px solid #2D3139;"
     "  padding:2px 6px; border-radius:5px; font-size:11px;"
-    "  font-family:'JetBrains Mono',monospace;"
+    "  font-family:'Avenir',sans-serif;"
     "  min-width:48px;"
     "}"
     "QSpinBox:focus { border-color:#FF6B4A; }"
@@ -52,7 +52,7 @@ static const QString kLabelStyle = QStringLiteral(
 
 static const QString kValueLabelStyle = QStringLiteral(
     "QLabel { color:#C8CCD8; font-size:10px;"
-    " font-family:'JetBrains Mono',monospace; }"
+    " font-family:'Avenir',sans-serif; }"
 );
 
 static const QString kSeparatorStyle = QStringLiteral(

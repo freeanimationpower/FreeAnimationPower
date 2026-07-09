@@ -95,7 +95,7 @@ protected:
         int firstVisible = std::max(0, offset / cellTotal);
         int lastVisible = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
 
-        QFont tickFont("JetBrains Mono", 7);
+        QFont tickFont("Avenir", 7);
         p.setFont(tickFont);
 
         for (int f = firstVisible; f <= lastVisible; ++f) {
@@ -481,7 +481,7 @@ protected:
 
             if (f % 5 == 0) {
                 p.setPen(kFrameNumColor);
-                QFont numFont("JetBrains Mono", 5);
+                QFont numFont("Avenir", 5);
                 p.setFont(numFont);
                 p.drawText(cellRect, Qt::AlignCenter, QString::number(f + 1));
             }
@@ -691,7 +691,7 @@ void TimelinePanelV2::setupUI()
     fpsSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     fpsSpin_->setStyleSheet(QString(
         "QSpinBox { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
-        "padding:1px 3px; font-size:12px; font-family:'JetBrains Mono',monospace; }"
+        "padding:1px 3px; font-size:12px; font-family:'Avenir',sans-serif; }"
         "QSpinBox:focus { border-color:%4; }")
         .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(), kPlayheadColor.name()));
     topBar->addWidget(fpsSpin_);
@@ -708,7 +708,7 @@ void TimelinePanelV2::setupUI()
 
     frameLabel_ = new QLabel("1 / 24", this);
     frameLabel_->setStyleSheet(QString(
-        "color:%1; font-size:11px; font-family:'JetBrains Mono',monospace;").arg(kBtnText.name()));
+        "color:%1; font-size:11px; font-family:'Avenir',sans-serif;").arg(kBtnText.name()));
     topBar->addWidget(frameLabel_);
 
     auto* minusFrameBtn = new QPushButton(this);

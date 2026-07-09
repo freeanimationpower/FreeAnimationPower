@@ -62,7 +62,7 @@
         <file alias="new_layer.svg">icons/new_layer.svg</file>
     </qresource>
     <qresource prefix="/fonts">
-        <file alias="JetBrainsMono-Regular.ttf">fonts/JetBrainsMono-Regular.ttf</file>
-        <file alias="JetBrainsMono-Bold.ttf">fonts/JetBrainsMono-Bold.ttf</file>
+        <file alias="Avenir.ttc">fonts/Avenir.ttc</file>
+        <file alias="AvenirLTStd-Heavy.otf">fonts/AvenirLTStd-Heavy.otf</file>
     </qresource>
 </RCC>
