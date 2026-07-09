@@ -103,13 +103,11 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
 
 #ifdef Q_OS_WIN
     {
-        COLORREF c = RGB(0xFF, 0x48, 0x00);
-        HRESULT hr = DwmSetWindowAttribute(
+        BOOL dark = TRUE;
+        DwmSetWindowAttribute(
             reinterpret_cast<HWND>(winId()),
-            DWMWA_CAPTION_COLOR, &c, sizeof(c));
-        if (FAILED(hr)) {
-            qDebug() << "DwmSetWindowAttribute(DWMWA_CAPTION_COLOR) failed:" << hr;
-        }
+            20, // DWMWA_USE_IMMERSIVE_DARK_MODE
+            &dark, sizeof(dark));
     }
 #endif
 
