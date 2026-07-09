@@ -133,6 +133,12 @@ void MainWindowV2::setupTopBar()
     toolbar->setIconSize(QSize(32, 32));
     toolbar->setFixedHeight(52);
 
+    auto* logoLabel = new QLabel();
+    QPixmap logo(":/icons/toolbar/logo.png");
+    logoLabel->setPixmap(logo.scaledToHeight(40, Qt::SmoothTransformation));
+    logoLabel->setStyleSheet("background:transparent; margin-right:16px;");
+    toolbar->addWidget(logoLabel);
+
     auto* newAct = toolbar->addAction(QIcon(":/icons/toolbar/new_project.png"), "");
     newAct->setToolTip("New Project (Ctrl+N)");
     newAct->setShortcut(QKeySequence("Ctrl+N"));
