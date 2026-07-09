@@ -38,6 +38,7 @@
 namespace fap {
 
 static const char* kTheme = R"(
+* { font-family:'Avenir'; }
 QMainWindow { background:#0F1115; }
 QToolBar { background:#14161C; border:none; border-bottom:1px solid #2D3139; spacing:2px; padding:4px 8px; }
 QToolBar::separator { width:1px; background:#2D3139; margin:4px 6px; }
