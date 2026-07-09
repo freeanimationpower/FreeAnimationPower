@@ -13,6 +13,14 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QMenu>
+
+#ifdef Q_OS_WIN
+#define NOMINMAX
+#include <dwmapi.h>
+#ifndef DWMWA_CAPTION_COLOR
+#define DWMWA_CAPTION_COLOR 35
+#endif
+#endif
 #include <QtCore/QProcess>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryDir>
@@ -40,10 +48,10 @@ namespace fap {
 static const char* kTheme = R"(
 * { font-family:'Avenir LT Std'; }
 QMainWindow { background:#0F1115; }
-QToolBar { background:#FF4800; border:none; border-bottom:1px solid #D43C00; spacing:2px; padding:4px 8px; }
+QToolBar { background:#14161C; border:none; border-bottom:1px solid #2D3139; spacing:2px; padding:4px 8px; }
 QToolBar::separator { width:1px; background:#2D3139; margin:4px 6px; }
-QToolButton { color:#fff; border:1px solid transparent; border-radius:6px; padding:4px 6px; font-size:11px; }
-QToolButton:hover { background:rgba(255,255,255,0.15); color:#fff; }
+QToolButton { color:#8B8FA3; border:1px solid transparent; border-radius:6px; padding:4px 6px; font-size:11px; }
+QToolButton:hover { background:#1E2130; color:#E0E2EA; }
 QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF4800,stop:1 #FF6A20); color:#fff; border-color:transparent; }
 QToolButton:disabled { color:#3D4150; background:transparent; }
 QDockWidget { background:#1A1D24; border:1px solid #2D3139; titlebar-close-icon:none; }
@@ -92,6 +100,18 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
 
     qApp->setStyleSheet(QLatin1String(kTheme));
     qApp->setFont(QFont("Avenir LT Std", 11));
+
+#ifdef Q_OS_WIN
+    {
+        COLORREF c = RGB(0xFF, 0x48, 0x00);
+        HRESULT hr = DwmSetWindowAttribute(
+            reinterpret_cast<HWND>(winId()),
+            DWMWA_CAPTION_COLOR, &c, sizeof(c));
+        if (FAILED(hr)) {
+            qDebug() << "DwmSetWindowAttribute(DWMWA_CAPTION_COLOR) failed:" << hr;
+        }
+    }
+#endif
 
     setupUI();
     updateUIState();
