@@ -90,7 +90,7 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
 
     auto* titleLabel = new QLabel("LAYERS");
     titleLabel->setStyleSheet(
-        QString("color:%1;font-size:10px;font-weight:bold;letter-spacing:1px;").arg(kMutedColor));
+        QString("color:%1;font-size:10px;font-weight:bold;letter-spacing:1px;").arg(kAccentColor));
     headerRow->addWidget(titleLabel);
     headerRow->addStretch();
 

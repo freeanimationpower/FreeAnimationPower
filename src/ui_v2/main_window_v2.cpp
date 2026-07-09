@@ -47,7 +47,7 @@ QToolButton:hover { background:#1E2130; color:#E0E2EA; }
 QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF4800,stop:1 #FF6A20); color:#fff; border-color:transparent; }
 QToolButton:disabled { color:#3D4150; background:transparent; }
 QDockWidget { background:#1A1D24; color:#8B8FA3; border:1px solid #2D3139; titlebar-close-icon:none; }
-QDockWidget::title { background:#1A1D24; padding:6px 10px; border-bottom:1px solid #2D3139; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#6B7088; }
+QDockWidget::title { background:#1A1D24; padding:6px 10px; border-bottom:1px solid #2D3139; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#FF4800; }
 QStatusBar { background:#14161C; color:#6B7088; border-top:1px solid #2D3139; font-size:11px; padding:2px 8px; }
 QScrollArea { background:transparent; border:none; }
 QScrollBar:vertical { background:transparent; width:6px; margin:0; }
@@ -71,7 +71,7 @@ QCheckBox::indicator:checked { background:#FF4800; border-color:#FF4800; }
 QPushButton { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; border-radius:6px; padding:5px 10px; font-size:10px; font-weight:500; }
 QPushButton:hover { background:#252838; border-color:#3D4150; }
 QPushButton:pressed { background:#FF4800; color:#fff; border-color:#FF4800; }
-QGroupBox { color:#6B7088; font-weight:600; font-size:9px; text-transform:uppercase; letter-spacing:1px; border:1px solid #2D3139; border-radius:6px; margin-top:12px; padding-top:14px; }
+QGroupBox { color:#FF4800; font-weight:600; font-size:9px; text-transform:uppercase; letter-spacing:1px; border:1px solid #2D3139; border-radius:6px; margin-top:12px; padding-top:14px; }
 QGroupBox::title { subcontrol-origin:margin; left:10px; padding:0 6px; }
 QLabel { color:#8B8FA3; font-size:10px; }
 QListWidget { background:#14161C; color:#C8CCD8; border:1px solid #2D3139; border-radius:5px; outline:none; }

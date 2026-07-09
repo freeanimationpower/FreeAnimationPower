@@ -14,7 +14,7 @@ namespace fap {
 
 static const char* kPanelBg = "#1A1D24";
 static const char* kTextColor = "#C8CCD8";
-static const char* kMutedColor = "#6B7088";
+static const char* kAccentColor = "#FF4800";
 static const char* kBorderColor = "#2D3139";
 static const char* kInputBg = "#252830";
 
@@ -39,7 +39,7 @@ ColorPanelV2::ColorPanelV2(QWidget* parent) : QWidget(parent) {
 
     auto* titleLabel = new QLabel("COLOR");
     titleLabel->setStyleSheet(
-        QString("color:%1;font-size:10px;font-weight:bold;letter-spacing:1px;").arg(kMutedColor));
+        QString("color:%1;font-size:10px;font-weight:bold;letter-spacing:1px;").arg(kAccentColor));
     layout->addWidget(titleLabel);
 
     swatch_ = new QPushButton();

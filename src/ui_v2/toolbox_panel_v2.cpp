@@ -151,7 +151,7 @@ static const char* kCheckStyle =
 
 static const char* kGroupBoxStyle =
     "QGroupBox {"
-    "  color: #6B7088;"
+    "  color: #FF4800;"
     "  font-size: 10px;"
     "  font-weight: 600;"
     "  text-transform: uppercase;"
