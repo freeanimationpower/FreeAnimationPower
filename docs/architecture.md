@@ -180,7 +180,7 @@ RasterStroke          VectorStroke  (with BezierPath)
    - **Vector path**: Points are fed through `createPathFromPoints()` which simplifies the polyline into a cubic Bezier path (`BezierPath`), wrapped in a `VectorStroke`.
 4. **Layer Storage**: The stroke is stored in the active `RasterLayer` or `VectorLayer`.
 5. **Compositing**: `GroupLayer` flattens child layers into a final RGBA image using per-layer blend modes and opacity.
-6. **Display**: The composited image is uploaded to an OpenGL texture and rendered in `CanvasWidget`.
+6. **Display**: The composited image is drawn via CPU `QPainter` directly onto the `CanvasWidgetV2` `QWidget`.
 
 ---
 

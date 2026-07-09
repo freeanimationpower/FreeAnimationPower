@@ -137,7 +137,7 @@ Key methods:
 | Drag WA Out edge | Resize in real-time, clamp `[waStart+1, totalFrames]` |
 | Click during playback | Auto-pauses playback + audio before moving playhead |
 
-Work area bar: 4px fill `QColor(255, 107, 74, 80)` with 1px border lines `QColor(255, 107, 74, 180)` at in/out boundaries.
+Work area bar: 4px fill `QColor(255, 72, 0, 80)` with 1px border lines `QColor(255, 72, 0, 180)` at in/out boundaries.
 
 ### AppState bridges (centralized state pipeline)
 

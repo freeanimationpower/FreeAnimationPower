@@ -1,6 +1,6 @@
 # INFORME COMPLETO: Free Animation Power
 
-> **Versión:** 2.0.0 | **Fecha:** Julio 2026 | **Autor:** Eduardo Fierro Duque  
+> **Versión:** 2.5.1 | **Fecha:** Julio 2026 | **Autor:** Eduardo Fierro Duque  
 > **Licencia:** GPLv3 | **Lenguaje:** C++20 | **Framework:** Qt 6.5+ | **Tests:** 154/154
 
 ---
@@ -472,31 +472,30 @@ class GroupLayer : public Layer {
 
 ### 3.3 document.hpp / document.cpp
 
-**Archivo:** `src/core/document.hpp` (58 líneas) + `document.cpp`
+**Archivo:** `src/core/document.hpp` (88 líneas) + `document.cpp`
 
 ```cpp
 class Document : public NonCopyable {
     int width_ = 1920, height_ = 1080;     // Tamaño de canvas
-    int fps_ = 24, total_frames_ = 24;     // Configuración de animación
     bool modified_ = false;                // Flag de documento modificado
-    std::map<int, unique_ptr<GroupLayer>> frames_;  // Datos por frame
-    UndoManager undo_manager_;             // Stack de undo/redo
+    std::vector<unique_ptr<Sequence>> sequences_;  // Multi-secuencia
+    size_t active_sequence_ = 0;           // Secuencia activa
+    std::vector<AudioTrackData> audioTracks_;      // Pistas de audio
 };
 ```
 
-**Modelo de frames:** Cada frame es una `GroupLayer` independiente que contiene sus capas. La key del mapa es el índice del frame. Esto permite:
-- Frames no contiguos (puede haber huecos)
-- Cada frame tiene sus propias capas con nombres/visibilidad independiente
+**Modelo multi-secuencia:** Cada `Sequence` tiene su propio timeline con frames, FPS, Work Area, y UndoManager. El `Document` delega a `activeSequence()` para acceder a frames/capas. Esto permite:
+- Múltiples timelines independientes en un solo documento
+- Per-sequence undo manager (128 entradas por secuencia)
+- Audio tracks como `AudioTrackData` (no como Layer)
 - Soporte para onion skinning (acceder frames anteriores/posteriores)
 
 ```cpp
+Sequence& activeSequence() { return *sequences_[active_sequence_]; }
 GroupLayer& rootLayerForFrame(int frame) {
-    // Crea el frame si no existe (emplace + ensureDefaultLayer)
-    ensureDefaultLayer(*root);  // Añade "Layer 1" raster si está vacío
+    return activeSequence().rootLayerForFrame(frame);
 }
 ```
-
-`shiftFrameData(fromFrame, delta)` - Reindexa frames. Útil para insertar/eliminar frames en el timeline.
 
 ---
 
@@ -1864,7 +1863,7 @@ Mantiene el estado actual del dispositivo Wacom. `handleEvent()` actualiza el es
 **Configuración:**
 ```cmake
 cmake_minimum_required(VERSION 3.20)
-project(FreeAnimation2dStyle VERSION 2.0.0 LANGUAGES CXX)
+project(FreeAnimationPower VERSION 2.5.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ```
@@ -1881,7 +1880,7 @@ Qt6::OpenGLWidgets  Qt6::Multimedia  Qt6::Svg
 
 **Target principal:**
 ```cmake
-add_executable(free-animation-2d-style
+add_executable(free-animation-power
     src/main.cpp
     src/core/*.cpp
     src/engine/raster/*.cpp
@@ -1911,14 +1910,14 @@ add_executable(fap-tests
 
 **Post-build (Windows):**
 ```cmake
-add_custom_command(TARGET free-animation-2d-style POST_BUILD
+add_custom_command(TARGET free-animation-power POST_BUILD
     COMMAND windeployqt --release --no-translations $<TARGET_FILE:...>)
 ```
 Despliega DLLs de Qt automáticamente.
 
 **Resources:**
 ```cmake
-qt_add_resources(free-animation-2d-style resources/resources.qrc)
+qt_add_resources(free-animation-power resources/resources.qrc)
 ```
 
 ### 9.2 Dependencias externas
@@ -2162,8 +2161,8 @@ src/
 
 | Métrica | Valor |
 |---------|-------|
-| Archivos .hpp | ~28 |
-| Archivos .cpp | ~32 |
+| Archivos .hpp | ~35 |
+| Archivos .cpp | ~40 |
 | Archivos en engine/ | ~42 |
 | Archivos en core/ | 19 |
 | Archivos en ui_v2/ | 18 |
@@ -2173,8 +2172,8 @@ src/
 | Clases del modelo | 15+ |
 | Enums | 10 |
 | Structs de datos | 15+ |
-| Tests totales | 139 |
-| Suites de test | 29 |
+| Tests totales | 154 |
+| Suites de test | 31 |
 | Tiempo total de tests | ~663ms |
 | Blend modes implementados | 12 |
 | Herramientas de dibujo | 17 |

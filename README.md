@@ -181,7 +181,7 @@ workAreaStart/End, durationFrames, looping. Viewport (zoom/offset) persistido.
 - **Click & Drag**: grab In/Out boundaries to resize work area in real-time
 - **Playhead scrubbing**: click + drag anywhere on ruler for smooth frame scrubbing
 - **Auto-pause on click**: clicking ruler during playback pauses transport + audio
-- **Work area bar**: 4px fill `#FF6B4A` (alpha 80) with 1px border lines (alpha 180)
+- **Work area bar**: 4px fill `#FF4800` (alpha 80) with 1px border lines (alpha 180)
 
 **Duration control**:
 - `SequenceTrackWidget::paintEvent()` renders cells up to `durationFrames_` (empty cells beyond `totalFrames_`)
@@ -207,7 +207,7 @@ workAreaStart/End, durationFrames, looping. Viewport (zoom/offset) persistido.
 - `setWorkAreaStart(frame)` / `setWorkAreaEnd(frame)` / `setDurationFrames(count)` / `setFps(fps)`
 - FPS: `fpsMinusBtn_` (−) / `fpsPlusBtn_` (+) → `appState_->setFps(fps ± 1)` clamped [1, 120]
 - `fpsSpin_` configured with `setButtonSymbols(QAbstractSpinBox::NoButtons)` — clean, no native arrows
-- FPS buttons styled with dark theme (`#1E2130` bg, `#FF6B4A` hover border, 20x22 fixed size)
+- FPS buttons styled with dark theme (`#1E2130` bg, `#FF4800` hover border, 20x22 fixed size)
 - `documentChanged` listener syncs `fpsSpin_` + timer interval + `setPlaybackRate(fps/24.0)`
 
 **Frame Content Detection — O(1) hasContent_ flag**:
@@ -433,7 +433,7 @@ Align: [◀][▶◀][▶]                 ← Left, Center, Right
 - `tween_engine::interpolatePaths()`: guard against `.back()` on empty segments vector
 
 **6. Font loading**:
-- JetBrainsMono bundled in `resources/fonts/` via QRC, loaded at startup
+- Avenir LT Std bundled in `resources/fonts/` via QRC, loaded at startup
 - `QFontDatabase::addApplicationFont()` in `main.cpp`
 
 **Files**: `tool_state.hpp/cpp`, `app_state.cpp`, `property_editor_v2.hpp/cpp`, `canvas_widget_v2.hpp/cpp`, `main.cpp`, `resources.qrc`, `tween_engine.cpp`, `resources/fonts/`
@@ -658,7 +658,7 @@ For detailed build instructions per platform (Linux, macOS), see `docs/build-ins
 | Language | C++20 |
 | UI Framework | Qt 6.5+ (Widgets) |
 | Build System | CMake 3.20+ |
-| Rendering | Qt Raster (QPainter) + OpenGL |
+| Rendering | Qt Raster (QPainter, CPU) |
 | Testing | GoogleTest (154 tests) |
 | Compression | miniz (zlib) |
 | Video Export | FFmpeg (MP4, GIF) |
