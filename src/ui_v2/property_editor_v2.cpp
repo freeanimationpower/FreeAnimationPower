@@ -38,7 +38,7 @@ static const QString kSliderStyle = QStringLiteral(
 static const QString kSpinStyle = QStringLiteral(
     "QSpinBox {"
     "  background:#1E2130; color:#C8CCD8; border:1px solid #2D3139;"
-    "  padding:2px 6px; border-radius:5px; font-size:11px;"
+    "  padding:2px 6px; border-radius:5px; font-size:10px;"
     "  font-family:'Avenir LT Std',sans-serif;"
     "  min-width:48px;"
     "}"
