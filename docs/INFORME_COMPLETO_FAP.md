@@ -163,7 +163,7 @@ QPainter → Pantalla
 - **COW (Copy-on-Write):** `RasterLayer::pixelBuffer_` es `shared_ptr<PixelBuffer>`, se copia al escribir mediante `ensureUnique()`
 - **UIDs:** `LayerUid` (uint64_t) generados con `std::atomic` `fetch_add`
 - **Epoch:** `buffer_epoch_` (uint64_t) incrementado en cada modificación del buffer para invalidación de cachés
-- **Estilo Qt:** dark theme (#252830 fondo, #FF6B4A acento naranja)
+- **Estilo Qt:** dark theme (#252830 fondo, #FF4800 acento naranja)
 - **Sin excepciones:** El engine evita excepciones, usa valores de retorno y asserts
 
 ### 2.5 El AppState central

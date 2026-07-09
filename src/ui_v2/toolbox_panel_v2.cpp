@@ -34,7 +34,7 @@ public:
         setStyleSheet(
             "QPushButton { background: transparent; border: 2px solid #2D3139; "
             "border-radius: 6px; }"
-            "QPushButton:hover { border-color: #FF6B4A; }");
+            "QPushButton:hover { border-color: #FF4800; }");
     }
 
     void setSwatchColor(const QColor& color) {
@@ -93,7 +93,7 @@ static const char* kToolBaseStyle =
     "}"
     "QPushButton:checked {"
     "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
-    "    stop:0 #FF6B4A, stop:1 #E5553A);"
+    "    stop:0 #FF4800, stop:1 #D43C00);"
     "  color: #FFFFFF;"
     "}";
 
@@ -104,14 +104,14 @@ static const char* kSliderStyle =
     "  border-radius: 2px;"
     "}"
     "QSlider::handle:horizontal {"
-    "  background: #FF6B4A;"
+    "  background: #FF4800;"
     "  width: 12px;"
     "  height: 12px;"
     "  margin: -5px 0;"
     "  border-radius: 6px;"
     "}"
     "QSlider::sub-page:horizontal {"
-    "  background: #FF6B4A;"
+    "  background: #FF4800;"
     "  height: 4px;"
     "  border-radius: 2px;"
     "}";
@@ -145,8 +145,8 @@ static const char* kCheckStyle =
     "  background: #1E2130;"
     "}"
     "QCheckBox::indicator:checked {"
-    "  background: #FF6B4A;"
-    "  border-color: #FF6B4A;"
+    "  background: #FF4800;"
+    "  border-color: #FF4800;"
     "}";
 
 static const char* kGroupBoxStyle =
@@ -346,8 +346,8 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     auto* applyBtn = new QPushButton("Apply Resize");
     applyBtn->setToolTip("Apply Canvas Resize\nResize the canvas to the specified dimensions. This operation cannot be undone.");
     applyBtn->setStyleSheet(
-        "QPushButton{background:#FF6B4A;color:#fff;border:none;border-radius:4px;padding:3px;font-size:10px;font-weight:bold;}"
-        "QPushButton:hover{background:#FF8A6A;}");
+        "QPushButton{background:#FF4800;color:#fff;border:none;border-radius:4px;padding:3px;font-size:10px;font-weight:bold;}"
+        "QPushButton:hover{background:#FF6A20;}");
     QObject::connect(applyBtn, &QPushButton::clicked, [this]() {
         int w = canvasWidthSpin_->value();
         int h = canvasHeightSpin_->value();

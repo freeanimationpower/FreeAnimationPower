@@ -45,14 +45,14 @@ static const QColor kHeaderActiveBg("#11131B");
 static const QColor kCellEmpty("#161920");
 static const QColor kCellFilled("#2E333D");
 static const QColor kCellBorder("#1E2128");
-static const QColor kCellActiveBorder("#FF6B4A");
+static const QColor kCellActiveBorder("#FF4800");
 static const QColor kBorderColor("#1E2128");
-static const QColor kAccentColor("#FF6B4A");
+static const QColor kAccentColor("#FF4800");
 static const QColor kAccentDim("#3A2018");
-static const QColor kPlayheadColor("#FF6B4A");
+static const QColor kPlayheadColor("#FF4800");
 static const QColor kBtnBg("#1E2130");
 static const QColor kBtnHover("#252838");
-static const QColor kBtnPressed("#FF6B4A");
+static const QColor kBtnPressed("#FF4800");
 static const QColor kBtnText("#C8CCD8");
 static const QColor kFrameNumColor("#4A4E60");
 static const QColor kRulerBg("#0F1115");
@@ -61,7 +61,7 @@ static const QColor kRulerText("#5A5E68");
 static const QColor kScrollBg("#14161C");
 static const QColor kScrollHandle("#2A2D38");
 static const QColor kTrackNameText("#8B8FA3");
-static const QColor kTrackNameActiveText("#FF6B4A");
+static const QColor kTrackNameActiveText("#FF4800");
 static const QColor kAddBtnColor("#3A5A40");
 
 // ========================================================================

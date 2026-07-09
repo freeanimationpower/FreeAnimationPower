@@ -848,7 +848,7 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
         } else if (tool == ToolType::Brush || tool == ToolType::Eraser) {
             float r = brushSize_ / 2.0f;
             p.setOpacity(0.5f);
-            p.setPen(QPen(QColor("#FF6B4A"), 1.5f / zoom_));
+            p.setPen(QPen(QColor("#FF4800"), 1.5f / zoom_));
             p.setBrush(Qt::NoBrush);
 
             QPointF center = virtualCursorPos_;
@@ -873,7 +873,7 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
                 p.restore();
             } else if (brushShape_ == "Pencil") {
                 p.drawEllipse(center, r, r);
-                p.setPen(QPen(QColor("#FF6B4A"), 0.5f / zoom_, Qt::DotLine));
+                p.setPen(QPen(QColor("#FF4800"), 0.5f / zoom_, Qt::DotLine));
                 p.drawEllipse(center, r * 0.85f, r * 0.85f);
             } else if (brushShape_ == "Highlighter") {
                 p.save();
@@ -1088,7 +1088,7 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
 
     // Selection rectangle and floating selection
     if (selState_ == SelectionState::Creating || (floatingActive_ && selRect_.isValid())) {
-        p.setPen(QPen(QColor("#FF6B4A"), 1.5f / zoom_, Qt::SolidLine));
+        p.setPen(QPen(QColor("#FF4800"), 1.5f / zoom_, Qt::SolidLine));
         p.setBrush(QColor(255, 107, 74, 30));
         p.drawRect(selRect_);
 
@@ -1110,7 +1110,7 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
 
             qreal hs = 6.0f / zoom_;
             p.setPen(QPen(QColor("#FFFFFF"), 1.0f / zoom_));
-            p.setBrush(QColor("#FF6B4A"));
+            p.setBrush(QColor("#FF4800"));
             QPointF corners[4] = {
                 selRect_.topLeft(), selRect_.topRight(),
                 selRect_.bottomRight(), selRect_.bottomLeft()

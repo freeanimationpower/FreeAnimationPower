@@ -22,7 +22,7 @@ static const QColor kAudioTrackBg("#121A16");
 static const QColor kAudioHeaderBg("#0D1410");
 static const QColor kBorderColor("#1E2128");
 static const QColor kBtnHover("#252838");
-static const QColor kPlayheadColor("#FF6B4A");
+static const QColor kPlayheadColor("#FF4800");
 static const QColor kBtnText("#C8CCD8");
 static const QColor kTrackNameText("#8B8FA3");
 static const QColor kRedColor("#FF4A4A");

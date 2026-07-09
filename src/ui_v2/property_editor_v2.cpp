@@ -28,10 +28,10 @@ static const QString kSliderStyle = QStringLiteral(
     "  background:#22252F; height:4px; border-radius:2px;"
     "}"
     "QSlider::handle:horizontal {"
-    "  background:#FF6B4A; width:14px; height:14px; margin:-5px 0; border-radius:7px;"
+    "  background:#FF4800; width:14px; height:14px; margin:-5px 0; border-radius:7px;"
     "}"
     "QSlider::sub-page:horizontal {"
-    "  background:#FF6B4A; border-radius:2px;"
+    "  background:#FF4800; border-radius:2px;"
     "}"
 );
 
@@ -42,7 +42,7 @@ static const QString kSpinStyle = QStringLiteral(
     "  font-family:'Avenir LT Std',sans-serif;"
     "  min-width:48px;"
     "}"
-    "QSpinBox:focus { border-color:#FF6B4A; }"
+    "QSpinBox:focus { border-color:#FF4800; }"
 );
 
 static const QString kLabelStyle = QStringLiteral(
@@ -229,7 +229,7 @@ void PropertyEditorV2::setupUI()
         "QComboBox::drop-down { border:none; width:16px; }"
         "QComboBox QAbstractItemView {"
         "  background:#1A1D24; color:#C8CCD8;"
-        "  selection-background-color:#FF6B4A; border:1px solid #2D3139;"
+        "  selection-background-color:#FF4800; border:1px solid #2D3139;"
         "}");
     shapeRow->addWidget(shapeCombo_, 1);
     brushLayout->addLayout(shapeRow);
@@ -280,7 +280,7 @@ void PropertyEditorV2::setupUI()
         "QCheckBox { color:#8B8FA3; font-size:10px; spacing:6px; }"
         "QCheckBox::indicator { width:14px; height:14px; border:1px solid #3D4150;"
         "  border-radius:3px; background:#1E2130; }"
-        "QCheckBox::indicator:checked { background:#FF6B4A; border-color:#FF6B4A; }");
+        "QCheckBox::indicator:checked { background:#FF4800; border-color:#FF4800; }");
     brushLayout->addWidget(pressureSizeCb_);
 
     pressureOpacityCb_ = new QCheckBox("Pressure controls opacity", this);
@@ -289,7 +289,7 @@ void PropertyEditorV2::setupUI()
         "QCheckBox { color:#8B8FA3; font-size:10px; spacing:6px; }"
         "QCheckBox::indicator { width:14px; height:14px; border:1px solid #3D4150;"
         "  border-radius:3px; background:#1E2130; }"
-        "QCheckBox::indicator:checked { background:#FF6B4A; border-color:#FF6B4A; }");
+        "QCheckBox::indicator:checked { background:#FF4800; border-color:#FF4800; }");
     brushLayout->addWidget(pressureOpacityCb_);
 
     mainLayout->addWidget(brushGroup_);
@@ -411,7 +411,7 @@ void PropertyEditorV2::setupUI()
         "QPushButton{background:#1E2130;color:#C8CCD8;border:1px solid #2D3139;"
         "border-radius:5px;padding:3px 8px;font-size:12px;text-align:left;}"
         "QPushButton:hover{border-color:#3D4150;}"
-        "QPushButton:pressed{background:#FF6B4A;color:#fff;border-color:#FF6B4A;}");
+        "QPushButton:pressed{background:#FF4800;color:#fff;border-color:#FF4800;}");
     connect(fontBtn_, &QPushButton::clicked, this, &PropertyEditorV2::openFontPicker);
     fontRow->addWidget(fontBtn_, 1);
     textLayout->addLayout(fontRow);
@@ -892,7 +892,7 @@ void PropertyEditorV2::syncTextFromState()
 
     QString colorStyle = QString(
         "QPushButton{background-color:%1;border:2px solid #2D3139;border-radius:12px;}"
-        "QPushButton:hover{border-color:#FF6B4A;}"
+        "QPushButton:hover{border-color:#FF4800;}"
     ).arg(ts.primaryColor().name());
     textColorBtn_->setStyleSheet(colorStyle);
 }
@@ -912,7 +912,7 @@ void PropertyEditorV2::updateColorVariations()
 
     QString swatchStyle = QString(
         "QPushButton { background-color:%1; border:2px solid #2D3139; border-radius:4px; }"
-        "QPushButton:hover { border-color:#FF6B4A; }"
+        "QPushButton:hover { border-color:#FF4800; }"
     ).arg(base.name());
     colorSwatch_->setStyleSheet(swatchStyle);
 
@@ -921,7 +921,7 @@ void PropertyEditorV2::updateColorVariations()
         QColor var = generateVariation(base, i, total);
         QString vStyle = QString(
             "QPushButton { background-color:%1; border:1px solid #2D3139; border-radius:3px; }"
-            "QPushButton:hover { border-color:#FF6B4A; }"
+            "QPushButton:hover { border-color:#FF4800; }"
         ).arg(var.name());
         variationButtons_[static_cast<size_t>(i)]->setStyleSheet(vStyle);
     }
@@ -1053,7 +1053,7 @@ void PropertyEditorV2::openFontPicker()
     popup->setStyleSheet(
         "QMenu{background:#1A1D24;border:1px solid #2D3139;border-radius:6px;padding:4px;}"
         "QMenu::item{padding:4px 8px;}"
-        "QMenu::item:selected{background:#FF6B4A;color:#fff;border-radius:3px;}");
+        "QMenu::item:selected{background:#FF4800;color:#fff;border-radius:3px;}");
 
     auto* search = new QLineEdit();
     search->setPlaceholderText("Search fonts...");
@@ -1061,7 +1061,7 @@ void PropertyEditorV2::openFontPicker()
     search->setStyleSheet(
         "QLineEdit{background:#1E2130;color:#C8CCD8;border:1px solid #2D3139;"
         "border-radius:5px;padding:4px 8px;font-size:11px;margin:2px 4px;}"
-        "QLineEdit:focus{border-color:#FF6B4A;}");
+        "QLineEdit:focus{border-color:#FF4800;}");
     auto* searchAct = new QWidgetAction(popup);
     searchAct->setDefaultWidget(search);
     popup->addAction(searchAct);
@@ -1073,7 +1073,7 @@ void PropertyEditorV2::openFontPicker()
     list->setStyleSheet(
         "QListWidget{background:transparent;color:#C8CCD8;border:none;outline:none;}"
         "QListWidget::item{padding:4px 8px;border-radius:3px;}"
-        "QListWidget::item:selected{background:#FF6B4A;color:#fff;}"
+        "QListWidget::item:selected{background:#FF4800;color:#fff;}"
         "QListWidget::item:hover{background:#1E2130;}");
     list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 

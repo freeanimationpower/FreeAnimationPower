@@ -44,7 +44,7 @@ QToolBar { background:#14161C; border:none; border-bottom:1px solid #2D3139; spa
 QToolBar::separator { width:1px; background:#2D3139; margin:4px 6px; }
 QToolButton { color:#8B8FA3; border:1px solid transparent; border-radius:6px; padding:4px 6px; font-size:11px; }
 QToolButton:hover { background:#1E2130; color:#E0E2EA; }
-QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF6B4A,stop:1 #FF8A6A); color:#fff; border-color:transparent; }
+QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF4800,stop:1 #FF6A20); color:#fff; border-color:transparent; }
 QToolButton:disabled { color:#3D4150; background:transparent; }
 QDockWidget { background:#1A1D24; color:#8B8FA3; border:1px solid #2D3139; titlebar-close-icon:none; }
 QDockWidget::title { background:#1A1D24; padding:6px 10px; border-bottom:1px solid #2D3139; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:#6B7088; }
@@ -57,26 +57,26 @@ QScrollBar:horizontal { background:transparent; height:6px; }
 QScrollBar::handle:horizontal { background:#2D3139; border-radius:3px; min-width:20px; }
 QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width:0; }
 QSlider::groove:horizontal { background:#22252F; height:3px; border-radius:2px; }
-QSlider::handle:horizontal { background:#FF6B4A; width:12px; height:12px; margin:-5px 0; border-radius:6px; }
-QSlider::sub-page:horizontal { background:#FF6B4A; border-radius:2px; }
+QSlider::handle:horizontal { background:#FF4800; width:12px; height:12px; margin:-5px 0; border-radius:6px; }
+QSlider::sub-page:horizontal { background:#FF4800; border-radius:2px; }
 QSpinBox,QDoubleSpinBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:2px 6px; border-radius:5px; font-size:10px; font-family:'Avenir LT Std',sans-serif; }
-QSpinBox:focus { border-color:#FF6B4A; }
+QSpinBox:focus { border-color:#FF4800; }
 QComboBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:3px 8px; border-radius:5px; font-size:10px; }
 QComboBox:hover { border-color:#3D4150; }
 QComboBox::drop-down { border:none; width:16px; }
-QComboBox QAbstractItemView { background:#1A1D24; color:#C8CCD8; selection-background-color:#FF6B4A; border:1px solid #2D3139; }
+QComboBox QAbstractItemView { background:#1A1D24; color:#C8CCD8; selection-background-color:#FF4800; border:1px solid #2D3139; }
 QCheckBox { color:#8B8FA3; font-size:10px; spacing:6px; }
 QCheckBox::indicator { width:14px; height:14px; border:1px solid #3D4150; border-radius:3px; background:#1E2130; }
-QCheckBox::indicator:checked { background:#FF6B4A; border-color:#FF6B4A; }
+QCheckBox::indicator:checked { background:#FF4800; border-color:#FF4800; }
 QPushButton { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; border-radius:6px; padding:5px 10px; font-size:10px; font-weight:500; }
 QPushButton:hover { background:#252838; border-color:#3D4150; }
-QPushButton:pressed { background:#FF6B4A; color:#fff; border-color:#FF6B4A; }
+QPushButton:pressed { background:#FF4800; color:#fff; border-color:#FF4800; }
 QGroupBox { color:#6B7088; font-weight:600; font-size:9px; text-transform:uppercase; letter-spacing:1px; border:1px solid #2D3139; border-radius:6px; margin-top:12px; padding-top:14px; }
 QGroupBox::title { subcontrol-origin:margin; left:10px; padding:0 6px; }
 QLabel { color:#8B8FA3; font-size:10px; }
 QListWidget { background:#14161C; color:#C8CCD8; border:1px solid #2D3139; border-radius:5px; outline:none; }
 QListWidget::item { padding:4px 8px; border-radius:3px; }
-QListWidget::item:selected { background:#FF6B4A; color:#fff; }
+QListWidget::item:selected { background:#FF4800; color:#fff; }
 QListWidget::item:hover { background:#1E2130; }
 )";
 
@@ -267,8 +267,8 @@ void MainWindowV2::setupTopBar()
             "<style>body{background:#0F1115;color:#C8CCD8;font-family:'Avenir LT Std',sans-serif}"
             "table{border-collapse:collapse;width:100%}"
             "td{padding:4px 12px}"
-            "b{color:#FF6B4A}"
-            "h3{color:#FF6B4A;margin-top:16px;font-size:13px}</style>"
+            "b{color:#FF4800}"
+            "h3{color:#FF4800;margin-top:16px;font-size:13px}</style>"
             "<h3>Tools</h3>"
             "<table>"
             "<tr><td><b>B</b></td><td>Brush</td><td><b>E</b></td><td>Eraser</td></tr>"
