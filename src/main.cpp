@@ -105,11 +105,10 @@ int main(int argc, char* argv[]) {
 
     QApplication app(argc, argv);
 
-    int fontId1 = QFontDatabase::addApplicationFont(":/fonts/Avenir.ttc");
-    int fontId2 = QFontDatabase::addApplicationFont(":/fonts/AvenirLTStd-Heavy.otf");
+    int fontId = QFontDatabase::addApplicationFont(":/fonts/AvenirLTStd-Heavy.otf");
 
-    if (fontId1 < 0 || fontId2 < 0) {
-        qWarning() << "Failed to load bundled Avenir fonts";
+    if (fontId < 0) {
+        qWarning() << "Failed to load bundled font";
     }
 
     app.setApplicationName("Free Animation Power");

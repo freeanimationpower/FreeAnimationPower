@@ -38,7 +38,7 @@
 namespace fap {
 
 static const char* kTheme = R"(
-* { font-family:'Avenir'; }
+* { font-family:'Avenir LT Std'; }
 QMainWindow { background:#0F1115; }
 QToolBar { background:#14161C; border:none; border-bottom:1px solid #2D3139; spacing:2px; padding:4px 8px; }
 QToolBar::separator { width:1px; background:#2D3139; margin:4px 6px; }
@@ -59,7 +59,7 @@ QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width:0; }
 QSlider::groove:horizontal { background:#22252F; height:3px; border-radius:2px; }
 QSlider::handle:horizontal { background:#FF6B4A; width:12px; height:12px; margin:-5px 0; border-radius:6px; }
 QSlider::sub-page:horizontal { background:#FF6B4A; border-radius:2px; }
-QSpinBox,QDoubleSpinBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:2px 6px; border-radius:5px; font-size:10px; font-family:'Avenir',sans-serif; }
+QSpinBox,QDoubleSpinBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:2px 6px; border-radius:5px; font-size:10px; font-family:'Avenir LT Std',sans-serif; }
 QSpinBox:focus { border-color:#FF6B4A; }
 QComboBox { background:#1E2130; color:#C8CCD8; border:1px solid #2D3139; padding:3px 8px; border-radius:5px; font-size:10px; }
 QComboBox:hover { border-color:#3D4150; }
@@ -91,7 +91,7 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
     setMinimumSize(1024, 600);
 
     qApp->setStyleSheet(QLatin1String(kTheme));
-    qApp->setFont(QFont("Avenir", 11));
+    qApp->setFont(QFont("Avenir LT Std", 11));
 
     setupUI();
     updateUIState();
@@ -264,7 +264,7 @@ void MainWindowV2::setupTopBar()
     helpAct->setToolTip("Keyboard Shortcuts (F1)");
     connect(helpAct, &QAction::triggered, [this]() {
         QMessageBox::about(this, "Keyboard Shortcuts",
-            "<style>body{background:#0F1115;color:#C8CCD8;font-family:Avenir,sans-serif}"
+            "<style>body{background:#0F1115;color:#C8CCD8;font-family:'Avenir LT Std',sans-serif}"
             "table{border-collapse:collapse;width:100%}"
             "td{padding:4px 12px}"
             "b{color:#FF6B4A}"

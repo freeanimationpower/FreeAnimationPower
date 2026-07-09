@@ -39,14 +39,14 @@ static const QString kSpinStyle = QStringLiteral(
     "QSpinBox {"
     "  background:#1E2130; color:#C8CCD8; border:1px solid #2D3139;"
     "  padding:2px 6px; border-radius:5px; font-size:11px;"
-    "  font-family:'Avenir',sans-serif;"
+    "  font-family:'Avenir LT Std',sans-serif;"
     "  min-width:48px;"
     "}"
     "QSpinBox:focus { border-color:#FF6B4A; }"
 );
 
 static const QString kLabelStyle = QStringLiteral(
-    "QLabel { color:#6B7088; font-size:9px; font-weight:600;"
+    "QLabel { color:#6B7088; font-size:8px; font-weight:600;"
     " text-transform:uppercase; letter-spacing:0.5px; }"
 );
 
