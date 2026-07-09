@@ -147,6 +147,7 @@ void PropertyEditorV2::setupUI()
     sizeSpin_ = new QSpinBox(this);
     sizeSpin_->setRange(1, 200);
     sizeSpin_->setValue(20);
+    sizeSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     sizeSpin_->setStyleSheet(kSpinStyle);
     sizeSpin_->setFixedWidth(52);
     sizeRow->addWidget(sizeSpin_);
@@ -174,6 +175,7 @@ void PropertyEditorV2::setupUI()
     opacitySpin_->setRange(0, 100);
     opacitySpin_->setValue(100);
     opacitySpin_->setSuffix("%");
+    opacitySpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     opacitySpin_->setStyleSheet(kSpinStyle);
     opacitySpin_->setFixedWidth(52);
     opacityRow->addWidget(opacitySpin_);
@@ -200,6 +202,7 @@ void PropertyEditorV2::setupUI()
     hardnessSpin_ = new QSpinBox(this);
     hardnessSpin_->setRange(0, 100);
     hardnessSpin_->setValue(80);
+    hardnessSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     hardnessSpin_->setStyleSheet(kSpinStyle);
     hardnessSpin_->setFixedWidth(52);
     hardnessRow->addWidget(hardnessSpin_);
@@ -270,6 +273,7 @@ void PropertyEditorV2::setupUI()
     stabilizerSpin_ = new QSpinBox(this);
     stabilizerSpin_->setRange(0, 50);
     stabilizerSpin_->setValue(0);
+    stabilizerSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     stabilizerSpin_->setStyleSheet(kSpinStyle);
     stabilizerSpin_->setFixedWidth(52);
     stabilizerRow->addWidget(stabilizerSpin_);
