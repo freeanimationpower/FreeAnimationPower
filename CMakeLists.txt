@@ -205,7 +205,6 @@ target_link_libraries(free-animation-power PRIVATE
     Qt6::Multimedia
     Qt6::Svg
     miniz
-    dwmapi
 )
 
 target_compile_definitions(free-animation-power PRIVATE
