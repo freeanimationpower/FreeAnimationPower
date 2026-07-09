@@ -88,10 +88,6 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     auto* headerRow = new QHBoxLayout();
     headerRow->setContentsMargins(0, 0, 0, 4);
 
-    auto* titleLabel = new QLabel("LAYERS");
-    titleLabel->setStyleSheet(
-        QString("color:%1;font-size:10px;font-weight:bold;letter-spacing:1px;").arg(kAccentColor));
-    headerRow->addWidget(titleLabel);
     headerRow->addStretch();
 
     auto* addRasterBtn = makeIconButton(":/icons/svg/new_layer.svg",

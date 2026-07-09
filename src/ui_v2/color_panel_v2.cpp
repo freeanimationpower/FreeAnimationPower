@@ -37,11 +37,6 @@ ColorPanelV2::ColorPanelV2(QWidget* parent) : QWidget(parent) {
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(8);
 
-    auto* titleLabel = new QLabel("COLOR");
-    titleLabel->setStyleSheet(
-        QString("color:%1;font-size:10px;font-weight:bold;letter-spacing:1px;").arg(kAccentColor));
-    layout->addWidget(titleLabel);
-
     swatch_ = new QPushButton();
     swatch_->setFixedSize(48, 48);
     swatch_->setCursor(Qt::PointingHandCursor);
