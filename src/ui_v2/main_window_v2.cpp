@@ -13,6 +13,14 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QMenu>
+
+#ifdef Q_OS_WIN
+#define NOMINMAX
+#include <dwmapi.h>
+#ifndef DWMWA_CAPTION_COLOR
+#define DWMWA_CAPTION_COLOR 35
+#endif
+#endif
 #include <QtCore/QProcess>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryDir>
@@ -92,6 +100,14 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
 
     qApp->setStyleSheet(QLatin1String(kTheme));
     qApp->setFont(QFont("Avenir LT Std", 11));
+
+    // Orange title bar via Windows DWM
+#ifdef Q_OS_WIN
+    QColor titleColor("#FF4800");
+    DwmSetWindowAttribute(reinterpret_cast<HWND>(winId()),
+        35, // DWMWA_CAPTION_COLOR (Win11 SDK 22000+)
+        &titleColor, sizeof(titleColor));
+#endif
 
     setupUI();
     updateUIState();
