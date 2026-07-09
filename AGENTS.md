@@ -37,7 +37,8 @@ ctest --test-dir build
 - C++20, CMake 3.20+, Qt 6.5+
 - Headers use `#pragma once`
 - Engine code is Qt-independent (no QObject/Qt types in engine/)
-- UI code uses Qt 6 Widgets with dark theme (#252830 background, #FF4800 accent)
+- UI code uses Qt 6 Widgets with dark theme (#252830 panels, #000000 toolbar/titlebar, #FF4800 accent)
+- Font: Avenir LT Std (bundled .otf + .ttc), loaded via QRC at startup
 - No external dependencies beyond Qt, FFmpeg, GoogleTest, and miniz (zlib compression)
 
 ## Skills Available
