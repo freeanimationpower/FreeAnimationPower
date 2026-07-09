@@ -159,8 +159,8 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
         QString("QComboBox{background:%1;color:%2;border:1px solid %3;border-radius:3px;padding:3px 6px;font-size:11px;}")
             .arg(kInputBg, kTextColor, kBorderColor) +
         QString("QComboBox:hover{border-color:%1;}")
-            .arg(kMutedColor) +
-        QString("QComboBox QAbstractItemView{background:%1;color:%2;selection-background-color:%3;border:1px solid %4;}")
+            .arg(kAccentColor) +
+        QString("QComboBox QAbstractItemView{background:%1;color:%2;selection-background-color:%3;selection-color:#fff;border:1px solid %4;}")
             .arg(kInputBg, kTextColor, kAccentColor, kBorderColor));
     QObject::connect(blendCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &LayerPanelV2::onBlendModeChanged);
