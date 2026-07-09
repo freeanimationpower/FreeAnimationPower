@@ -95,6 +95,7 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
     , appState_(std::move(state))
 {
     setWindowTitle("Free Animation Power - Untitled.fap");
+    setWindowIcon(QIcon(":/icons/toolbar/logo.png"));
     resize(1600, 900);
     setMinimumSize(1024, 600);
 
@@ -132,12 +133,6 @@ void MainWindowV2::setupTopBar()
     toolbar->setObjectName("mainToolBarV2");
     toolbar->setIconSize(QSize(32, 32));
     toolbar->setFixedHeight(52);
-
-    auto* logoLabel = new QLabel();
-    QPixmap logo(":/icons/toolbar/logo.png");
-    logoLabel->setPixmap(logo.scaledToHeight(40, Qt::SmoothTransformation));
-    logoLabel->setStyleSheet("background:transparent; margin-right:16px;");
-    toolbar->addWidget(logoLabel);
 
     auto* newAct = toolbar->addAction(QIcon(":/icons/toolbar/new_project.png"), "");
     newAct->setToolTip("New Project (Ctrl+N)");
