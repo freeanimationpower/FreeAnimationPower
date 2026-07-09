@@ -90,7 +90,7 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
     setMinimumSize(1024, 600);
 
     qApp->setStyleSheet(QLatin1String(kTheme));
-    qApp->setFont(QFont("Inter", 10));
+    qApp->setFont(QFont("Avenir", 10));
 
     setupUI();
     updateUIState();
@@ -263,7 +263,7 @@ void MainWindowV2::setupTopBar()
     helpAct->setToolTip("Keyboard Shortcuts (F1)");
     connect(helpAct, &QAction::triggered, [this]() {
         QMessageBox::about(this, "Keyboard Shortcuts",
-            "<style>body{background:#0F1115;color:#C8CCD8;font-family:Inter,sans-serif}"
+            "<style>body{background:#0F1115;color:#C8CCD8;font-family:Avenir,sans-serif}"
             "table{border-collapse:collapse;width:100%}"
             "td{padding:4px 12px}"
             "b{color:#FF6B4A}"

@@ -112,9 +112,6 @@ int main(int argc, char* argv[]) {
         qWarning() << "Failed to load bundled Avenir fonts";
     }
 
-    QFont defaultFont("Avenir", 10);
-    app.setFont(defaultFont);
-
     app.setApplicationName("Free Animation Power");
     app.setApplicationVersion("2.0.0");
     app.setOrganizationName("FAP");

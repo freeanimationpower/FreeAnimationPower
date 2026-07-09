@@ -293,7 +293,7 @@ public:
         nameEdit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         nameEdit_->setStyleSheet(QString(
             "QLineEdit { background:transparent; color:%1; border:none; "
-            "font-size:11px; font-family:'Inter'; padding:0px 8px; }"
+            "font-size:11px; font-family:'Avenir'; padding:0px 8px; }"
             "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
             .arg(isActive_ ? kTrackNameActiveText.name() : kTrackNameText.name()));
         nameEdit_->setCursorPosition(0);
@@ -402,7 +402,7 @@ public:
                       : (isActive_ ? kTrackNameActiveText : kTrackNameText);
         nameEdit_->setStyleSheet(QString(
             "QLineEdit { background:transparent; color:%1; border:none; "
-            "font-size:11px; font-family:'Inter'; padding:0px 8px; }"
+            "font-size:11px; font-family:'Avenir'; padding:0px 8px; }"
             "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
             .arg(color.name()));
     }

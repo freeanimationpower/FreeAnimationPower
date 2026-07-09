@@ -47,7 +47,7 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
     nameEdit_ = new QLineEdit(displayName_, this);
     nameEdit_->setStyleSheet(QString(
         "QLineEdit { background:transparent; color:%1; border:none; "
-        "font-size:11px; font-family:'Inter'; padding:0px 8px; }"
+        "font-size:11px; font-family:'Avenir'; padding:0px 8px; }"
         "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
         .arg(kTrackNameText.name()));
     nameEdit_->setReadOnly(true);
@@ -253,7 +253,7 @@ void AudioTrackWidget::updateMuteStyle()
     QColor color = muted_ ? kMutedColor : kTrackNameText;
     nameEdit_->setStyleSheet(QString(
         "QLineEdit { background:transparent; color:%1; border:none; "
-        "font-size:11px; font-family:'Inter'; padding:0px 8px; }"
+        "font-size:11px; font-family:'Avenir'; padding:0px 8px; }"
         "QLineEdit:focus { background:#1A1E28; color:#E8ECF0; }")
         .arg(color.name()));
     muteBtn_->setText(muted_ ? QString::fromUtf8("\U0001F507")
@@ -277,14 +277,14 @@ void AudioTrackWidget::paintEvent(QPaintEvent*)
 
     if (!decoded_) {
         p.setPen(kTrackNameText);
-        QFont f("Inter", 9);
+        QFont f("Avenir", 9);
         p.setFont(f);
         p.drawText(QRect(hdrW + 8, 0, w - hdrW - 16, h),
                    Qt::AlignVCenter | Qt::AlignLeft,
                    "Decoding audio...");
     } else if (waveformPicks_.empty()) {
         p.setPen(kTrackNameText);
-        QFont f("Inter", 8);
+        QFont f("Avenir", 8);
         p.setFont(f);
         QString msg;
         if (decodeError_) {
