@@ -51,10 +51,10 @@ QDockWidget::title { background:#1A1D24; padding:6px 10px; border-bottom:1px sol
 QStatusBar { background:#14161C; color:#6B7088; border-top:1px solid #2D3139; font-size:11px; padding:2px 8px; }
 QScrollArea { background:transparent; border:none; }
 QScrollBar:vertical { background:transparent; width:6px; margin:0; }
-QScrollBar::handle:vertical { background:#2D3139; border-radius:3px; min-height:20px; }
+QScrollBar::handle:vertical { background:#FF4800; border-radius:3px; min-height:20px; }
 QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical { height:0; }
 QScrollBar:horizontal { background:transparent; height:6px; }
-QScrollBar::handle:horizontal { background:#2D3139; border-radius:3px; min-width:20px; }
+QScrollBar::handle:horizontal { background:#FF4800; border-radius:3px; min-width:20px; }
 QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal { width:0; }
 QSlider::groove:horizontal { background:#22252F; height:3px; border-radius:2px; }
 QSlider::handle:horizontal { background:#FF4800; width:12px; height:12px; margin:-5px 0; border-radius:6px; }
