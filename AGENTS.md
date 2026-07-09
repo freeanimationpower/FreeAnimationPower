@@ -39,6 +39,7 @@ ctest --test-dir build
 - Engine code is Qt-independent (no QObject/Qt types in engine/)
 - UI code uses Qt 6 Widgets with dark theme (#252830 panels, #000000 toolbar/titlebar, #FF4800 accent)
 - Font: Avenir LT Std (bundled .otf + .ttc), loaded via QRC at startup
+- Window icon: logo.png (256x256) set via setWindowIcon(), appears in title bar / taskbar
 - No external dependencies beyond Qt, FFmpeg, GoogleTest, and miniz (zlib compression)
 
 ## Skills Available
