@@ -62,7 +62,7 @@
         <file alias="new_layer.svg">icons/new_layer.svg</file>
     </qresource>
     <qresource prefix="/fonts">
-        <file alias="Avenir.ttc">fonts/Avenir.ttc</file>
-        <file alias="AvenirLTStd-Heavy.otf">fonts/AvenirLTStd-Heavy.otf</file>
+        <file alias="Avenir-Roman.ttf">fonts/AvenirRoman.ttf</file>
+        <file alias="Avenir-Heavy.ttf">fonts/AvenirHeavy.ttf</file>
     </qresource>
 </RCC>
