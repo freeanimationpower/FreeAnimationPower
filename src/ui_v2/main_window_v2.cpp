@@ -91,7 +91,7 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
     setMinimumSize(1024, 600);
 
     qApp->setStyleSheet(QLatin1String(kTheme));
-    qApp->setFont(QFont("Avenir", 10));
+    qApp->setFont(QFont("Avenir", 11));
 
     setupUI();
     updateUIState();
