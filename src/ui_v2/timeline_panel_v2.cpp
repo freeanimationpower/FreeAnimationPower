@@ -741,18 +741,19 @@ void TimelinePanelV2::setupUI()
     newSeqBtn_->setStyleSheet(QString(
         "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:4px; "
         "font-size:10px; font-weight:bold; padding:2px 10px; }"
-        "QPushButton:hover { background:%4; border-color:%5; color:#E8ECF0; }"
+        "QPushButton:hover { background:%4; border-color:%5; }"
+        "QPushButton:pressed { background:%5; color:#fff; }"
         "QPushButton::menu-indicator { image:none; subcontrol-position:right center; "
         "subcontrol-origin:padding; left:2px; }")
         .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
-             kBtnHover.name(), kPlayheadColor.name()));
+             kBtnHover.name(), kAccentColor.name()));
     auto* addMenu = new QMenu(this);
     addMenu->setStyleSheet(QString(
         "QMenu { background:%1; color:%2; border:1px solid %3; border-radius:4px; "
         "padding:4px; }"
         "QMenu::item { padding:4px 16px; border-radius:3px; }"
-        "QMenu::item:selected { background:%4; color:#E8ECF0; }")
-        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(), kBtnHover.name()));
+        "QMenu::item:selected { background:%4; color:#fff; }")
+        .arg(kBtnBg.name(), kBtnText.name(), kAccentColor.name(), kAccentColor.name()));
     addMenu->addAction("Add Animation Sequence", this, &TimelinePanelV2::onNewSequence);
     addMenu->addAction("Add Audio Track", this, &TimelinePanelV2::onImportAudio);
     newSeqBtn_->setMenu(addMenu);
