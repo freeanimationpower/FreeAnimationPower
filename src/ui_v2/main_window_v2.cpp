@@ -48,10 +48,10 @@ namespace fap {
 static const char* kTheme = R"(
 * { font-family:'Avenir LT Std'; }
 QMainWindow { background:#0F1115; }
-QToolBar { background:#14161C; border:none; border-bottom:1px solid #2D3139; spacing:2px; padding:4px 8px; }
+QToolBar { background:#000000; border:none; border-bottom:1px solid #2D3139; spacing:2px; padding:4px 8px; }
 QToolBar::separator { width:1px; background:#2D3139; margin:4px 6px; }
-QToolButton { color:#8B8FA3; border:1px solid transparent; border-radius:6px; padding:4px 6px; font-size:11px; }
-QToolButton:hover { background:#1E2130; color:#E0E2EA; }
+QToolButton { color:#FF4800; border:1px solid transparent; border-radius:6px; padding:4px 6px; font-size:11px; }
+QToolButton:hover { background:#1A1A1A; color:#FF6A20; }
 QToolButton:pressed,QToolButton:checked { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FF4800,stop:1 #FF6A20); color:#fff; border-color:transparent; }
 QToolButton:disabled { color:#3D4150; background:transparent; }
 QDockWidget { background:#1A1D24; border:1px solid #2D3139; titlebar-close-icon:none; }
