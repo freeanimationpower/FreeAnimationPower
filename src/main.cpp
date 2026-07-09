@@ -105,10 +105,10 @@ int main(int argc, char* argv[]) {
 
     QApplication app(argc, argv);
 
-    int jmId = QFontDatabase::addApplicationFont(":/fonts/JetBrainsMono-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/JetBrainsMono-Bold.ttf");
-    if (jmId < 0) {
-        qWarning() << "Failed to load bundled JetBrainsMono font";
+    int fontId = QFontDatabase::addApplicationFont(":/fonts/Avenir.ttc");
+    QFontDatabase::addApplicationFont(":/fonts/AvenirLTStd-Heavy.otf");
+    if (fontId < 0) {
+        qWarning() << "Failed to load bundled Avenir font";
     }
 
     app.setApplicationName("Free Animation Power");
