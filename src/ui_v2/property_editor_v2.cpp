@@ -225,12 +225,13 @@ void PropertyEditorV2::setupUI()
         "  background:#1E2130; color:#C8CCD8; border:1px solid #2D3139;"
         "  padding:2px 6px; border-radius:5px; font-size:10px;"
         "}"
-        "QComboBox:hover { border-color:#3D4150; }"
+        "QComboBox:hover { border-color:#FF4800; }"
         "QComboBox::drop-down { border:none; width:16px; }"
         "QComboBox QAbstractItemView {"
         "  background:#1A1D24; color:#C8CCD8;"
-        "  selection-background-color:#FF4800; border:1px solid #2D3139;"
-        "}");
+        "  selection-background-color:#FF4800; selection-color:#fff; border:1px solid #2D3139;"
+        "}"
+        "QComboBox QAbstractItemView::item:hover { background:#FF4800; color:#fff; }");
     shapeRow->addWidget(shapeCombo_, 1);
     brushLayout->addLayout(shapeRow);
 
