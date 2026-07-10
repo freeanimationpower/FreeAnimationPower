@@ -8,6 +8,7 @@
 #include <QMutex>
 #include "ui_v2/main_window_v2.hpp"
 #include "core/app_state.hpp"
+#include "core/diagnostic/tracer.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -127,6 +128,10 @@ int main(int argc, char* argv[]) {
     qInfo() << "Free Animation Power v2.0.0 started";
     qInfo() << "Log:" << logPath;
 
+#ifdef FAP_DIAGNOSTIC_TRACER
+    fap::diagnostic::Tracer::startup();
+#endif
+
     QCommandLineParser parser;
     parser.setApplicationDescription("2D Animation Studio — Hybrid Vector + Raster Engine");
     parser.addHelpOption();
@@ -146,6 +151,11 @@ int main(int argc, char* argv[]) {
 
     int result = app.exec();
     qInfo() << "Application exiting with code" << result;
+
+#ifdef FAP_DIAGNOSTIC_TRACER
+    fap::diagnostic::Tracer::shutdown();
+#endif
+
     g_logFile.close();
     return result;
 }

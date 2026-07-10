@@ -23,6 +23,7 @@
 
 #include "core/document.hpp"
 #include "core/layer.hpp"
+#include "core/diagnostic/tracer_macros.hpp"
 #include "core/undo_manager.hpp"
 #include "core/tool_state.hpp"
 
@@ -1253,8 +1254,9 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         // Before snapshot from pixelBuffer_ for undo
         QRect initialRect = stampRect(cx, cy);
         beforeSnapshot_ = captureRect(initialRect);
-
         drawBrushStamp(cx, cy);
+
+        FAP_TRACE_STROKE("begin", 0);
     } else if (tool == ToolType::ColorPicker) {
         QPointF cp = widgetToCanvas(event->pos());
         auto& doc = appState_->document();
@@ -1554,6 +1556,7 @@ void CanvasWidgetV2::mouseReleaseEvent(QMouseEvent* event)
                            static_cast<int>(virtualCursorPos_.y()));
         }
         drawing_ = false;
+        FAP_TRACE_STROKE("end", 1);
         commitStroke();
         update();
     }
@@ -2148,6 +2151,8 @@ void CanvasWidgetV2::commitStroke()
 
     // Thumbnail invalidation
     appState_->thumbnailCache().invalidateFrame(currentFrame_);
+
+    FAP_TRACE_BUFFER_COMMIT(layer->uid(), commitR.x(), commitR.y(), commitR.width(), commitR.height());
 
     // Cleanup
     strokeBuffer_ = QImage();

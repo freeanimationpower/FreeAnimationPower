@@ -21,6 +21,8 @@
 #include <memory>
 #include <unordered_set>
 
+#include "core/diagnostic/tracer_macros.hpp"
+
 namespace fap {
 
 using namespace io::utils;
@@ -236,6 +238,8 @@ bool DocumentManager::save(const Document& doc, const QString& path, const ViewS
     busy_ = true;
     lock.unlock();
 
+    FAP_TRACE_IO("save_begin", path.toStdString(), 0.0);
+
     QString tmpPath;
     if (!prepareAtomicTarget(path, tmpPath)) {
         QMutexLocker relock(&mutex_);
@@ -289,6 +293,7 @@ bool DocumentManager::save(const Document& doc, const QString& path, const ViewS
 
     QMutexLocker relock(&mutex_);
     busy_ = false;
+    FAP_TRACE_IO("save_end", path.toStdString(), 0.0);
     return true;
 }
 
@@ -472,6 +477,8 @@ bool DocumentManager::load(Document& doc, const QString& path) {
     busy_ = true;
     lock.unlock();
 
+    FAP_TRACE_IO("load_begin", path.toStdString(), 0.0);
+
     if (!QFileInfo::exists(path)) {
         lastError_ = QStringLiteral("File not found: ") + path;
         QMutexLocker relock(&mutex_);
@@ -515,6 +522,7 @@ bool DocumentManager::load(Document& doc, const QString& path) {
 
     QMutexLocker relock(&mutex_);
     busy_ = false;
+    FAP_TRACE_IO("load_end", path.toStdString(), 0.0);
     return true;
 }
 

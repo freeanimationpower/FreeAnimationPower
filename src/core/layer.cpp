@@ -1,4 +1,5 @@
 #include "core/layer.hpp"
+#include "core/diagnostic/tracer_macros.hpp"
 #include <atomic>
 #include <algorithm>
 #include <cstring>
@@ -126,6 +127,7 @@ void RasterLayer::clear(const Color& color) {
     std::fill(pixelBuffer_->pixels.begin(), pixelBuffer_->pixels.end(), val);
     hasContent_ = false;
     ++buffer_epoch_;
+    FAP_TRACE_BUFFER("clear", width_, height_, originX_, originY_, pixelBuffer_->pixels.size());
 }
 
 void RasterLayer::resize(int width, int height) {
@@ -151,6 +153,7 @@ void RasterLayer::resize(int width, int height) {
         std::copy(srcRow, srcRow + copyW, dstRow);
     }
     ++buffer_epoch_;
+    FAP_TRACE_BUFFER("resize", width_, height_, originX_, originY_, pixelBuffer_->pixels.size());
 }
 
 void RasterLayer::relocatePixels(std::vector<uint32_t> oldPixels,
@@ -248,6 +251,7 @@ void RasterLayer::ensureContains(int x, int y, int w, int h, bool pad) {
                    newWidth, newHeight, newOriginX, newOriginY);
 
     ++buffer_epoch_;
+    FAP_TRACE_BUFFER("ensure_contains", width_, height_, originX_, originY_, pixelBuffer_->pixels.size());
 }
 
 VectorLayer::VectorLayer(const std::string& name)

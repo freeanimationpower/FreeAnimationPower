@@ -12,6 +12,7 @@ if(MSVC)
 endif()
 
 option(FAP_BUILD_TESTS "Build tests" ON)
+option(FAP_DIAGNOSTIC_TRACER "Enable diagnostic session tracer" ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia Svg)
 
@@ -66,6 +67,9 @@ set(CORE_HEADERS
     src/core/undo_manager.hpp
     src/core/tool_state.hpp
     src/core/app_state.hpp
+    src/core/diagnostic/tracer_types.hpp
+    src/core/diagnostic/tracer_macros.hpp
+    src/core/diagnostic/tracer.hpp
 )
 
 set(CORE_SOURCES
@@ -78,6 +82,7 @@ set(CORE_SOURCES
     src/core/undo_manager.cpp
     src/core/tool_state.cpp
     src/core/app_state.cpp
+    src/core/diagnostic/tracer.cpp
 )
 
 set(ENGINE_HEADERS
@@ -212,6 +217,9 @@ target_compile_definitions(free-animation-power PRIVATE
     FAP_VERSION="2.0.0"
     FAP_APP_NAME="Free Animation Power"
 )
+if(FAP_DIAGNOSTIC_TRACER)
+    target_compile_definitions(free-animation-power PRIVATE FAP_DIAGNOSTIC_TRACER)
+endif()
 
 if(FAP_BUILD_TESTS)
     set(TEST_SOURCES

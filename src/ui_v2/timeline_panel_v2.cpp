@@ -27,6 +27,7 @@
 #include "core/app_state.hpp"
 #include "core/document.hpp"
 #include "core/sequence.hpp"
+#include "core/diagnostic/tracer_macros.hpp"
 #include "audio_track_widget.hpp"
 #include "engine/animation/frame_thumbnail.hpp"
 
@@ -948,6 +949,7 @@ void TimelinePanelV2::setTotalFrames(int count)
 void TimelinePanelV2::setCurrentFrame(int frame)
 {
     currentFrame_ = std::clamp(frame, 0, totalFrames_ - 1);
+    FAP_TRACE_FRAME("change", currentFrame_);
 
     int viewWidth = scrollArea_->viewport()->width();
     int cellTotal = kCellTotal;
@@ -1012,6 +1014,7 @@ void TimelinePanelV2::onPlayPause()
             at->player()->pause();
         playBtn_->setToolTip("Play / Pause (Space)");
         emit playbackToggled(false);
+        FAP_TRACE_PLAYBACK("pause", currentFrame_, fps_);
     } else {
         if (appState_) {
             auto& seq = appState_->activeSequence();
@@ -1032,6 +1035,7 @@ void TimelinePanelV2::onPlayPause()
         playing_ = true;
         playBtn_->setToolTip("Playing... Click to Pause (Space)");
         emit playbackToggled(true);
+        FAP_TRACE_PLAYBACK("play", currentFrame_, fps_);
     }
 }
 
@@ -1049,6 +1053,7 @@ void TimelinePanelV2::onStop()
     for (auto* t : trackWidgets_) t->update();
     emit frameChanged(currentFrame_);
     emit playbackToggled(false);
+    FAP_TRACE_PLAYBACK("stop", currentFrame_, fps_);
 
     for (auto* at : audioTrackWidgets_) {
         at->player()->stop();
