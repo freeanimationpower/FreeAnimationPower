@@ -10,6 +10,7 @@
 #include <thread>
 #include <queue>
 #include <memory>
+#include <chrono>
 
 #ifdef FAP_DIAGNOSTIC_TRACER
 
@@ -57,6 +58,9 @@ private:
 
     uint64_t eventSequence_{0};
     QMutex fileMutex_;
+
+    std::chrono::steady_clock::time_point lastFlushTime_;
+    std::chrono::steady_clock::time_point lastMouseMoveTime_;
 };
 
 Tracer& tracer();

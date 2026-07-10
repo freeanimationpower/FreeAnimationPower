@@ -126,10 +126,12 @@ void Tracer::startup() {
     t.startSession();
 
     t.running_ = true;
+    t.lastFlushTime_ = std::chrono::steady_clock::now();
     t.writerThread_ = std::make_unique<std::thread>(&Tracer::writeThreadFunc, &t);
 
     if (QApplication::instance()) {
         QApplication::instance()->installEventFilter(&t);
+        qInfo() << "Tracer event filter installed on QApplication";
     }
 
     TraceEvent e;
@@ -137,6 +139,8 @@ void Tracer::startup() {
     e.event = "session_start";
     e.sessionId = t.sessionId_;
     t.record(e);
+
+    qInfo() << "Tracer active — recording session" << t.sessionId_;
 }
 
 void Tracer::shutdown() {
@@ -167,6 +171,8 @@ void Tracer::shutdown() {
             t.traceFile_.close();
         }
     }
+
+    qInfo() << "Tracer session" << t.sessionId_ << "ended —" << t.eventSequence_ << "events recorded";
 }
 
 void Tracer::startSession() {
@@ -223,22 +229,43 @@ void Tracer::record(TraceEvent evt) {
 }
 
 void Tracer::writeThreadFunc() {
+    std::vector<std::string> batch;
+    batch.reserve(256);
+
     while (running_) {
-        std::string line;
         {
             QMutexLocker lock(&queueMutex_);
             if (writeQueue_.empty()) {
                 queueCond_.wait(&queueMutex_, 100);
                 continue;
             }
-            line = std::move(writeQueue_.front());
-            writeQueue_.pop();
+            while (!writeQueue_.empty() && batch.size() < 256) {
+                batch.push_back(std::move(writeQueue_.front()));
+                writeQueue_.pop();
+            }
         }
 
-        QMutexLocker lock(&fileMutex_);
-        if (traceFile_.isOpen()) {
-            traceFile_.write(line.data(), static_cast<qint64>(line.size()));
-            traceFile_.flush();
+        try {
+            QMutexLocker lock(&fileMutex_);
+            if (traceFile_.isOpen()) {
+                for (const auto& line : batch) {
+                    traceFile_.write(line.data(), static_cast<qint64>(line.size()));
+                }
+            }
+        } catch (...) {
+            qWarning() << "Tracer writer thread: write error";
+        }
+        batch.clear();
+
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastFlushTime_ > std::chrono::milliseconds(500)) {
+            try {
+                QMutexLocker lock(&fileMutex_);
+                if (traceFile_.isOpen()) {
+                    traceFile_.flush();
+                }
+            } catch (...) {}
+            lastFlushTime_ = now;
         }
     }
 
@@ -278,6 +305,11 @@ bool Tracer::eventFilter(QObject* obj, QEvent* event) {
     case QEvent::MouseMove: {
         auto* me = static_cast<QMouseEvent*>(event);
         if (!(me->buttons() & (Qt::LeftButton | Qt::RightButton | Qt::MiddleButton))) break;
+
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastMouseMoveTime_ < std::chrono::milliseconds(50)) break;
+        lastMouseMoveTime_ = now;
+
         e.category = EventCategory::Mouse;
         e.event = "move";
         e.position.x = static_cast<double>(me->position().x());
