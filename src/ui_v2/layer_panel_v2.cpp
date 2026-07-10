@@ -467,7 +467,6 @@ void LayerPanelV2::startRename(int index, QWidget* row) {
     };
 
     QObject::connect(editor, &QLineEdit::returnPressed, this, commitRename);
-    QObject::connect(editor, &QLineEdit::editingFinished, this, commitRename);
 }
 
 void LayerPanelV2::refreshLayerList() {

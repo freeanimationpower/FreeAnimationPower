@@ -77,6 +77,13 @@ public:
     bool isBufferShared() const { return pixelBuffer_.use_count() > 1; }
     void ensureUnique();
 
+    void shareDataFrom(const RasterLayer& other) {
+        pixelBuffer_ = other.pixelBuffer_;
+        originX_ = other.originX_;
+        originY_ = other.originY_;
+        buffer_epoch_ = other.buffer_epoch_;
+    }
+
     bool hasContent() const { return hasContent_; }
     void setHasContent(bool v) { hasContent_ = v; }
 

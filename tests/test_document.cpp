@@ -244,3 +244,55 @@ TEST(DocumentTest, SetSequenceOpacity) {
     // Sequence 0 still at default
     EXPECT_FLOAT_EQ(doc.sequenceAt(0).opacity(), 1.0f);
 }
+
+TEST(SequenceTest, ClonePreservesFrameContent) {
+    Sequence seq("Original", 1920, 1080, 24, 4);
+
+    // Draw on frame 0
+    auto& root = seq.rootLayerForFrame(0);
+    auto* rl = dynamic_cast<RasterLayer*>(root.layerAt(0));
+    ASSERT_NE(rl, nullptr);
+    rl->setPixel(10, 10, Color{1.0f, 0.0f, 0.0f, 1.0f});
+    ASSERT_TRUE(rl->hasContent());
+    ASSERT_GT(rl->pixelAt(10, 10).a, 0.0f);
+
+    // Verify frame 0 pixel is in source buffer
+    auto srcPixel = rl->pixelData()[1920 * 10 + 10];
+    EXPECT_GT(srcPixel & 0xFF000000, 0u) << "Source pixel data has alpha at (10,10)";
+    const uint32_t* srcBuf = rl->pixelData();
+
+    // Test: does release() + unique_ptr<GroupLayer>() corrupt data?
+    {
+        auto cloned = root.clone();
+        auto* raw = cloned.release();
+        auto wrapped = std::unique_ptr<GroupLayer>(static_cast<GroupLayer*>(raw));
+        auto* testRl = dynamic_cast<RasterLayer*>(wrapped->layerAt(0));
+        ASSERT_NE(testRl, nullptr);
+        bool sameBuf = (testRl->pixelData() == srcBuf);
+        EXPECT_TRUE(sameBuf) << "Release+wrap roundtrip: should share buffer. src="
+            << srcBuf << " clone=" << testRl->pixelData();
+        EXPECT_TRUE(testRl->hasContent()) << "Release+wrap: hasContent_ lost";
+        EXPECT_GT(testRl->pixelAt(10, 10).a, 0.0f) << "Release+wrap: pixel data lost";
+    }
+
+    // Clone via Sequence::clone()
+    auto clone = seq.clone("Copy");
+    ASSERT_NE(clone, nullptr);
+
+    const GroupLayer* cloneRoot0 = clone->peekRootLayerForFrame(0);
+    ASSERT_NE(cloneRoot0, nullptr);
+    ASSERT_GE(cloneRoot0->layerCount(), 1u);
+    const auto* cloneRl0 = dynamic_cast<const RasterLayer*>(cloneRoot0->layerAt(0));
+    ASSERT_NE(cloneRl0, nullptr);
+
+    // Compare raw pixel data pointers
+    const uint32_t* cloneBuf = cloneRl0->pixelData();
+    bool sameBuffer = (cloneBuf == srcBuf);
+    EXPECT_TRUE(sameBuffer) << "Sequence clone should share pixel buffer. src="
+        << srcBuf << " clone=" << cloneBuf;
+
+    EXPECT_TRUE(cloneRl0->hasContent())
+        << "Sequence clone frame 0: hasContent_ lost. sameBuffer=" << sameBuffer;
+    EXPECT_GT(cloneRl0->pixelAt(10, 10).a, 0.0f)
+        << "Sequence clone frame 0: pixel data lost at (10,10)";
+}

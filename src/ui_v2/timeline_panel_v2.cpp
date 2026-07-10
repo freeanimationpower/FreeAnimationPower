@@ -23,15 +23,78 @@
 #include <QtGui/QIcon>
 #include <QtCore/QTimer>
 #include <algorithm>
+#include <set>
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
 #include "core/sequence.hpp"
+#include "core/undo_manager.hpp"
 #include "core/diagnostic/tracer_macros.hpp"
 #include "audio_track_widget.hpp"
 #include "engine/animation/frame_thumbnail.hpp"
 
 namespace fap {
+
+class DeleteFrameCommand : public UndoCommand {
+public:
+    DeleteFrameCommand(int deletedFrame, int sequenceIndex,
+                       std::unique_ptr<GroupLayer> savedFrame,
+                       std::shared_ptr<AppState> state)
+        : deletedFrame_(deletedFrame)
+        , sequenceIndex_(sequenceIndex)
+        , savedFrameData_(std::move(savedFrame))
+        , appState_(std::move(state))
+    {}
+
+    void undo() override {
+        auto& doc = appState_->document();
+        if (sequenceIndex_ < 0 || static_cast<size_t>(sequenceIndex_) >= doc.sequenceCount())
+            return;
+
+        auto& seq = doc.sequenceAt(sequenceIndex_);
+        int total = seq.totalFrames();
+
+        seq.shiftFrameData(deletedFrame_, +1);
+        seq.setTotalFrames(total + 1);
+        seq.setDurationFrames(total + 1);
+
+        auto& root = seq.rootLayerForFrame(deletedFrame_);
+        while (root.layerCount() > 0) root.removeLayer(0);
+
+        auto* savedRoot = savedFrameData_.get();
+        if (savedRoot) {
+            for (size_t i = 0; i < savedRoot->layerCount(); ++i) {
+                const Layer* src = savedRoot->layerAt(static_cast<int>(i));
+                if (src) root.addLayer(src->clone());
+            }
+        }
+
+        appState_->setCurrentFrame(deletedFrame_);
+    }
+
+    void redo() override {
+        auto& doc = appState_->document();
+        if (sequenceIndex_ < 0 || static_cast<size_t>(sequenceIndex_) >= doc.sequenceCount())
+            return;
+
+        auto& seq = doc.sequenceAt(sequenceIndex_);
+        int total = seq.totalFrames();
+
+        seq.shiftFrameData(deletedFrame_ + 1, -1);
+        seq.removeFrameData(total - 1);
+        seq.setTotalFrames(total - 1);
+        seq.setDurationFrames(total - 1);
+
+        int cf = appState_->document().currentFrame();
+        if (cf >= total - 1) appState_->setCurrentFrame(std::max(0, total - 2));
+    }
+
+private:
+    int deletedFrame_;
+    int sequenceIndex_;
+    std::unique_ptr<GroupLayer> savedFrameData_;
+    std::shared_ptr<AppState> appState_;
+};
 
 // ========================================================================
 // Colors
@@ -459,11 +522,40 @@ protected:
         p.drawLine(0, h - 1, w, h - 1);
 
         int cellY = 16;
-        const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+
+        std::string targetName = name_.toStdString();
+        const Sequence* targetSeqPtr = nullptr;
+        size_t seqCount = appState_->document().sequenceCount();
+        if (static_cast<size_t>(seqIndex_) < seqCount) {
+            auto& s = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+            if (s.name() == targetName) targetSeqPtr = &s;
+        }
+        if (!targetSeqPtr) {
+            for (size_t si = 0; si < seqCount; ++si) {
+                auto& s = appState_->document().sequenceAt(si);
+                if (s.name() == targetName) {
+                    targetSeqPtr = &s;
+                    break;
+                }
+            }
+        }
+        if (!targetSeqPtr) return;
+
+        const auto& seq = *targetSeqPtr;
         int durFrames = seq.durationFrames();
         int seqTotal = seq.totalFrames();
         int firstVisible = std::max(0, offset / cellTotal);
         int lastVisible = std::min(durFrames - 1, (offset + w - hdrW) / cellTotal + 1);
+
+        static std::set<std::string> loggedNames;
+        if (loggedNames.find(targetName) == loggedNames.end()) {
+            loggedNames.insert(targetName);
+            FAP_TRACE_CAT(fap::diagnostic::EventCategory::App,
+                (std::string("drawCells name=") + targetName +
+                " seqIdx=" + std::to_string(seqIndex_) +
+                " total=" + std::to_string(seqTotal) +
+                " dur=" + std::to_string(durFrames)).c_str());
+        }
 
         for (int f = firstVisible; f <= lastVisible; ++f) {
             int cx = hdrW + f * cellTotal - offset;
@@ -566,10 +658,41 @@ private:
     bool frameHasContent(int frame) const {
         if (!appState_) return false;
         size_t seqCount = appState_->document().sequenceCount();
-        if (static_cast<size_t>(seqIndex_) >= seqCount) return false;
-        const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
-        const GroupLayer* root = seq.peekRootLayerForFrame(frame);
-        if (!root || root->layerCount() == 0) return false;
+        if (seqCount == 0) return false;
+
+        const Sequence* targetSeq = nullptr;
+        std::string targetName = name_.toStdString();
+
+        if (static_cast<size_t>(seqIndex_) < seqCount) {
+            auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+            if (seq.name() == targetName) {
+                targetSeq = &seq;
+            }
+        }
+
+        if (!targetSeq) {
+            FAP_TRACE_CAT(fap::diagnostic::EventCategory::App,
+                (std::string("frameHasContent_fallback name=") + targetName + " idx=" + std::to_string(seqIndex_)).c_str());
+            for (size_t si = 0; si < seqCount; ++si) {
+                auto& seq = appState_->document().sequenceAt(si);
+                if (seq.name() == targetName) {
+                    targetSeq = &seq;
+                    break;
+                }
+            }
+        }
+
+        if (!targetSeq) return false;
+
+        const GroupLayer* root = targetSeq->peekRootLayerForFrame(frame);
+        if (!root) {
+            FAP_TRACE_FRAME("frame_no_root", frame);
+            return false;
+        }
+        if (root->layerCount() == 0) {
+            FAP_TRACE_FRAME("frame_no_layers", frame);
+            return false;
+        }
 
         for (size_t i = 0; i < root->layerCount(); ++i) {
             const Layer* layer = root->layerAt(static_cast<int>(i));
@@ -577,12 +700,19 @@ private:
 
             if (layer->type() == LayerType::Raster) {
                 const auto* rl = static_cast<const RasterLayer*>(layer);
-                if (rl->hasContent()) return true;
+                if (rl->hasContent()) {
+                    FAP_TRACE_FRAME("frame_has_content", frame);
+                    return true;
+                }
+                FAP_TRACE_FRAME("frame_raster_empty", frame);
             }
 
             if (layer->type() == LayerType::Vector) {
                 const auto* vl = static_cast<const VectorLayer*>(layer);
-                if (vl->strokeCount() > 0) return true;
+                if (vl->strokeCount() > 0) {
+                    FAP_TRACE_FRAME("frame_has_content", frame);
+                    return true;
+                }
             }
         }
         return false;
@@ -1227,11 +1357,27 @@ void TimelinePanelV2::deleteFrame()
 
     int delFrame = currentFrame_;
     FAP_TRACE_FRAME("delete", delFrame);
-    appState_->document().shiftFrameData(delFrame + 1, -1);
-    appState_->document().removeFrameData(totalFrames_ - 1);
+
+    auto& doc = appState_->document();
+    int seqIdx = doc.activeSequenceIndex();
+
+    const auto* root = doc.activeSequence().peekRootLayerForFrame(delFrame);
+    std::unique_ptr<GroupLayer> saved;
+    if (root) {
+        auto cloned = root->clone();
+        saved.reset(static_cast<GroupLayer*>(cloned.release()));
+    }
+
+    auto cmd = std::make_unique<DeleteFrameCommand>(
+        delFrame, seqIdx, std::move(saved), appState_);
+
+    doc.shiftFrameData(delFrame + 1, -1);
+    doc.removeFrameData(totalFrames_ - 1);
     totalFrames_--;
-    appState_->document().setTotalFrames(totalFrames_);
-    appState_->activeSequence().setDurationFrames(totalFrames_);
+    doc.setTotalFrames(totalFrames_);
+    doc.activeSequence().setDurationFrames(totalFrames_);
+
+    doc.undoManager().pushApplied(std::move(cmd));
 
     if (currentFrame_ >= totalFrames_) currentFrame_ = totalFrames_ - 1;
     appState_->setCurrentFrame(currentFrame_);

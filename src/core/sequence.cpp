@@ -171,25 +171,45 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
     seq->locked_ = locked_;
     seq->workAreaStart_ = workAreaStart_;
     seq->workAreaEnd_ = workAreaEnd_;
-    seq->durationFrames_ = durationFrames_;  
+    seq->durationFrames_ = durationFrames_;
 
     for (const auto& [frameIdx, rootLayer] : frames_) {
-        auto cloned = rootLayer->clone();
-        auto clonedRoot = std::unique_ptr<GroupLayer>(
-            static_cast<GroupLayer*>(cloned.release()));
-        seq->frames_.emplace(frameIdx, std::move(clonedRoot));
-        FAP_TRACE_CAT(fap::diagnostic::EventCategory::Frame, "clone_frame");
+        auto newRoot = std::make_unique<GroupLayer>(rootLayer->name());
+        newRoot->setVisible(rootLayer->visible());
+        newRoot->setOpacity(rootLayer->opacity());
+        newRoot->setBlendMode(rootLayer->blendMode());
+        newRoot->setLocked(rootLayer->locked());
+
+        for (size_t li = 0; li < rootLayer->layerCount(); ++li) {
+            const Layer* src = rootLayer->layerAt(static_cast<int>(li));
+            if (!src) continue;
+
+            if (src->type() == LayerType::Raster) {
+                const auto* srcRl = static_cast<const RasterLayer*>(src);
+                auto copyRl = std::make_unique<RasterLayer>(
+                    srcRl->name(), srcRl->width(), srcRl->height());
+                copyRl->shareDataFrom(*srcRl);
+                copyRl->setHasContent(srcRl->hasContent());
+                copyRl->setVisible(srcRl->visible());
+                copyRl->setOpacity(srcRl->opacity());
+                copyRl->setBlendMode(srcRl->blendMode());
+                copyRl->setLocked(srcRl->locked());
+                newRoot->addLayer(std::move(copyRl));
+            } else {
+                newRoot->addLayer(src->clone());
+            }
+        }
+
+        seq->frames_[frameIdx] = std::move(newRoot);
     }
 
-    // Only create frame 0 if original had NO frames at all (purely empty sequence)
     if (seq->frames_.empty()) {
         auto root = std::make_unique<GroupLayer>("Root");
         root->addLayer(std::make_unique<RasterLayer>("Layer 1", canvas_width_, canvas_height_));
-        seq->frames_.emplace(0, std::move(root));
+        seq->frames_[0] = std::move(root);
     }
 
     seq->keyframes_ = keyframes_;
-    FAP_TRACE_SEQUENCE("cloned", 0, name_ + " -> " + seq->name_);
     return seq;
 }
 

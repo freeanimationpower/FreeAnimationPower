@@ -52,26 +52,63 @@ static QPainter::CompositionMode toQtCompositionMode(BlendMode mode) {
 class PaintCommandV2 : public UndoCommand {
 public:
     PaintCommandV2(LayerUid layerUid, int frame, int layerIndex,
-                   QImage before, QImage after, QRect dirtyRect)
+                   QImage before, QImage after, QRect dirtyRect,
+                   bool hadContentBefore = false, bool hasContentAfter = true)
         : layerUid_(layerUid)
         , frame_(frame)
         , layerIndex_(layerIndex)
         , beforePixels_(std::move(before))
         , afterPixels_(std::move(after))
         , dirtyRect_(dirtyRect)
+        , hadContentBefore_(hadContentBefore)
+        , hasContentAfter_(hasContentAfter)
     {}
 
-    void undo() override { applySnapshot(beforePixels_); }
-    void redo() override { applySnapshot(afterPixels_); }
+    void setState(std::shared_ptr<AppState> state) {
+        appState_ = std::move(state);
+    }
+
+    void undo() override {
+        applySnapshot(beforePixels_);
+        RasterLayer* layer = nullptr;
+        resolveLayer(layer);
+        if (layer) layer->setHasContent(hadContentBefore_);
+    }
+    void redo() override {
+        applySnapshot(afterPixels_);
+        RasterLayer* layer = nullptr;
+        resolveLayer(layer);
+        if (layer) layer->setHasContent(hasContentAfter_);
+    }
 
     void setLayerAccess(std::function<RasterLayer*()> accessor) {
         layerAccessor_ = std::move(accessor);
     }
 
 private:
+    void resolveLayer(RasterLayer*& outLayer) {
+        // Try UID-based lookup first (targets the correct layer even if active layer changed)
+        if (layerUid_ > 0 && appState_) {
+            auto& doc = appState_->document();
+            for (size_t si = 0; si < doc.sequenceCount(); ++si) {
+                auto* root = doc.sequenceAt(si).peekRootLayerForFrame(frame_);
+                if (!root) continue;
+                Layer* found = const_cast<Layer*>(root->layerByUid(layerUid_));
+                if (found && found->type() == LayerType::Raster) {
+                    outLayer = static_cast<RasterLayer*>(found);
+                    return;
+                }
+            }
+        }
+        // Fallback to active layer (backward compatibility)
+        if (layerAccessor_) {
+            outLayer = layerAccessor_();
+        }
+    }
+
     void applySnapshot(const QImage& snapshot) {
-        if (!layerAccessor_) return;
-        auto* layer = layerAccessor_();
+        RasterLayer* layer = nullptr;
+        resolveLayer(layer);
         if (!layer) return;
         layer->ensureUnique();
         const int w = snapshot.width();
@@ -106,7 +143,10 @@ private:
     QImage beforePixels_;
     QImage afterPixels_;
     QRect dirtyRect_;
+    bool hadContentBefore_ = false;
+    bool hasContentAfter_ = true;
     std::function<RasterLayer*()> layerAccessor_;
+    std::shared_ptr<AppState> appState_;
 };
 
 } // anonymous namespace
@@ -386,7 +426,8 @@ void CanvasWidgetV2::cutSelection()
     if (floatingActive_) {
         auto* layer = activeRasterLayer();
         if (layer && !layer->locked()) {
-            pushFullLayerUndo(layer, snapFullLayer(layer));
+            bool hadBefore = layer->hasContent();
+            pushFullLayerUndo(layer, snapFullLayer(layer), hadBefore);
         }
         floatingSelection_ = QImage();
         originalFloatingSelection_ = QImage();
@@ -406,6 +447,7 @@ void CanvasWidgetV2::cutSelection()
     auto* layer = activeRasterLayer();
     if (layer && !layer->locked()) {
         auto before = snapFullLayer(layer);
+        bool hadBefore = layer->hasContent();
         int ox = layer->originX();
         int oy = layer->originY();
         QRect bufRect(static_cast<int>(selRect_.x() - ox),
@@ -430,7 +472,7 @@ void CanvasWidgetV2::cutSelection()
             std::copy(src, src + img.width(), dst);
         }
         layer->bufferEpochTick();
-        pushFullLayerUndo(layer, before);
+        pushFullLayerUndo(layer, before, hadBefore);
     }
 
     selRect_ = QRectF();
@@ -472,7 +514,8 @@ void CanvasWidgetV2::deleteSelection()
     if (floatingActive_ && !floatingSelection_.isNull()) {
         auto* layer = activeRasterLayer();
         if (layer && !layer->locked()) {
-            pushFullLayerUndo(layer, snapFullLayer(layer));
+            bool hadBefore = layer->hasContent();
+            pushFullLayerUndo(layer, snapFullLayer(layer), hadBefore);
         }
         floatingSelection_ = QImage();
         originalFloatingSelection_ = QImage();
@@ -490,6 +533,7 @@ void CanvasWidgetV2::deleteSelection()
         auto* layer = activeRasterLayer();
         if (layer && !layer->locked()) {
             auto before = snapFullLayer(layer);
+            bool hadBefore = layer->hasContent();
             int ox = layer->originX();
             int oy = layer->originY();
             QRect bufRect(static_cast<int>(selRect_.x() - ox),
@@ -514,7 +558,7 @@ void CanvasWidgetV2::deleteSelection()
                 std::copy(src, src + img.width(), dst);
             }
             layer->bufferEpochTick();
-            pushFullLayerUndo(layer, before);
+            pushFullLayerUndo(layer, before, hadBefore);
         }
         selRect_ = QRectF();
         selImage_ = QImage();
@@ -1246,8 +1290,12 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
     auto tool = appState_->toolState().activeTool();
     if (tool == ToolType::Brush || tool == ToolType::Eraser) {
         auto* active = appState_->activeLayer();
-        if (!active || active->type() != LayerType::Raster) return;
+        if (!active || active->type() != LayerType::Raster) {
+            FAP_TRACE_APP("stroke_blocked_no_layer");
+            return;
+        }
         if (active->locked()) {
+            FAP_TRACE_APP("stroke_blocked_locked");
             emit statusMessage("Layer is locked - unlock it to draw");
             return;
         }
@@ -2200,6 +2248,7 @@ void CanvasWidgetV2::commitStroke()
 
     // Before snapshot (layer untouched during stroke -> capture now)
     QImage beforeSnap = captureRect(commitR);
+    bool hadContentBefore = layer->hasContent();
 
     // Composite strokeBuffer_ -> layer pixelBuffer_
     {
@@ -2233,7 +2282,9 @@ void CanvasWidgetV2::commitStroke()
         doc.setModified(true);
         auto cmd = std::make_unique<PaintCommandV2>(
             layer->uid(), currentFrame_, currentLayerIndex_,
-            std::move(beforeSnap), std::move(afterSnap), commitR);
+            std::move(beforeSnap), std::move(afterSnap), commitR,
+            hadContentBefore, true);
+        cmd->setState(appState_);
         cmd->setLayerAccess([this]() -> RasterLayer* {
             return activeRasterLayer();
         });
@@ -2300,7 +2351,7 @@ QImage CanvasWidgetV2::snapFullLayer(RasterLayer* layer)
     return captureLayerRect(layer, fullRect);
 }
 
-void CanvasWidgetV2::pushFullLayerUndo(RasterLayer* layer, const QImage& beforeSnap)
+void CanvasWidgetV2::pushFullLayerUndo(RasterLayer* layer, const QImage& beforeSnap, bool hadContentBefore)
 {
     if (!layer || beforeSnap.isNull()) return;
 
@@ -2313,7 +2364,9 @@ void CanvasWidgetV2::pushFullLayerUndo(RasterLayer* layer, const QImage& beforeS
 
     auto cmd = std::make_unique<PaintCommandV2>(
         layer->uid(), currentFrame_, currentLayerIndex_,
-        QImage(beforeSnap), std::move(afterSnap), fullRect);
+        QImage(beforeSnap), std::move(afterSnap), fullRect,
+        hadContentBefore, layer->hasContent());
+    cmd->setState(appState_);
     cmd->setLayerAccess([this]() -> RasterLayer* {
         return activeRasterLayer();
     });
@@ -2347,6 +2400,7 @@ void CanvasWidgetV2::drawShape()
 
     QRect dirtyRect(minX, minY, maxX - minX, maxY - minY);
     QImage before = captureLayerRect(layer, dirtyRect);
+    bool hadBefore = layer->hasContent();
 
     QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
                layer->width(), layer->height(),
@@ -2461,6 +2515,7 @@ void CanvasWidgetV2::drawShape()
     }
 
     layer->bufferEpochTick();
+    layer->setHasContent(true);
 
     QImage after = captureLayerRect(layer, dirtyRect);
 
@@ -2470,7 +2525,9 @@ void CanvasWidgetV2::drawShape()
 
     auto cmd = std::make_unique<PaintCommandV2>(
         layer->uid(), currentFrame_, currentLayerIndex_,
-        std::move(before), std::move(after), dirtyRect);
+        std::move(before), std::move(after), dirtyRect,
+        hadBefore, true);
+    cmd->setState(appState_);
     cmd->setLayerAccess([this]() -> RasterLayer* {
         return activeRasterLayer();
     });
@@ -2517,6 +2574,7 @@ void CanvasWidgetV2::doFill(QPointF cpos)
     img = img.copy();
 
     QImage before = snapFullLayer(layer);
+    bool hadBefore = layer->hasContent();
 
     FAP_TRACE_CAT(fap::diagnostic::EventCategory::Stroke, "fill_begin");
 
@@ -2820,6 +2878,7 @@ void CanvasWidgetV2::doText(QPointF cpos)
     layer->ensureUnique();
 
     QImage before = snapFullLayer(layer);
+    bool hadBefore = layer->hasContent();
 
     QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
                layer->width(), layer->height(),
@@ -2998,6 +3057,7 @@ void CanvasWidgetV2::clearTextRaster(const TextEntry& entry)
     if (lw <= 0 || lh <= 0) return;
 
     QImage before = snapFullLayer(layer);
+    bool hadBefore = layer->hasContent();
 
     layer->ensureUnique();
     for (int y = 0; y < lh; ++y) {
@@ -3092,6 +3152,7 @@ void CanvasWidgetV2::commitMove()
     int newLh = layer->height();
 
     QImage before = snapFullLayer(layer);
+    bool hadBefore = layer->hasContent();
 
     std::vector<uint32_t> newPixels(static_cast<size_t>(newLw) * static_cast<size_t>(newLh), 0);
 
@@ -3161,6 +3222,7 @@ void CanvasWidgetV2::commitSelection()
     selImage_ = img.copy(bufRect);
 
     QImage before = snapFullLayer(layer);
+    bool hadBefore = layer->hasContent();
 
     {
         QPainter cp(&img);
@@ -3218,6 +3280,7 @@ void CanvasWidgetV2::commitFloatingSelection()
     iy = static_cast<int>(selRect_.y() - oy);
 
     QImage before = snapFullLayer(layer);
+    bool hadBefore = layer->hasContent();
 
     QImage img(reinterpret_cast<const uchar*>(layer->pixelData()),
                layer->width(), layer->height(),

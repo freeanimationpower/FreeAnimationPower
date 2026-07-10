@@ -567,13 +567,44 @@ Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer 
 | Buffer | clone_frame |
 | Frame | add, duplicate, delete, change, clone_frame |
 
-### Bugs corregidos acumulados (14 en total)
+### Bugs corregidos acumulados (16 en total)
 | # | Bug | Estado |
 |---|-----|--------|
 | 1-6 | Brush performance, timeline, fill, traces, padding | Corregido |
 | 7-12 | Pixel dedup, save crash, UI styling | Corregido |
 | 13 | Audio track duplication on reopen | Corregido |
-| 14 | Ghost sequence on reopen | Corregido |
+| 14 | Ghost sequence on reopen | **Corregido** (verificado 16-38-23) |
+| 15 | Undo wrong-layer (1.3) | Corregido (PaintCommandV2::resolveLayer por layerUid_) |
+| 16 | Tracer session_end faltante | Corregido (flush directo en shutdown) |
 
 ### Bugs pendientes
-Undo wrong-layer (1.3), layer rename crash (1.5), video export broken (1.1).
+| # | Bug | Severidad | Notas |
+|---|-----|-----------|-------|
+| 1 | Layer rename crash (doble delete QLineEdit) | ALTO | `returnPressed` + `editingFinished` |
+| 2 | Video export roto (renderFrame) | CRÍTICO | Produce frames en blanco |
+| 3 | Frame 0 vacío en secuencia duplicada | ALTO | Pendiente de verificación |
+| 4 | Canvas bloqueado (no dibuja) | ALTO | Trazas de diagnóstico activas |
+| 5 | Undo no implementado para deleteFrame | MEDIO | Sin comando de undo |
+| 6 | `hasContent_` no se restaura en undo | MEDIO | applySnapshot no actualiza el flag |
+
+---
+
+## 16. VERIFICACIÓN DE FIXES (Jul 10, 2026 — sesiones 15-56-09 y 16-38-23)
+
+### Resultados positivos
+| Fix | Verificación |
+|-----|-------------|
+| Secuencia fantasma | `open_seq_count_2` consistente en 5 cargas (sin "3") |
+| Tracer session_end | Presente en ambos traces (shutdown correcto) |
+| Audio track duplication | No duplicado en cargas sucesivas |
+| Save crash protection | Saves exitosos seguidos de New Project sin crash |
+| FrameHasContent traces | `frame_has_content` reporta correctamente frames con datos |
+
+### No reproducidos
+| Bug | Notas |
+|-----|-------|
+| Canvas bloqueado (stroke_blocked) | 0 eventos en ambas sesiones |
+| Frame 0 vacío | Pendiente de prueba específica |
+
+### Archivo de diagnóstico
+Ver `docs/diagnostico-persistente-2026-07-10.md` para referencia cruzada de bugs pendientes con trazas de diagnóstico activas y plan de ataque.

@@ -15,6 +15,24 @@ namespace fap {
 
 namespace {
 
+static QPainter::CompositionMode toQtCompositionMode(BlendMode mode) {
+    switch (mode) {
+    case BlendMode::Normal:     return QPainter::CompositionMode_SourceOver;
+    case BlendMode::Multiply:   return QPainter::CompositionMode_Multiply;
+    case BlendMode::Screen:     return QPainter::CompositionMode_Screen;
+    case BlendMode::Overlay:    return QPainter::CompositionMode_Overlay;
+    case BlendMode::Add:        return QPainter::CompositionMode_Plus;
+    case BlendMode::Subtract:   return QPainter::CompositionMode_Exclusion;
+    case BlendMode::Darken:     return QPainter::CompositionMode_Darken;
+    case BlendMode::Lighten:    return QPainter::CompositionMode_Lighten;
+    case BlendMode::ColorBurn:  return QPainter::CompositionMode_ColorBurn;
+    case BlendMode::ColorDodge: return QPainter::CompositionMode_ColorDodge;
+    case BlendMode::SoftLight:  return QPainter::CompositionMode_SoftLight;
+    case BlendMode::HardLight:  return QPainter::CompositionMode_HardLight;
+    }
+    return QPainter::CompositionMode_SourceOver;
+}
+
 static QImage renderFrame(const Document& doc, int frameIndex) {
     int w = doc.width();
     int h = doc.height();
@@ -22,24 +40,29 @@ static QImage renderFrame(const Document& doc, int frameIndex) {
     image.fill(Qt::white);
 
     QPainter painter(&image);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
 
-    auto& root = doc.rootLayer();
-    for (size_t li = 0; li < root.layerCount(); ++li) {
-        Layer* layer = root.layers()[li].get();
-        if (!layer->visible()) continue;
+    for (size_t si = doc.sequenceCount(); si > 0; --si) {
+        size_t idx = si - 1;
+        if (!doc.sequenceAt(idx).visible()) continue;
+        float seqOpacity = doc.sequenceAt(idx).opacity();
+        const auto& root = doc.sequenceAt(idx).rootLayerForFrame(frameIndex);
+        for (size_t li = root.layerCount(); li > 0; --li) {
+            const Layer* layer = root.layerAt(li - 1);
+            if (!layer || !layer->visible()) continue;
+            if (layer->type() != LayerType::Raster) continue;
 
-        painter.setOpacity(layer->opacity());
+            const auto& rl = static_cast<const RasterLayer&>(*layer);
+            QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
+                       rl.width(), rl.height(),
+                       rl.width() * static_cast<int>(sizeof(uint32_t)),
+                       QImage::Format_ARGB32_Premultiplied);
+            QImage display = img.convertToFormat(QImage::Format_ARGB32);
 
-        if (layer->type() == LayerType::Raster) {
-            QString framePath = QString("frames/L%1_%2.png")
-                                    .arg(li)
-                                    .arg(frameIndex, 4, 10, QLatin1Char('0'));
-            QImage layerImg(framePath);
-            if (!layerImg.isNull()) {
-                painter.drawImage(0, 0, layerImg);
-            }
+            painter.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
+            painter.setCompositionMode(toQtCompositionMode(layer->blendMode()));
+            painter.drawImage(QPoint(rl.originX(), rl.originY()), display);
         }
     }
 

@@ -147,11 +147,27 @@ void Tracer::shutdown() {
     auto& t = instance();
     if (!t.enabled_) return;
 
-    TraceEvent e;
-    e.category = EventCategory::App;
-    e.event = "session_end";
-    e.sessionId = t.sessionId_;
-    t.record(e);
+    // Write session_end directly without going through writer queue
+    {
+        uint64_t seq = ++t.eventSequence_;
+        double ts = static_cast<double>(
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()
+            ).count()
+        ) / 1'000'000.0;
+
+        std::ostringstream ss;
+        ss << "{\"seq\":" << seq
+           << ",\"ts\":" << std::fixed << std::setprecision(6) << ts
+           << ",\"cat\":\"app\",\"evt\":\"session_end\""
+           << ",\"sid\":" << t.sessionId_ << "}\n";
+
+        QMutexLocker lock(&t.fileMutex_);
+        if (t.traceFile_.isOpen()) {
+            t.traceFile_.write(ss.str().data(), static_cast<qint64>(ss.str().size()));
+            t.traceFile_.flush();
+        }
+    }
 
     t.running_ = false;
     t.queueCond_.wakeAll();

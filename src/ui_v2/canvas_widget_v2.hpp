@@ -245,7 +245,7 @@ private:
     void commitFloatingSelection();
 
     // Undo helper
-    void pushFullLayerUndo(RasterLayer* layer, const QImage& beforeSnap);
+    void pushFullLayerUndo(RasterLayer* layer, const QImage& beforeSnap, bool hadContentBefore = false);
     QImage snapFullLayer(RasterLayer* layer);
 };
 

@@ -325,6 +325,7 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
         const auto& seq = doc.sequenceAt(si);
         FAP_TRACE_SEQUENCE("save", static_cast<int>(si), seq.name());
         QJsonObject seqObj;
+        seqObj[QStringLiteral("name")]          = QString::fromStdString(seq.name());
         seqObj[QStringLiteral("index")]          = static_cast<int>(si);
         seqObj[QStringLiteral("total_frames")]   = seq.totalFrames();
         seqObj[QStringLiteral("fps")]            = seq.fps();
@@ -379,7 +380,6 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
 }
 
 bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
-    std::unordered_map<const void*, uint64_t> writtenPixelBuffers; // pixelPtr -> sourceLayerUid
     int layerCount = 0;
 
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
@@ -401,7 +401,6 @@ bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
 
                 if (layer->type() == LayerType::Raster) {
                     const auto& rl = static_cast<const RasterLayer&>(*layer);
-                    const void* pixelPtr = static_cast<const void*>(rl.pixelData());
 
                     // Skip empty layers to save space
                     if (!rl.hasContent()) {
@@ -417,12 +416,9 @@ bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
                         continue;
                     }
 
-                    if (auto it = writtenPixelBuffers.find(pixelPtr); it != writtenPixelBuffers.end()) {
-                        lmeta[QStringLiteral("shared_pixels")] = true;
-                        lmeta[QStringLiteral("share_source_uid")] = static_cast<qint64>(it->second);
-                    } else {
-                        writtenPixelBuffers[pixelPtr] = layer->uid();
-
+                    // Always write PNG for layers with content
+                    // (no pixel dedup — UIDs change on load, breaking shared resolution)
+                    {
                         QImage layerImage(
                             reinterpret_cast<const uchar*>(rl.pixelData()),
                             rl.width(), rl.height(),
@@ -605,8 +601,11 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         QJsonObject seqObj = seqArr[si].toObject();
         int sframeCount = seqObj[QStringLiteral("total_frames")].toInt(1);
         auto& seq = (si == 0) ? doc.activeSequence() : doc.addSequence("");
-        if (seq.name().empty()) {
-            seq.setName("Sequence " + std::to_string(si + 1));
+
+        // Restore sequence name from saved JSON
+        QString sname = seqObj[QStringLiteral("name")].toString();
+        if (!sname.isEmpty()) {
+            seq.setName(sname.toStdString());
         }
         FAP_TRACE_SEQUENCE("load", si, seq.name());
         seq.setTotalFrames(sframeCount);
@@ -661,6 +660,11 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
                 }
             }
         }
+    }
+
+    // Remove any extra sequences beyond what the JSON specifies
+    while (doc.sequenceCount() > static_cast<size_t>(seqArr.size())) {
+        doc.removeSequence(doc.sequenceCount() - 1);
     }
 
     // Parse audio tracks
