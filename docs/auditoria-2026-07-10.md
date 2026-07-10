@@ -443,9 +443,50 @@ Los traces se guardan en `./fap_traces/trace_YYYY-MM-DD_HH-MM-SS_sN.jsonl`. Cada
 | 4 | FAP_TRACE_BUFFER_COMMIT sin frameIndex | Corregido |
 | 5 | Falta de traces en UI | Corregido |
 | 6 | Brush padding cap (16px) | Corregido |
+| 7 | Pixel dedup: capas compartidas cargan vacías (1.2) | Corregido |
+| 8 | Save largo bloquea UI + crash por re-entrada | Corregido |
+| 9 | Skip capas vacías en save (hasContent_) | Corregido |
+| 10 | .tmp preservado en fallo de rename | Corregido |
+| 11 | processEvents(ExcludeUserInputEvents) durante save | Corregido |
+| 12 | Guardia saving_ en newProject/openProject | Corregido |
 
 ### Bugs pendientes (del informe original)
-Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5), pixel dedup load (1.2).
+Prioridad: undo wrong-layer (1.3), layer rename crash (1.5), video export broken (1.1).
+
+---
+
+## 12. SAVE DATA LOSS & CRASH (Jul 10, 2026)
+
+### 12.1 Pixel Dedup → Capas Vacías al Reabrir
+**Síntoma**: Guardar proyecto con capas duplicadas/clonadas. Al reabrir, solo una fracción de las capas tiene contenido.
+**Causa**: `writeLayerData()` usa `unordered_set<void*>` para detectar buffers compartidos. Escribe `shared_pixels: true` en vez del PNG. `readLayerData()` NUNCA lee ese flag — intenta cargar PNG inexistente y la capa queda vacía.
+**Fix**: 
+- `writeLayerData()`: cambia `set<void*>` a `map<void*, LayerUid>`, escribe `share_source_uid`
+- `readTimeline()`: lee `shared_pixels` + `share_source_uid`, guarda en `sharePixelMap_`
+- `readLayerData()`: `loadedPixelBuffers` map resuelve capas compartidas copiando el buffer fuente
+- Skip capas con `hasContent_ == false` en save (reduce tiempo de save)
+**Archivos**: `document_manager.cpp`, `document_manager.hpp`
+
+### 12.2 Save Bloquea UI → Crash por Re-entrada
+**Síntoma**: Save de 40 segundos congela el UI. Si el usuario hace click en "New Project" durante el save, `processEvents()` despacha `resetDocument()` que destruye el documento que se está guardando → crash.
+**Causa**: `processEvents()` permitía entrada del usuario durante el save.
+**Fix**:
+- `processEvents(QEventLoop::ExcludeUserInputEvents)` — refresca UI pero bloquea clicks
+- Guardia `saving_` en `newProject()` y `openProject()`: "Save in progress, wait..."
+- WaitCursor + status "Saving..." durante save
+**Archivos**: `document_manager.cpp`, `main_window_v2.cpp`, `main_window_v2.hpp`
+
+### 12.3 .tmp Preservado en Fallo de Rename
+**Síntoma**: Si `commitAtomic` falla, el `.tmp` se borraba perdiendo los datos del ZIP.
+**Fix**: `.tmp` se preserva. `lastError_` incluye la ruta para recuperación manual.
+**Archivo**: `document_manager.cpp`
+
+### 12.4 Traces de Error en Save
+**Fix**: `FAP_TRACE_IO("save_error*")` en paths: zip_init, write, rename.
+**Archivo**: `document_manager.cpp`
+
+### Bugs pendientes (del informe original)
+Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5).
 
 ### Tests
 - 154/154 pasan (100%)

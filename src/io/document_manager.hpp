@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
 extern "C" {
 #include <miniz.h>
@@ -73,6 +74,9 @@ private:
     bool busy_ = false;
     ViewState viewState_;
     QString audioTempDir_;
+
+    // Temporary map for shared pixel resolution during load
+    std::unordered_map<uint64_t, uint64_t> sharePixelMap_;
 };
 
 } // namespace fap

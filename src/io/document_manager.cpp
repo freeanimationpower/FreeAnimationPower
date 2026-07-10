@@ -15,6 +15,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QCoreApplication>
+#include <QEventLoop>
 
 #include <algorithm>
 #include <cstring>
@@ -221,8 +222,9 @@ bool DocumentManager::commitAtomic(const QString& tmpPath,
     }
     if (!QFile::rename(tmpPath, finalPath)) {
         lastError_ = QStringLiteral("Atomic rename failed: ") + tmpPath
-                   + QStringLiteral(" -> ") + finalPath;
-        QFile::remove(tmpPath);
+                   + QStringLiteral(" -> ") + finalPath
+                   + QStringLiteral(". Temp file preserved at: ") + tmpPath;
+        // Keep .tmp for manual recovery
         return false;
     }
     return true;
@@ -244,6 +246,7 @@ bool DocumentManager::save(const Document& doc, const QString& path, const ViewS
     if (!prepareAtomicTarget(path, tmpPath)) {
         QMutexLocker relock(&mutex_);
         busy_ = false;
+        FAP_TRACE_IO("save_error", path.toStdString(), 0.0);
         return false;
     }
 
@@ -254,6 +257,7 @@ bool DocumentManager::save(const Document& doc, const QString& path, const ViewS
         QFile::remove(tmpPath);
         QMutexLocker relock(&mutex_);
         busy_ = false;
+        FAP_TRACE_IO("save_error_zip_init", path.toStdString(), 0.0);
         return false;
     }
 
@@ -282,12 +286,14 @@ bool DocumentManager::save(const Document& doc, const QString& path, const ViewS
         QFile::remove(tmpPath);
         QMutexLocker relock(&mutex_);
         busy_ = false;
+        FAP_TRACE_IO("save_error_write", path.toStdString(), 0.0);
         return false;
     }
 
     if (!commitAtomic(tmpPath, path)) {
         QMutexLocker relock(&mutex_);
         busy_ = false;
+        FAP_TRACE_IO("save_error_rename", path.toStdString(), 0.0);
         return false;
     }
 
@@ -372,7 +378,8 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
 }
 
 bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
-    std::unordered_set<const void*> writtenPixelBuffers;
+    std::unordered_map<const void*, uint64_t> writtenPixelBuffers; // pixelPtr -> sourceLayerUid
+    int layerCount = 0;
 
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
         const auto& seq = doc.sequenceAt(si);
@@ -382,6 +389,11 @@ bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
             for (size_t li = 0; li < rootLayer->layerCount(); ++li) {
                 const Layer* layer = rootLayer->layers()[li].get();
 
+                // Keep UI responsive during long saves
+                if (++layerCount % 20 == 0) {
+                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+                }
+
                 QString metaPath = buildLayerPath(f, static_cast<int>(si),
                                                   static_cast<int>(li), "json");
                 QJsonObject lmeta = layerMetadataToJson(*layer);
@@ -390,14 +402,25 @@ bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
                     const auto& rl = static_cast<const RasterLayer&>(*layer);
                     const void* pixelPtr = static_cast<const void*>(rl.pixelData());
 
-                    qDebug() << "SAVE layer:" << rl.name().c_str()
-                             << "origin:" << rl.originX() << "," << rl.originY()
-                             << "size:" << rl.width() << "x" << rl.height();
+                    // Skip empty layers to save space
+                    if (!rl.hasContent()) {
+                        QJsonDocument metaDoc(lmeta);
+                        QByteArray metaData = metaDoc.toJson(QJsonDocument::Indented);
+                        QByteArray metaPathUtf8 = metaPath.toUtf8();
+                        if (!mz_zip_writer_add_mem(zip, metaPathUtf8.constData(),
+                                                    metaData.constData(), metaData.size(),
+                                                    MZ_DEFAULT_COMPRESSION)) {
+                            lastError_ = QStringLiteral("Failed to write layer metadata: ") + metaPath;
+                            return false;
+                        }
+                        continue;
+                    }
 
-                    if (writtenPixelBuffers.count(pixelPtr)) {
+                    if (auto it = writtenPixelBuffers.find(pixelPtr); it != writtenPixelBuffers.end()) {
                         lmeta[QStringLiteral("shared_pixels")] = true;
+                        lmeta[QStringLiteral("share_source_uid")] = static_cast<qint64>(it->second);
                     } else {
-                        writtenPixelBuffers.insert(pixelPtr);
+                        writtenPixelBuffers[pixelPtr] = layer->uid();
 
                         QImage layerImage(
                             reinterpret_cast<const uchar*>(rl.pixelData()),
@@ -609,6 +632,8 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
                         QJsonDocument metaDoc = QJsonDocument::fromJson(metaRaw);
                         if (metaDoc.isObject()) {
                             layer = layerMetadataFromJson(metaDoc.object());
+                            // Use meta_file as source for shared pixel info
+                            lobj = metaDoc.object();
                         }
                     }
                 }
@@ -618,6 +643,15 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
                 }
 
                 if (layer) {
+                    // Track shared pixel mappings for readLayerData
+                    bool shared = lobj[QStringLiteral("shared_pixels")].toBool(false);
+                    if (shared) {
+                        uint64_t srcUid = static_cast<uint64_t>(
+                            lobj[QStringLiteral("share_source_uid")].toDouble(0));
+                        if (srcUid > 0) {
+                            sharePixelMap_[layer->uid()] = srcUid;
+                        }
+                    }
                     frameRoot.addLayer(std::move(layer));
                 }
             }
@@ -642,6 +676,9 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
 }
 
 bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
+    // Track successfully loaded pixel buffers by layerUid for sharing
+    std::unordered_map<uint64_t, std::shared_ptr<PixelBuffer>> loadedPixelBuffers;
+
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
         auto& seq = doc.sequenceAt(si);
         for (int f = 0; f < seq.totalFrames(); ++f) {
@@ -652,6 +689,22 @@ bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
                 if (!layer || layer->type() != LayerType::Raster) continue;
 
                 auto* rl = static_cast<RasterLayer*>(layer);
+
+                // Handle shared pixel layers
+                auto shareIt = sharePixelMap_.find(rl->uid());
+                if (shareIt != sharePixelMap_.end()) {
+                    auto srcIt = loadedPixelBuffers.find(shareIt->second);
+                    if (srcIt != loadedPixelBuffers.end()) {
+                        // Share the source layer's pixel buffer
+                        rl->ensureUnique();
+                        rl->pixelBuffer()->pixels = srcIt->second->pixels;
+                        rl->setOrigin(rl->originX(), rl->originY());
+                        rl->setHasContent(true);
+                        rl->bufferEpochTick();
+                    }
+                    continue;
+                }
+
                 QString pngPath = buildLayerPath(f, static_cast<int>(si),
                                                  static_cast<int>(li), "png");
                 QByteArray pngPathUtf8 = pngPath.toUtf8();
@@ -690,9 +743,13 @@ bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
                 }
                 rl->setHasContent(true);
                 rl->bufferEpochTick();
+
+                // Track this buffer for potential sharing
+                loadedPixelBuffers[rl->uid()] = rl->pixelBuffer();
             }
         }
     }
+    sharePixelMap_.clear();
     return true;
 }
 

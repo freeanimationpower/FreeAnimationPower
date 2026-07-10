@@ -50,6 +50,8 @@ private:
 
     QAction* undoAct_ = nullptr;
     QAction* redoAct_ = nullptr;
+
+    bool saving_ = false;
 };
 
 } // namespace fap

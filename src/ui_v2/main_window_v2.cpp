@@ -521,6 +521,11 @@ void MainWindowV2::updateUIState()
 
 void MainWindowV2::newProject()
 {
+    if (saving_) {
+        statusBar()->showMessage("Save in progress, wait...", 2000);
+        return;
+    }
+
     if (appState_->isModified()) {
         auto result = QMessageBox::question(this, "Unsaved Changes",
             "The current project has unsaved changes. Create a new project anyway?",
@@ -566,6 +571,11 @@ void MainWindowV2::openProject(const QString& path)
 {
     if (path.isEmpty())
         return;
+
+    if (saving_) {
+        statusBar()->showMessage("Save in progress, wait...", 2000);
+        return;
+    }
 
     if (appState_->isModified()) {
         auto result = QMessageBox::question(this, "Unsaved Changes",
@@ -629,8 +639,11 @@ void MainWindowV2::saveProject()
         return;
     }
 
-    // Sync audio track state into Document before save
     syncAudioToDocument();
+
+    saving_ = true;
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    statusBar()->showMessage("Saving...");
 
     DocumentManager dm;
     ViewState vs;
@@ -646,6 +659,9 @@ void MainWindowV2::saveProject()
     } else {
         QMessageBox::warning(this, "Error", "Failed to save project.");
     }
+
+    QApplication::restoreOverrideCursor();
+    saving_ = false;
 }
 
 void MainWindowV2::saveProjectAs()
@@ -687,8 +703,11 @@ void MainWindowV2::saveProjectAs()
 
     if (path.isEmpty()) return;
 
-    // Sync audio track state into Document before save
     syncAudioToDocument();
+
+    saving_ = true;
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    statusBar()->showMessage("Saving...");
 
     DocumentManager dm;
     ViewState vs;
@@ -721,6 +740,9 @@ void MainWindowV2::saveProjectAs()
     } else {
         QMessageBox::warning(this, "Error", "Failed to save project.");
     }
+
+    QApplication::restoreOverrideCursor();
+    saving_ = false;
 }
 
 void MainWindowV2::exportVideo()
