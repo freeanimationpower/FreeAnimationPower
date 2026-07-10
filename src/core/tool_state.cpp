@@ -1,7 +1,32 @@
 #include "core/tool_state.hpp"
+#include "core/diagnostic/tracer_macros.hpp"
 #include <algorithm>
 
 namespace fap {
+
+namespace {
+    const char* toolNameForTrace(ToolType t) {
+        switch (t) {
+        case ToolType::Brush:         return "brush";
+        case ToolType::Eraser:        return "eraser";
+        case ToolType::ColorPicker:   return "color_picker";
+        case ToolType::Fill:          return "fill";
+        case ToolType::Text:          return "text";
+        case ToolType::Line:          return "line";
+        case ToolType::Rectangle:     return "rectangle";
+        case ToolType::Ellipse:       return "ellipse";
+        case ToolType::Move:          return "move";
+        case ToolType::Select:        return "select";
+        case ToolType::Hand:          return "hand";
+        case ToolType::PencilRetouch: return "pencil_retouch";
+        case ToolType::RulerLine:     return "ruler_line";
+        case ToolType::RulerEllipse:  return "ruler_ellipse";
+        case ToolType::DeformMesh:    return "deform_mesh";
+        case ToolType::TweenEdit:     return "tween_edit";
+        }
+        return "unknown";
+    }
+}
 
 ToolState::ToolState(QObject* parent)
     : QObject(parent) {
@@ -41,6 +66,9 @@ void ToolState::setActiveTool(ToolType tool) {
         active_tool_ = tool;
         emit activeToolChanged(tool);
         emit toolSettingsChanged();
+        FAP_TRACE_TOOL(toolNameForTrace(tool), brush_size_, brush_opacity_,
+                       brush_hardness_, brush_shape_.toStdString(),
+                       primary_color_.name().toStdString());
     }
 }
 
@@ -66,6 +94,9 @@ void ToolState::setPrimaryColor(const QColor& color) {
         primary_color_ = color;
         emit primaryColorChanged(color);
         emit toolSettingsChanged();
+        FAP_TRACE_TOOL(toolNameForTrace(active_tool_), brush_size_, brush_opacity_,
+                       brush_hardness_, brush_shape_.toStdString(),
+                       primary_color_.name().toStdString());
     }
 }
 
@@ -75,6 +106,9 @@ void ToolState::setBrushSize(int size) {
         brush_size_ = clamped;
         emit brushSizeChanged(clamped);
         emit toolSettingsChanged();
+        FAP_TRACE_TOOL(toolNameForTrace(active_tool_), clamped, brush_opacity_,
+                       brush_hardness_, brush_shape_.toStdString(),
+                       primary_color_.name().toStdString());
     }
 }
 
@@ -84,6 +118,9 @@ void ToolState::setBrushOpacity(int opacity) {
         brush_opacity_ = clamped;
         emit brushOpacityChanged(clamped);
         emit toolSettingsChanged();
+        FAP_TRACE_TOOL(toolNameForTrace(active_tool_), brush_size_, clamped,
+                       brush_hardness_, brush_shape_.toStdString(),
+                       primary_color_.name().toStdString());
     }
 }
 
@@ -93,6 +130,9 @@ void ToolState::setBrushHardness(int hardness) {
         brush_hardness_ = clamped;
         emit brushHardnessChanged(clamped);
         emit toolSettingsChanged();
+        FAP_TRACE_TOOL(toolNameForTrace(active_tool_), brush_size_, brush_opacity_,
+                       clamped, brush_shape_.toStdString(),
+                       primary_color_.name().toStdString());
     }
 }
 
@@ -101,6 +141,9 @@ void ToolState::setBrushShape(const QString& shape) {
         brush_shape_ = shape;
         emit brushShapeChanged(shape);
         emit toolSettingsChanged();
+        FAP_TRACE_TOOL(toolNameForTrace(active_tool_), brush_size_, brush_opacity_,
+                       brush_hardness_, brush_shape_.toStdString(),
+                       primary_color_.name().toStdString());
     }
 }
 
@@ -191,6 +234,7 @@ void ToolState::resetToDefaults() {
     setTextAntiAliasing(true);
     setTextUnderline(false);
     setTextStrikethrough(false);
+    FAP_TRACE_APP("reset_to_defaults");
 }
 
 void ToolState::setOnionEnabled(bool enabled) {
