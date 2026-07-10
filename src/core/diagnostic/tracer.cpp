@@ -173,9 +173,9 @@ void Tracer::startSession() {
     static int globalSessionCounter = 0;
     sessionId_ = ++globalSessionCounter;
 
-    QString tempDir = QDir::tempPath() + "/fap_traces";
-    QDir().mkpath(tempDir);
-    traceDir_ = tempDir;
+    QString tracesDir = QDir::currentPath() + "/fap_traces";
+    QDir().mkpath(tracesDir);
+    traceDir_ = tracesDir;
 
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
     QString fileName = QString("trace_%1_s%2.jsonl").arg(timestamp).arg(sessionId_);
