@@ -224,6 +224,11 @@ void Tracer::record(TraceEvent evt) {
     {
         QMutexLocker lock(&queueMutex_);
         writeQueue_.push(ss.str());
+
+        while (writeQueue_.size() > kMaxQueueSize) {
+            writeQueue_.pop();
+            ++droppedEvents_;
+        }
     }
     queueCond_.wakeOne();
 }
@@ -231,14 +236,17 @@ void Tracer::record(TraceEvent evt) {
 void Tracer::writeThreadFunc() {
     std::vector<std::string> batch;
     batch.reserve(256);
+    uint64_t eventsWritten = 0;
 
     while (running_) {
+        bool forceFlush = false;
         {
             QMutexLocker lock(&queueMutex_);
             if (writeQueue_.empty()) {
                 queueCond_.wait(&queueMutex_, 100);
                 continue;
             }
+            forceFlush = (writeQueue_.size() > kFlushThreshold);
             while (!writeQueue_.empty() && batch.size() < 256) {
                 batch.push_back(std::move(writeQueue_.front()));
                 writeQueue_.pop();
@@ -251,6 +259,32 @@ void Tracer::writeThreadFunc() {
                 for (const auto& line : batch) {
                     traceFile_.write(line.data(), static_cast<qint64>(line.size()));
                 }
+                eventsWritten += batch.size();
+
+                if (eventsWritten >= kHeartbeatInterval) {
+                    eventsWritten = 0;
+                    auto now = std::chrono::steady_clock::now();
+                    double elapsed = static_cast<double>(
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            now - lastFlushTime_
+                        ).count()
+                    ) / 1000.0;
+
+                    std::ostringstream hs;
+                    hs << "{\"seq\":" << (eventSequence_.load())
+                       << ",\"ts\":" << std::fixed << std::setprecision(6)
+                       << (static_cast<double>(
+                            std::chrono::duration_cast<std::chrono::microseconds>(
+                                now.time_since_epoch()
+                            ).count()
+                          ) / 1'000'000.0)
+                       << ",\"cat\":\"app\",\"evt\":\"heartbeat\""
+                       << ",\"dropped\":" << droppedEvents_.load()
+                       << ",\"elapsed\":" << std::fixed << std::setprecision(1) << elapsed
+                       << ",\"sid\":" << sessionId_
+                       << "}\n";
+                    traceFile_.write(hs.str().data(), static_cast<qint64>(hs.str().size()));
+                }
             }
         } catch (...) {
             qWarning() << "Tracer writer thread: write error";
@@ -258,7 +292,7 @@ void Tracer::writeThreadFunc() {
         batch.clear();
 
         auto now = std::chrono::steady_clock::now();
-        if (now - lastFlushTime_ > std::chrono::milliseconds(500)) {
+        if (forceFlush || (now - lastFlushTime_ > std::chrono::milliseconds(500))) {
             try {
                 QMutexLocker lock(&fileMutex_);
                 if (traceFile_.isOpen()) {

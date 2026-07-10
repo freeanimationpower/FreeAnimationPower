@@ -47,7 +47,13 @@ private:
 
     std::atomic<bool> enabled_{false};
     std::atomic<bool> running_{false};
+    std::atomic<uint64_t> droppedEvents_{0};
+    std::atomic<uint64_t> eventSequence_{0};
     int sessionId_ = 0;
+
+    static constexpr size_t kMaxQueueSize = 10000;
+    static constexpr size_t kFlushThreshold = 500;
+    static constexpr uint64_t kHeartbeatInterval = 1000;
 
     QString traceDir_;
     QFile traceFile_;
@@ -56,7 +62,6 @@ private:
     std::unique_ptr<std::thread> writerThread_;
     QWaitCondition queueCond_;
 
-    uint64_t eventSequence_{0};
     QMutex fileMutex_;
 
     std::chrono::steady_clock::time_point lastFlushTime_;
