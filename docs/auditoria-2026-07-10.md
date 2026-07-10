@@ -511,9 +511,69 @@ Prioridad: undo wrong-layer (1.3), layer rename crash (1.5), video export broken
 ### Bugs pendientes (del informe original)
 Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5).
 
-### Bugs pendientes (del informe original)
-Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5).
-
 ### Tests
 - 154/154 pasan (100%)
 - 0 tests de UI, 0 tests de IO (DocumentManager), 0 tests de exportación
+
+---
+
+## 14. SEQUENCE CLONE & DUPLICATION BUGS (Jul 10, 2026)
+
+### 14.1 Frame 0 Vacío en Secuencia Duplicada
+**Síntoma**: Al duplicar una secuencia con contenido, el frame 0 de la copia aparece vacío en la timeline.
+**Causa**: `Sequence::clone()` creaba un frame 0 vacío con "Layer 1" por defecto si no existía en `frames_`, sobrescribiendo el frame 0 real clonado.
+**Fix**: Cambiar la condición de `frames_.find(0) == end()` a `frames_.empty()` — solo crear frame 0 si la secuencia original está completamente vacía.
+**Archivo**: `core/sequence.cpp`
+
+### 14.2 Secuencia Fantasma al Reabrir Archivo
+**Síntoma**: Al guardar un proyecto con secuencias duplicadas y reabrirlo, aparece una secuencia vacía extra entre la original y la duplicada.
+**Causa**: `readTimeline()` llamaba `doc.addSequence("")` para secuencias si>0, creando secuencias con nombre vacío. `writeTimeline()` guardaba estos nombres vacíos. Al recargar, `addSequence("")` creaba otra secuencia vacía adicional.
+**Fix**: `readTimeline()` renombra secuencias sin nombre a "Sequence N" (ej: "Sequence 2", "Sequence 3").
+**Archivo**: `io/document_manager.cpp`
+
+### 14.3 Audio Track Duplicación al Reabrir
+**Síntoma**: Al abrir múltiples proyectos en la misma sesión, las pistas de audio se duplican (1 → 2 → 4...).
+**Causa**: `openProject()` no llamaba `clearAudioTracks()` antes de restaurar pistas de audio desde el documento cargado. Los widgets de audio del proyecto anterior sobrevivían y se acumulaban.
+**Fix**: Agregar `timeline_panel_->clearAudioTracks()` antes del loop de restauración en `openProject()`.
+**Archivo**: `ui_v2/main_window_v2.cpp`
+
+### 14.4 Crash al Crear Nuevo Proyecto (New Project)
+**Síntoma**: Después de guardar un proyecto y hacer click en "New Project", el programa crashea.
+**Causa**: `resetDocument()` destruía el documento viejo pero quedaban widgets pendientes de `deleteLater()` y eventos de paint en la cola de Qt referenciando capas destruidas.
+**Fix**:
+- `deleteLater()` → `delete` directo en `rebuildTracks()`, `clearAudioTracks()`, `removeAudioTrack()`
+- `sendPostedEvents(DeferredDelete)` + `processEvents()` después de `resetDocument()` en `newProject()` y `openProject()`
+- `canvas_->resetState()` limpia todos los buffers internos del canvas
+**Archivos**: `ui_v2/main_window_v2.cpp`, `ui_v2/timeline_panel_v2.cpp`, `ui_v2/canvas_widget_v2.cpp/.hpp`
+
+---
+## 15. DIAGNOSTIC TRACE EXPANSIONS (Jul 10, 2026)
+
+### 15.1 Sequence Traces
+- `FAP_TRACE_SEQUENCE(evt, idx, name)`: nuevo macro para operaciones de secuencia
+- Traces en: `onDupTrack`, `onDelTrack`, `Sequence::clone()`, `writeTimeline()`, `readTimeline()`
+- `openProject()` traza `open_seq_count_N` post-load
+
+### 15.2 Guardias Anti-Crash
+- `CanvasWidgetV2::setCurrentFrame()`: `if (frame == currentFrame_) return`
+- `TimelinePanelV2::setCurrentFrame()`: misma guardia
+- `SequenceTrackWidget::frameHasContent()`: `seqIndex_ >= seqCount` → `return false`
+
+### 15.3 Cobertura Actualizada del Tracer
+| Nueva categoría | Eventos |
+|-----------------|---------|
+| Sequence | duplicate, delete, save, load, cloned |
+| App | rebuild_tracks_begin/end, rebuild_after_dup, open_seq_count_N |
+| Buffer | clone_frame |
+| Frame | add, duplicate, delete, change, clone_frame |
+
+### Bugs corregidos acumulados (14 en total)
+| # | Bug | Estado |
+|---|-----|--------|
+| 1-6 | Brush performance, timeline, fill, traces, padding | Corregido |
+| 7-12 | Pixel dedup, save crash, UI styling | Corregido |
+| 13 | Audio track duplication on reopen | Corregido |
+| 14 | Ghost sequence on reopen | Corregido |
+
+### Bugs pendientes
+Undo wrong-layer (1.3), layer rename crash (1.5), video export broken (1.1).

@@ -565,6 +565,8 @@ private:
 
     bool frameHasContent(int frame) const {
         if (!appState_) return false;
+        size_t seqCount = appState_->document().sequenceCount();
+        if (static_cast<size_t>(seqIndex_) >= seqCount) return false;
         const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
         const GroupLayer* root = seq.peekRootLayerForFrame(frame);
         if (!root || root->layerCount() == 0) return false;
@@ -848,6 +850,8 @@ void TimelinePanelV2::setupUI()
 
 void TimelinePanelV2::rebuildTracks()
 {
+    FAP_TRACE_APP("rebuild_tracks_begin");
+
     QWidget* focused = QApplication::focusWidget();
     if (focused && tracksContainer_->isAncestorOf(focused)) {
         focused->clearFocus();
@@ -859,7 +863,7 @@ void TimelinePanelV2::rebuildTracks()
 
     for (auto* tw : trackWidgets_) {
         tracksLayout_->removeWidget(tw);
-        tw->deleteLater();
+        delete tw;
     }
     trackWidgets_.clear();
 
@@ -912,6 +916,8 @@ void TimelinePanelV2::rebuildTracks()
     updateScrollBarRange();
     rulerWidget_->update();
     for (auto* at : audioTrackWidgets_) at->update();
+
+    FAP_TRACE_APP("rebuild_tracks_end");
 }
 
 void TimelinePanelV2::refreshTimelineLayout()
@@ -952,7 +958,10 @@ void TimelinePanelV2::setTotalFrames(int count)
 
 void TimelinePanelV2::setCurrentFrame(int frame)
 {
-    currentFrame_ = std::clamp(frame, 0, totalFrames_ - 1);
+    frame = std::clamp(frame, 0, totalFrames_ - 1);
+    if (frame == currentFrame_) return;
+
+    currentFrame_ = frame;
     FAP_TRACE_FRAME("change", currentFrame_);
 
     int viewWidth = scrollArea_->viewport()->width();
@@ -1290,7 +1299,7 @@ void TimelinePanelV2::clearAudioTracks()
 {
     for (auto* at : audioTrackWidgets_) {
         tracksLayout_->removeWidget(at);
-        at->deleteLater();
+        delete at;
     }
     audioTrackWidgets_.clear();
 }
@@ -1301,7 +1310,7 @@ void TimelinePanelV2::removeAudioTrack(AudioTrackWidget* track)
     if (it != audioTrackWidgets_.end()) {
         audioTrackWidgets_.erase(it);
         tracksLayout_->removeWidget(track);
-        track->deleteLater();
+        delete track;
 
         for (size_t i = 0; i < audioTrackWidgets_.size(); ++i) {
             audioTrackWidgets_[i]->setTrackIndex(static_cast<int>(i));
@@ -1406,13 +1415,20 @@ void TimelinePanelV2::onRenameTrack(int seqIndex, const QString& name)
 void TimelinePanelV2::onDupTrack(int seqIndex)
 {
     if (!appState_) return;
+    auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex));
+    FAP_TRACE_SEQUENCE("duplicate", seqIndex, seq.name());
     appState_->duplicateSequence(seqIndex);
-    QTimer::singleShot(0, this, [this]() { rebuildTracks(); });
+    QTimer::singleShot(0, this, [this]() {
+        FAP_TRACE_APP("rebuild_after_dup");
+        rebuildTracks();
+    });
 }
 
 void TimelinePanelV2::onDelTrack(int seqIndex)
 {
     if (!appState_) return;
+    auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex));
+    FAP_TRACE_SEQUENCE("delete", seqIndex, seq.name());
     if (appState_->sequenceCount() <= 1) return;
     appState_->removeSequence(seqIndex);
     QTimer::singleShot(0, this, [this]() { rebuildTracks(); });

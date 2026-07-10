@@ -152,8 +152,10 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
 
 void CanvasWidgetV2::setCurrentFrame(int frame)
 {
-    currentFrame_ = std::clamp(frame, 0, totalFrames_ - 1);
-    invalidateBackgroundCache();  // frame change → onion + layers differ
+    int clamped = std::clamp(frame, 0, totalFrames_ - 1);
+    if (clamped == currentFrame_) return;
+    currentFrame_ = clamped;
+    invalidateBackgroundCache();
     update();
 }
 
@@ -540,6 +542,25 @@ void CanvasWidgetV2::resetView()
 void CanvasWidgetV2::invalidateBackgroundCache()
 {
     backgroundCacheValid_ = false;
+}
+
+void CanvasWidgetV2::resetState()
+{
+    strokeBuffer_ = QImage();
+    strokeDirtyRect_ = QRect();
+    backgroundCache_ = QImage();
+    backgroundCacheValid_ = false;
+    beforeSnapshot_ = QImage();
+    floatingSelection_ = QImage();
+    originalFloatingSelection_ = QImage();
+    floatingActive_ = false;
+    selRect_ = QRectF();
+    selState_ = SelectionState::None;
+    moveImage_ = QImage();
+    drawing_ = false;
+    moving_ = false;
+    currentFrame_ = 0;
+    currentLayerIndex_ = 0;
 }
 
 void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)

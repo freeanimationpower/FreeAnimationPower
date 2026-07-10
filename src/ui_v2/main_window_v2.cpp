@@ -1,6 +1,7 @@
 #include "main_window_v2.hpp"
 
 #include <QtWidgets/QApplication>
+#include <QtCore/QCoreApplication>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QStatusBar>
@@ -31,6 +32,7 @@
 #include <QtGui/QPainter>
 #include <QtGui/QImage>
 
+#include "core/diagnostic/tracer_macros.hpp"
 #include "toolbox_panel_v2.hpp"
 #include "color_panel_v2.hpp"
 #include "layer_panel_v2.hpp"
@@ -535,12 +537,19 @@ void MainWindowV2::newProject()
     }
 
     appState_->resetDocument(1920, 1080, 24, 24);
+
+    // Process deferred deletions and pending events from old document
+    QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QCoreApplication::processEvents();
+
     setWindowTitle("Free Animation Power - Untitled.fap");
     if (timeline_panel_) {
         timeline_panel_->clearAudioTracks();
     }
     layer_panel_->refreshLayerList();
     if (canvas_) {
+        canvas_->resetState();
+        canvas_->invalidateBackgroundCache();
         canvas_->setCurrentFrame(0);
         canvas_->setTotalFrames(appState_->document().totalFrames());
         canvas_->setCurrentLayer(0);
@@ -586,10 +595,17 @@ void MainWindowV2::openProject(const QString& path)
     }
 
     appState_->resetDocument(1920, 1080, 24, 1);
+
+    QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QCoreApplication::processEvents();
+
     DocumentManager dm;
     if (dm.load(appState_->document(), path)) {
         appState_->document().setFilepath(path.toStdString());
         appState_->document().setModified(false);
+
+        FAP_TRACE_CAT(fap::diagnostic::EventCategory::App,
+            ("open_seq_count_" + std::to_string(appState_->document().sequenceCount())).c_str());
         setWindowTitle(QString("Free Animation Power - %1").arg(path));
         layer_panel_->refreshLayerList();
         auto& doc = appState_->document();
@@ -623,6 +639,7 @@ void MainWindowV2::openProject(const QString& path)
 
         // Restore audio tracks from loaded document
         if (timeline_panel_) {
+            timeline_panel_->clearAudioTracks();
             for (const auto& at : appState_->document().audioTracks()) {
                 timeline_panel_->addAudioTrackFromData(at);
             }

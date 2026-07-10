@@ -82,6 +82,7 @@ public:
     void resetView();
 
     void invalidateBackgroundCache();
+    void resetState();
     bool isSequenceLocked() const;
 
 signals:

@@ -323,6 +323,7 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
     QJsonArray seqArr;
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
         const auto& seq = doc.sequenceAt(si);
+        FAP_TRACE_SEQUENCE("save", static_cast<int>(si), seq.name());
         QJsonObject seqObj;
         seqObj[QStringLiteral("index")]          = static_cast<int>(si);
         seqObj[QStringLiteral("total_frames")]   = seq.totalFrames();
@@ -604,6 +605,10 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         QJsonObject seqObj = seqArr[si].toObject();
         int sframeCount = seqObj[QStringLiteral("total_frames")].toInt(1);
         auto& seq = (si == 0) ? doc.activeSequence() : doc.addSequence("");
+        if (seq.name().empty()) {
+            seq.setName("Sequence " + std::to_string(si + 1));
+        }
+        FAP_TRACE_SEQUENCE("load", si, seq.name());
         seq.setTotalFrames(sframeCount);
         seq.setFPS(seqObj[QStringLiteral("fps")].toInt(24));
 

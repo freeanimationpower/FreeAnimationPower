@@ -136,6 +136,15 @@ inline void traceCatEvent(EventCategory cat, const char* evt) {
     tracer().record(cat, evt);
 }
 
+inline void traceSequenceEvent(const char* evt, int seqIndex, const std::string& name) {
+    TraceEvent e;
+    e.category = EventCategory::Layer;
+    e.event = evt;
+    e.layerIndex = seqIndex;
+    e.layerName = name;
+    tracer().record(e);
+}
+
 } // namespace fap::diagnostic
 
 #define FAP_TRACE_CAT(cat, evt)     fap::diagnostic::traceCatEvent(cat, evt)
@@ -154,6 +163,7 @@ inline void traceCatEvent(EventCategory cat, const char* evt) {
 #define FAP_TRACE_IO(evt, filename, ms) fap::diagnostic::traceIOEvent(evt, filename, ms)
 #define FAP_TRACE_PAINT(ms)          fap::diagnostic::tracePaintEvent(ms)
 #define FAP_TRACE_APP(evt)           fap::diagnostic::traceAppEvent(evt)
+#define FAP_TRACE_SEQUENCE(evt, idx, name) fap::diagnostic::traceSequenceEvent(evt, idx, name)
 
 #else
 
@@ -171,5 +181,6 @@ inline void traceCatEvent(EventCategory cat, const char* evt) {
 #define FAP_TRACE_IO(...)              ((void)0)
 #define FAP_TRACE_PAINT(...)           ((void)0)
 #define FAP_TRACE_APP(...)             ((void)0)
+#define FAP_TRACE_SEQUENCE(...)        ((void)0)
 
 #endif

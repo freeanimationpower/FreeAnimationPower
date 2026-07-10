@@ -1,4 +1,5 @@
 #include "sequence.hpp"
+#include "diagnostic/tracer_macros.hpp"
 #include <atomic>
 #include <algorithm>
 #include <map>
@@ -177,9 +178,18 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
         auto clonedRoot = std::unique_ptr<GroupLayer>(
             static_cast<GroupLayer*>(cloned.release()));
         seq->frames_.emplace(frameIdx, std::move(clonedRoot));
+        FAP_TRACE_CAT(fap::diagnostic::EventCategory::Frame, "clone_frame");
+    }
+
+    // Only create frame 0 if original had NO frames at all (purely empty sequence)
+    if (seq->frames_.empty()) {
+        auto root = std::make_unique<GroupLayer>("Root");
+        root->addLayer(std::make_unique<RasterLayer>("Layer 1", canvas_width_, canvas_height_));
+        seq->frames_.emplace(0, std::move(root));
     }
 
     seq->keyframes_ = keyframes_;
+    FAP_TRACE_SEQUENCE("cloned", 0, name_ + " -> " + seq->name_);
     return seq;
 }
 
