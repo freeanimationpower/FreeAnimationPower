@@ -1911,6 +1911,116 @@ QRect CanvasWidgetV2::stampRect(int cx, int cy) const
     return QRect(cx - radius, cy - radius, brushSize_, brushSize_);
 }
 
+void CanvasWidgetV2::renderStampToImage(QImage& img, int radius, int cx, int cy,
+                                        const QString& shape, const QColor& color,
+                                        float opacity, bool erasing) {
+    int size = radius * 2 + 1;
+    img = QImage(size, size, QImage::Format_ARGB32_Premultiplied);
+    img.fill(0);
+
+    float flatStretch = 4.0f;
+    float calliStretch = 5.0f;
+    float calliAngle = 0.785398f;
+    float highlighterStretch = 8.0f;
+    float r2 = static_cast<float>(radius * radius);
+
+    for (int dy = -radius; dy <= radius; ++dy) {
+        int sy = dy + radius;
+        uint32_t* row = reinterpret_cast<uint32_t*>(img.scanLine(sy));
+
+        for (int dx = -radius; dx <= radius; ++dx) {
+            int sx_img = dx + radius;
+            bool inside = false;
+
+            if (shape == "Round") {
+                inside = (dx * dx + dy * dy <= r2);
+            } else if (shape == "Square") {
+                inside = true;
+            } else if (shape == "Flat") {
+                float ex = static_cast<float>(dx) / flatStretch;
+                inside = (ex * ex + dy * dy <= r2);
+            } else if (shape == "Calligraphy") {
+                float cosA = std::cos(calliAngle);
+                float sinA = std::sin(calliAngle);
+                float rx = dx * cosA + dy * sinA;
+                float ry = -dx * sinA + dy * cosA;
+                float ex = rx / calliStretch;
+                inside = (ex * ex + ry * ry <= r2);
+            } else if (shape == "Pencil") {
+                float dist = static_cast<float>(dx * dx + dy * dy);
+                float edgeFuzz = (static_cast<float>((dx * 7 + dy * 13) & 0xFF) / 512.0f) * r2;
+                inside = (dist <= r2 + edgeFuzz);
+                if (inside) {
+                    uint32_t hash = static_cast<uint32_t>(dx * 374761393 + dy * 668265263 + cx * 1267128163 + cy * 3266489917);
+                    hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+                    hash = ((hash >> 16) ^ hash);
+                    float grain = static_cast<float>(hash & 0xFFFF) / 65536.0f;
+                    float threshold = 0.25f;
+                    float edgeFactor = (r2 - dist) / r2;
+                    if (edgeFactor < 0.2f) threshold = 0.15f;
+                    if (grain < threshold) inside = false;
+                }
+            } else if (shape == "Highlighter") {
+                float ex = static_cast<float>(dx) / highlighterStretch;
+                float ey = static_cast<float>(dy) / (highlighterStretch * 0.30f);
+                inside = (ex * ex + ey * ey <= r2);
+            } else {
+                inside = (dx * dx + dy * dy <= r2);
+            }
+
+            if (!inside) continue;
+
+            float alpha = (color.alphaF() * opacity);
+            if (shape == "Highlighter") alpha *= 0.35f;
+
+            uint8_t a = static_cast<uint8_t>(alpha * 255.0f);
+            if (a == 0) continue;
+
+            uint8_t pr, pg, pb;
+            if (erasing) {
+                pr = a; pg = a; pb = a;
+            } else {
+                pr = static_cast<uint8_t>(color.red()   * a / 255);
+                pg = static_cast<uint8_t>(color.green() * a / 255);
+                pb = static_cast<uint8_t>(color.blue()  * a / 255);
+            }
+            row[sx_img] = (static_cast<uint32_t>(a) << 24) |
+                          (static_cast<uint32_t>(pr) << 16) |
+                          (static_cast<uint32_t>(pg) << 8) | pb;
+        }
+    }
+}
+
+void CanvasWidgetV2::ensureStampCache(int effectiveRadius) {
+    auto tool = appState_->toolState().activeTool();
+    bool erasing = (tool == ToolType::Eraser);
+    float opacity = appState_->toolState().brushOpacity() / 100.0f;
+
+    int calliR = -1;
+    if (brushShape_ == "Calligraphy") {
+        calliR = (effectiveRadius / 5) * 5;
+    }
+
+    if (stampCache_.size == brushSize_ &&
+        stampCache_.shape == brushShape_ &&
+        stampCache_.color == brushColor_ &&
+        stampCache_.erasing == erasing &&
+        stampCache_.opacity == opacity &&
+        (brushShape_ != "Calligraphy" || stampCache_.calliRadius == calliR)) {
+        return;
+    }
+
+    int renderRadius = (brushShape_ == "Calligraphy") ? effectiveRadius : (brushSize_ / 2);
+    renderStampToImage(stampCache_.stamp, renderRadius, 0, 0,
+                       brushShape_, brushColor_, opacity, erasing);
+    stampCache_.size = brushSize_;
+    stampCache_.calliRadius = calliR;
+    stampCache_.shape = brushShape_;
+    stampCache_.color = brushColor_;
+    stampCache_.erasing = erasing;
+    stampCache_.opacity = opacity;
+}
+
 void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
 {
     auto* layer = activeRasterLayer();
@@ -1935,8 +2045,6 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
     bool erasing = (tool == ToolType::Eraser);
     float opacity = appState_->toolState().brushOpacity() / 100.0f;
 
-    QColor color = brushColor_;
-
     int lcx = cx - ox;
     int lcy = cy - oy;
 
@@ -1944,111 +2052,76 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
         lcy < -radius || lcy >= sh + radius)
         return;
 
-    float flatStretch = 4.0f;
-    float calliStretch = 5.0f;
-    float calliAngle = 0.785398f;
-    float highlighterStretch = 8.0f;
-    float r2 = static_cast<float>(radius * radius);
+    ensureStampCache(radius);
 
-    for (int dy = -radius; dy <= radius; ++dy) {
-        int sy = lcy + dy;
-        if (sy < 0 || sy >= sh) continue;
+    QImage stamp;
+    if (stampCache_.stamp.isNull()) {
+        renderStampToImage(stamp, radius, cx, cy,
+                           brushShape_, brushColor_, opacity, erasing);
+    } else {
+        stamp = stampCache_.stamp;
+    }
 
-        for (int dx = -radius; dx <= radius; ++dx) {
-            int sx = lcx + dx;
-            if (sx < 0 || sx >= sw) continue;
+    int halfW = stamp.width() / 2;
+    int halfH = stamp.height() / 2;
+    int sx = lcx - halfW;
+    int sy = lcy - halfH;
 
-            bool inside = false;
+    // Direct pixel copy from stamp to strokeBuffer — skips transparent pixels
+    int stampW = stamp.width();
+    int stampH = stamp.height();
+    int dstX0 = std::max(0, sx);
+    int dstY0 = std::max(0, sy);
+    int dstX1 = std::min(sw, sx + stampW);
+    int dstY1 = std::min(sh, sy + stampH);
 
-            if (brushShape_ == "Round") {
-                inside = (dx * dx + dy * dy <= r2);
-            } else if (brushShape_ == "Square") {
-                inside = true;
-            } else if (brushShape_ == "Flat") {
-                float ex = static_cast<float>(dx) / flatStretch;
-                inside = (ex * ex + dy * dy <= r2);
-            } else if (brushShape_ == "Calligraphy") {
-                float cosA = std::cos(calliAngle);
-                float sinA = std::sin(calliAngle);
-                float rx = dx * cosA + dy * sinA;
-                float ry = -dx * sinA + dy * cosA;
-                float ex = rx / calliStretch;
-                inside = (ex * ex + ry * ry <= r2);
-            } else if (brushShape_ == "Pencil") {
-                float dist = static_cast<float>(dx * dx + dy * dy);
-                float edgeFuzz = (static_cast<float>((dx * 7 + dy * 13) & 0xFF) / 512.0f) * r2;
-                inside = (dist <= r2 + edgeFuzz);
-                if (inside) {
-                    uint32_t hash = static_cast<uint32_t>(dx * 374761393 + dy * 668265263 + cx * 1267128163 + cy * 3266489917);
-                    hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
-                    hash = ((hash >> 16) ^ hash);
-                    float grain = static_cast<float>(hash & 0xFFFF) / 65536.0f;
-                    float threshold = 0.25f;
-                    float edgeFactor = (r2 - dist) / r2;
-                    if (edgeFactor < 0.2f) threshold = 0.15f;
-                    if (grain < threshold) inside = false;
-                }
-            } else if (brushShape_ == "Highlighter") {
-                float ex = static_cast<float>(dx) / highlighterStretch;
-                float ey = static_cast<float>(dy) / (highlighterStretch * 0.30f);
-                inside = (ex * ex + ey * ey <= r2);
+    for (int dy = dstY0; dy < dstY1; ++dy) {
+        int srcY = dy - sy;
+        const uint32_t* srcRow = reinterpret_cast<const uint32_t*>(stamp.constScanLine(srcY));
+        uint32_t* dstRow = reinterpret_cast<uint32_t*>(strokeBuffer_.scanLine(dy));
+
+        for (int dx = dstX0; dx < dstX1; ++dx) {
+            int srcX = dx - sx;
+            uint32_t src = srcRow[srcX];
+            if (src == 0) continue;
+
+            if (erasing) {
+                uint32_t srcA = (src >> 24) & 0xFF;
+                uint32_t dst = dstRow[dx];
+                uint32_t inv = 255 - srcA;
+                uint8_t nr = static_cast<uint8_t>(((dst >> 16) & 0xFF) * inv / 255);
+                uint8_t ng = static_cast<uint8_t>(((dst >> 8)  & 0xFF) * inv / 255);
+                uint8_t nb = static_cast<uint8_t>(( dst        & 0xFF) * inv / 255);
+                uint8_t na = static_cast<uint8_t>(((dst >> 24) & 0xFF) * inv / 255);
+                dstRow[dx] = (na << 24) | (nr << 16) | (ng << 8) | nb;
             } else {
-                inside = (dx * dx + dy * dy <= r2);
-            }
-
-            if (!inside) continue;
-
-            float alpha = (color.alphaF() * opacity);
-            if (brushShape_ == "Highlighter") alpha *= 0.35f;
-
-            uint32_t srcPixel;
-            {
-                uint8_t a = static_cast<uint8_t>(alpha * 255.0f);
-                if (a == 0) continue;
-
-                if (erasing) {
-                    srcPixel = (static_cast<uint32_t>(a) << 24) |
-                               (static_cast<uint32_t>(a) << 16) |
-                               (static_cast<uint32_t>(a) << 8) | a;
+                uint32_t sa = (src >> 24) & 0xFF;
+                if (sa == 255) {
+                    dstRow[dx] = src;
                 } else {
-                    uint8_t pr = static_cast<uint8_t>(color.red()   * a / 255);
-                    uint8_t pg = static_cast<uint8_t>(color.green() * a / 255);
-                    uint8_t pb = static_cast<uint8_t>(color.blue()  * a / 255);
-                    srcPixel = (static_cast<uint32_t>(a) << 24) |
-                               (static_cast<uint32_t>(pr) << 16) |
-                               (static_cast<uint32_t>(pg) << 8) | pb;
+                    uint32_t dst = dstRow[dx];
+                    uint32_t inv = 255 - sa;
+                    uint32_t nr = ((src >> 16) & 0xFF) + (((dst >> 16) & 0xFF) * inv / 255);
+                    uint32_t ng = ((src >> 8)  & 0xFF) + (((dst >> 8)  & 0xFF) * inv / 255);
+                    uint32_t nb = ( src        & 0xFF) + (( dst        & 0xFF) * inv / 255);
+                    uint32_t na = sa + (((dst >> 24) & 0xFF) * inv / 255);
+                    if (na > 255) na = 255;
+                    dstRow[dx] = (na << 24) | (nr << 16) | (ng << 8) | nb;
                 }
-            }
-
-            // Premultiplied SourceOver blend into strokeBuffer_
-            uint32_t* row = reinterpret_cast<uint32_t*>(strokeBuffer_.scanLine(sy));
-            uint32_t dst = row[sx];
-            uint32_t sa = (srcPixel >> 24) & 0xFF;
-            if (sa == 255) {
-                row[sx] = srcPixel;
-            } else {
-                uint32_t inv = 255 - sa;
-                uint32_t nr = ((srcPixel >> 16) & 0xFF) + (((dst >> 16) & 0xFF) * inv / 255);
-                uint32_t ng = ((srcPixel >> 8)  & 0xFF) + (((dst >> 8)  & 0xFF) * inv / 255);
-                uint32_t nb = ( srcPixel        & 0xFF) + (( dst        & 0xFF) * inv / 255);
-                uint32_t na = sa + (((dst >> 24) & 0xFF) * inv / 255);
-                if (na > 255) na = 255;
-                row[sx] = (na << 24) | (nr << 16) | (ng << 8) | nb;
             }
         }
     }
 
-    // Expand dirty rect (canvas coords)
-    QRect stampR(cx - radius, cy - radius, brushSize_, brushSize_);
+    QRect stampR(cx - halfW, cy - halfH, stamp.width(), stamp.height());
     if (strokeDirtyRect_.isNull()) {
         strokeDirtyRect_ = stampR;
     } else {
         strokeDirtyRect_ = strokeDirtyRect_.united(stampR);
     }
 
-    // Map canvas dirty rect -> widget and schedule repaint
     QPointF tl = canvasToWidget(QPointF(static_cast<qreal>(strokeDirtyRect_.left()),
                                         static_cast<qreal>(strokeDirtyRect_.top())));
+
     QPointF br = canvasToWidget(QPointF(static_cast<qreal>(strokeDirtyRect_.right()),
                                         static_cast<qreal>(strokeDirtyRect_.bottom())));
     int x1 = qRound(std::min(tl.x(), br.x()));
@@ -2091,8 +2164,8 @@ void CanvasWidgetV2::commitStroke()
 
     auto& doc = appState_->document();
 
-    // Dynamic padding (brush radius + 1px guard)
-    int pad = brushSize_ / 2 + 1;
+    // Dynamic padding (brush feathering guard, capped to prevent full-canvas explosion at large sizes)
+    int pad = std::min(brushSize_ / 2 + 1, 16);
     QRect commitR = strokeDirtyRect_.adjusted(-pad, -pad, pad, pad);
 
     // Clamp to canvas bounds
@@ -2152,7 +2225,7 @@ void CanvasWidgetV2::commitStroke()
     // Thumbnail invalidation
     appState_->thumbnailCache().invalidateFrame(currentFrame_);
 
-    FAP_TRACE_BUFFER_COMMIT(layer->uid(), commitR.x(), commitR.y(), commitR.width(), commitR.height());
+    FAP_TRACE_BUFFER_COMMIT(layer->uid(), commitR.x(), commitR.y(), commitR.width(), commitR.height(), currentFrame_);
 
     // Cleanup
     strokeBuffer_ = QImage();
@@ -2401,6 +2474,13 @@ void CanvasWidgetV2::doFill(QPointF cpos)
 
     if (lx < 0 || lx >= layer->width() || ly < 0 || ly >= layer->height()) return;
 
+    // Safety limit: refuse fill on areas larger than full canvas (2M pixels)
+    size_t layerPixels = static_cast<size_t>(layer->width()) * static_cast<size_t>(layer->height());
+    if (layerPixels > 2'500'000) {
+        emit statusMessage("Fill: layer too large");
+        return;
+    }
+
     int fillType = appState_->toolState().fillType();
 
     Color targetColor = layer->pixelAt(lx, ly);
@@ -2416,6 +2496,8 @@ void CanvasWidgetV2::doFill(QPointF cpos)
     img = img.copy();
 
     QImage before = snapFullLayer(layer);
+
+    FAP_TRACE_CAT(fap::diagnostic::EventCategory::Stroke, "fill_begin");
 
     switch (fillType) {
     case 0: // Solid
@@ -2440,9 +2522,14 @@ void CanvasWidgetV2::doFill(QPointF cpos)
     }
 
     layer->bufferEpochTick();
+    layer->setHasContent(true);
 
     pushFullLayerUndo(layer, before);
-    invalidateBackgroundCache();  // fill modifies pixelBuffer_
+
+    FAP_TRACE_BUFFER_COMMIT(layer->uid(), layer->originX(), layer->originY(),
+                            layer->width(), layer->height(), currentFrame_);
+
+    invalidateBackgroundCache();
     update();
     emit canvasUpdated();
 }

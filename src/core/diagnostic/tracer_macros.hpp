@@ -62,7 +62,7 @@ inline void traceBufferEvent(const char* evt, int w, int h, int ox, int oy, size
     tracer().record(e);
 }
 
-inline void traceBufferCommitEvent(uint64_t luid, int rx, int ry, int rw, int rh) {
+inline void traceBufferCommitEvent(uint64_t luid, int rx, int ry, int rw, int rh, int frame) {
     TraceEvent e;
     e.category = EventCategory::Buffer;
     e.event = "commit";
@@ -71,6 +71,7 @@ inline void traceBufferCommitEvent(uint64_t luid, int rx, int ry, int rw, int rh
     e.dirtyRect.y = ry;
     e.dirtyRect.w = rw;
     e.dirtyRect.h = rh;
+    e.frameIndex = frame;
     tracer().record(e);
 }
 
@@ -144,7 +145,8 @@ inline void traceCatEvent(EventCategory cat, const char* evt) {
     fap::diagnostic::traceToolEvent(toolName, size, opac, hard, shape, col)
 #define FAP_TRACE_STROKE(evt, dabs) fap::diagnostic::traceStrokeEvent(evt, dabs)
 #define FAP_TRACE_BUFFER(evt, w, h, ox, oy, sz) fap::diagnostic::traceBufferEvent(evt, w, h, ox, oy, sz)
-#define FAP_TRACE_BUFFER_COMMIT(luid, rx, ry, rw, rh) fap::diagnostic::traceBufferCommitEvent(luid, rx, ry, rw, rh)
+#define FAP_TRACE_BUFFER_COMMIT(luid, rx, ry, rw, rh, frame) \
+    fap::diagnostic::traceBufferCommitEvent(luid, rx, ry, rw, rh, frame)
 #define FAP_TRACE_UNDO(op, unSize, reSize) fap::diagnostic::traceUndoEvent(op, unSize, reSize)
 #define FAP_TRACE_LAYER(evt, idx, luid, name) fap::diagnostic::traceLayerEvent(evt, idx, luid, name)
 #define FAP_TRACE_FRAME(evt, frame)  fap::diagnostic::traceFrameEvent(evt, frame)

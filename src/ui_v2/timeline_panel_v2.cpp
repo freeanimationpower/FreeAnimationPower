@@ -1172,11 +1172,13 @@ void TimelinePanelV2::addFrame()
 {
     totalFrames_++;
     appState_->document().setTotalFrames(totalFrames_);
+    appState_->activeSequence().setDurationFrames(totalFrames_);
     updateScrollBarRange();
     updateLabels();
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
+    FAP_TRACE_FRAME("add", totalFrames_ - 1);
 }
 
 void TimelinePanelV2::duplicateFrame()
@@ -1184,6 +1186,7 @@ void TimelinePanelV2::duplicateFrame()
     if (currentFrame_ < 0 || currentFrame_ >= totalFrames_) return;
     totalFrames_++;
     appState_->document().setTotalFrames(totalFrames_);
+    appState_->activeSequence().setDurationFrames(totalFrames_);
 
     auto& srcRoot = appState_->document().rootLayerForFrame(currentFrame_);
     auto& dstRoot = appState_->document().rootLayerForFrame(totalFrames_ - 1);
@@ -1201,6 +1204,7 @@ void TimelinePanelV2::duplicateFrame()
     for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
     emit frameChanged(currentFrame_);
+    FAP_TRACE_FRAME("duplicate", currentFrame_);
 }
 
 void TimelinePanelV2::deleteFrame()
@@ -1209,10 +1213,12 @@ void TimelinePanelV2::deleteFrame()
     if (currentFrame_ < 0 || currentFrame_ >= totalFrames_) return;
 
     int delFrame = currentFrame_;
+    FAP_TRACE_FRAME("delete", delFrame);
     appState_->document().shiftFrameData(delFrame + 1, -1);
     appState_->document().removeFrameData(totalFrames_ - 1);
     totalFrames_--;
     appState_->document().setTotalFrames(totalFrames_);
+    appState_->activeSequence().setDurationFrames(totalFrames_);
 
     if (currentFrame_ >= totalFrames_) currentFrame_ = totalFrames_ - 1;
     appState_->setCurrentFrame(currentFrame_);

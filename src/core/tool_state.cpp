@@ -241,6 +241,8 @@ void ToolState::setOnionEnabled(bool enabled) {
     if (onion_enabled_ != enabled) {
         onion_enabled_ = enabled;
         emit onionEnabledChanged(enabled);
+        FAP_TRACE_CAT(fap::diagnostic::EventCategory::ToolState,
+                       enabled ? "onion_enabled" : "onion_disabled");
     }
 }
 
@@ -249,6 +251,7 @@ void ToolState::setOnionPrevFrames(int count) {
     if (onion_prev_frames_ != clamped) {
         onion_prev_frames_ = clamped;
         emit onionPrevFramesChanged(clamped);
+        FAP_TRACE_CAT(fap::diagnostic::EventCategory::ToolState, "onion_prev_frames");
     }
 }
 
@@ -257,6 +260,7 @@ void ToolState::setOnionNextFrames(int count) {
     if (onion_next_frames_ != clamped) {
         onion_next_frames_ = clamped;
         emit onionNextFramesChanged(clamped);
+        FAP_TRACE_CAT(fap::diagnostic::EventCategory::ToolState, "onion_next_frames");
     }
 }
 
@@ -265,6 +269,7 @@ void ToolState::setOnionOpacity(int opacity) {
     if (onion_opacity_ != clamped) {
         onion_opacity_ = clamped;
         emit onionOpacityChanged(clamped);
+        FAP_TRACE_CAT(fap::diagnostic::EventCategory::ToolState, "onion_opacity");
     }
 }
 

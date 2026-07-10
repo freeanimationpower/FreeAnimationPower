@@ -19,6 +19,7 @@
 #include "core/document.hpp"
 #include "core/layer.hpp"
 #include "core/types.hpp"
+#include "core/diagnostic/tracer_macros.hpp"
 
 namespace fap {
 
@@ -278,9 +279,11 @@ void LayerPanelV2::addRasterLayer() {
     auto& doc = appState_->document();
     GroupLayer& root = doc.rootLayerForFrame(currentFrame_);
     int n = static_cast<int>(root.layerCount()) + 1;
-    root.addLayer(std::make_unique<RasterLayer>(
+    auto newLayer = std::make_unique<RasterLayer>(
         "Layer " + std::to_string(n),
-        doc.width(), doc.height()));
+        doc.width(), doc.height());
+    LayerUid uid = newLayer->uid();
+    root.addLayer(std::move(newLayer));
     doc.setModified(true);
     refreshLayerList();
     int idx = static_cast<int>(root.layerCount()) - 1;
@@ -288,6 +291,7 @@ void LayerPanelV2::addRasterLayer() {
     appState_->setActiveLayerIndex(idx);
     emit layerDisplayPropertiesChanged();
     emit layerChanged(idx);
+    FAP_TRACE_LAYER("add", idx, uid, "Layer " + std::to_string(n));
 }
 
 void LayerPanelV2::duplicateLayer() {
@@ -295,12 +299,14 @@ void LayerPanelV2::duplicateLayer() {
     GroupLayer& root = doc.rootLayerForFrame(currentFrame_);
     int row = list_->currentRow();
     if (row < 0 || row >= static_cast<int>(root.layerCount())) return;
-    root.duplicateLayer(row);
+    Layer* dup = root.duplicateLayer(row);
     doc.setModified(true);
     refreshLayerList();
     list_->setCurrentRow(row + 1);
     emit layerDisplayPropertiesChanged();
     emit layerChanged(row + 1);
+    FAP_TRACE_LAYER("duplicate", row + 1, dup ? dup->uid() : 0,
+                     dup ? dup->name() : "");
 }
 
 void LayerPanelV2::moveLayerUp() {
@@ -314,6 +320,8 @@ void LayerPanelV2::moveLayerUp() {
         list_->setCurrentRow(row - 1);
         emit layerDisplayPropertiesChanged();
         emit layerChanged(row - 1);
+        FAP_TRACE_LAYER("move_up", row - 1,
+                         root.layerAt(row - 1) ? root.layerAt(row - 1)->uid() : 0, "");
     }
 }
 
@@ -329,6 +337,8 @@ void LayerPanelV2::moveLayerDown() {
         list_->setCurrentRow(row + 1);
         emit layerDisplayPropertiesChanged();
         emit layerChanged(row + 1);
+        FAP_TRACE_LAYER("move_down", row + 1,
+                         root.layerAt(row + 1) ? root.layerAt(row + 1)->uid() : 0, "");
     }
 }
 
@@ -338,6 +348,9 @@ void LayerPanelV2::deleteLayer() {
     if (root.layerCount() <= 1) return;
     int row = list_->currentRow();
     if (row < 0 || row >= static_cast<int>(root.layerCount())) return;
+    Layer* l = root.layerAt(row);
+    LayerUid uid = l ? l->uid() : 0;
+    std::string name = l ? l->name() : "";
     root.removeLayer(row);
     doc.setModified(true);
     refreshLayerList();
@@ -347,6 +360,7 @@ void LayerPanelV2::deleteLayer() {
         emit layerDisplayPropertiesChanged();
         emit layerChanged(newRow);
     }
+    FAP_TRACE_LAYER("delete", row, uid, name);
 }
 
 void LayerPanelV2::toggleLayerVisibility(int index) {
@@ -355,10 +369,12 @@ void LayerPanelV2::toggleLayerVisibility(int index) {
     if (index < 0 || index >= static_cast<int>(root.layerCount())) return;
     Layer* layer = root.layerAt(index);
     if (layer) {
-        layer->setVisible(!layer->visible());
+        bool vis = !layer->visible();
+        layer->setVisible(vis);
         doc.setModified(true);
         refreshLayerList();
         emit layerDisplayPropertiesChanged();
+        FAP_TRACE_LAYER(vis ? "visible_on" : "visible_off", index, layer->uid(), "");
     }
 }
 
@@ -368,10 +384,12 @@ void LayerPanelV2::toggleLayerLock(int index) {
     if (index < 0 || index >= static_cast<int>(root.layerCount())) return;
     Layer* layer = root.layerAt(index);
     if (layer) {
-        layer->setLocked(!layer->locked());
+        bool lk = !layer->locked();
+        layer->setLocked(lk);
         doc.setModified(true);
         QTimer::singleShot(0, this, [this]() { refreshLayerList(); });
         emit layerChanged(index);
+        FAP_TRACE_LAYER(lk ? "lock_on" : "lock_off", index, layer->uid(), "");
     }
 }
 
@@ -384,6 +402,7 @@ void LayerPanelV2::onBlendModeChanged(int mode) {
     if (layer && mode >= 0 && mode <= static_cast<int>(BlendMode::HardLight)) {
         layer->setBlendMode(static_cast<BlendMode>(mode));
         doc.setModified(true);
+        FAP_TRACE_LAYER("blend_mode", row, layer->uid(), std::to_string(mode));
         emit layerDisplayPropertiesChanged();
         emit layerChanged(row);
     }

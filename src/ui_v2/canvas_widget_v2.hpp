@@ -158,9 +158,24 @@ private:
     QString brushShape_ = "Round";
     float strokeDistance_ = 0.0f;
 
+    struct StampCache {
+        QImage stamp;
+        int size = -1;
+        int calliRadius = -1;
+        QString shape;
+        QColor color;
+        bool erasing = false;
+        float opacity = -1.0f;
+    };
+    StampCache stampCache_;
+
     void drawBrushStamp(int cx, int cy);
     void drawLineStamps(const QPointF& from, const QPointF& to);
     QRect stampRect(int cx, int cy) const;
+    void ensureStampCache(int effectiveRadius);
+    void renderStampToImage(QImage& img, int radius, int cx, int cy,
+                            const QString& shape, const QColor& color,
+                            float opacity, bool erasing);
     void commitStroke();
     QImage captureRect(const QRect& r);
     QImage captureLayerRect(RasterLayer* layer, const QRect& r) const;

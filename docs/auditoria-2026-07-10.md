@@ -339,3 +339,114 @@ El pipeline central de estado (`AppState` → señales → widgets) no tiene cob
 | `file_format.cpp` | 2 | Alto |
 | `deformation_mesh.cpp` | 1 | Alto |
 | `node_graph.cpp` | 1 | Alto |
+
+---
+
+## 9. BUGS DESCUBIERTOS DURANTE TESTING (Jul 10, 2026)
+
+### 9.1 Brush Stamp Performance Collapse
+**Síntoma**: Pincel a tamaño máximo (size 200) colapsa — lag severo, especialmente con Pencil y Calligraphy.
+**Causa**: `drawBrushStamp()` usaba un loop pixel-por-pixel (201×201 = 40,401 iteraciones por dab). A 60fps, esto implicaba procesar 2.4M de píxeles/segundo con trigonometría y blending.
+**Fix**: 
+- Sistema de stamp caching (`StampCache`) — el stamp se pre-renderiza 1 vez por cambio de parámetro
+- Direct pixel copy con skip de transparentes — reemplaza QPainter overhead
+- Calligraphy: cache key cuantizado a múltiplos de 5px
+- Padding del dirty rect capeado a 16px
+**Archivos**: `canvas_widget_v2.cpp`, `canvas_widget_v2.hpp`
+
+### 9.2 Botón "+" de Timeline Trabado
+**Síntoma**: Al agregar frames más allá del total inicial, el botón "+" queda fuera del área scrolleable.
+**Causa**: `addFrame()/duplicateFrame()/deleteFrame()` actualizaban `totalFrames_` pero no `durationFrames_`. El scrollbar usa `durationFrames_` para calcular el rango.
+**Fix**: Sincronizar `durationFrames_ = totalFrames_` en las 3 funciones.
+**Archivo**: `timeline_panel_v2.cpp`
+
+### 9.3 Crash con Fill Tool en Capa Grande
+**Síntoma**: Al usar tarro de pintura en una capa de 1920×1080 con 34 entradas de undo, el programa crashea.
+**Causa**: `pushFullLayerUndo()` crea un `afterSnap` de 8MB adicional. Con undo stack grande (~34 entradas a ~8-16MB cada una), memoria se agota.
+**Fix**:
+- Límite de píxeles en `doFill()`: rechaza capas > 2.5M px
+- Traces `fill_begin` y commit después de undo para diagnóstico
+- `setHasContent(true)` agregado después del fill
+**Archivo**: `canvas_widget_v2.cpp`
+
+### 9.4 FAP_TRACE_BUFFER_COMMIT sin frameIndex
+**Síntoma**: Todos los commits de buffer en el trace reportaban `frame:0`, imposible saber en qué frame se pintó.
+**Causa**: `traceBufferCommitEvent()` no aceptaba ni seteaba `frameIndex`.
+**Fix**: Agregar `frameIndex` como parámetro y pasarlo desde `commitStroke()` y `doFill()`.
+**Archivos**: `tracer_macros.hpp`, `canvas_widget_v2.cpp`
+
+### 9.5 Falta de Traces en UI (Onion Skin, Layers, Frames, Fill)
+**Síntoma**: El tracer no capturaba cambios de onion skin, operaciones de capa, add/delete/duplicate de frames, ni operaciones de fill.
+**Fix**: Se agregaron traces en:
+- `ToolState`: onion skin (enabled, opacity, prev/next frames)
+- `LayerPanelV2`: add, delete, duplicate, move, visibility, lock, blend mode
+- `TimelinePanelV2`: addFrame, duplicateFrame, deleteFrame
+- `CanvasWidgetV2::doFill()`: fill_begin + buffer commit
+**Archivos**: `tool_state.cpp`, `layer_panel_v2.cpp`, `timeline_panel_v2.cpp`, `canvas_widget_v2.cpp`
+
+---
+
+## 10. DIAGNOSTIC TRACER SYSTEM (Jul 10, 2026)
+
+### Arquitectura
+Sistema de captura de sesiones en `src/core/diagnostic/`:
+
+| Archivo | Rol |
+|---------|-----|
+| `tracer_types.hpp` | Tipos de eventos (15 categorías) y serialización JSON |
+| `tracer_macros.hpp` | Inline functions + macros `FAP_TRACE_*` (compilan a void en Release sin el flag) |
+| `tracer.hpp` | Singleton `Tracer` con event filter global de Qt |
+| `tracer.cpp` | Hilo escritor asíncrono, batch writes (256 líneas), flush cada 500ms, heartbeat cada 1000 eventos, límite de cola 10k |
+
+### Activación
+```powershell
+$env:FAP_TRACE = "1"
+.\build\Release\free-animation-power.exe
+```
+Los traces se guardan en `./fap_traces/trace_YYYY-MM-DD_HH-MM-SS_sN.jsonl`. Cada sesión crea un archivo nuevo.
+
+### Cobertura actual
+| Categoría | Eventos capturados |
+|-----------|-------------------|
+| Mouse | press, move (throttled 50ms), release, wheel |
+| Keyboard | key_press con modifiers |
+| Tool | change (tool, size, opacity, hardness, shape, color) |
+| Stroke | begin, end, fill_begin |
+| Buffer | commit (layerUid, frame, dirty rect), resize, clear, ensureContains |
+| Undo | push_applied, undo, redo con stack sizes |
+| Layer | add, delete, duplicate, move_up/down, visible_on/off, lock_on/off, blend_mode |
+| Frame | change, add, duplicate, delete |
+| Onion skin | enabled, disabled, opacity, prev_frames, next_frames |
+| Playback | play, pause, stop con frame+fps |
+| IO | save_begin/end, load_begin/end |
+| Paint | paint (duración) |
+| App | session_start, session_end, heartbeat, reset_to_defaults |
+
+### Protecciones
+- Límite de cola: 10,000 eventos (droppea los más viejos si se excede)
+- Heartbeat cada 1,000 eventos con timestamp + dropped count
+- Flush forzado si cola > 500 eventos
+- Flush periódico cada 500ms
+- Try-catch en hilo escritor
+- Los traces antiguos nunca se borran
+
+---
+
+## 11. ESTADO ACTUAL (Jul 10, 2026)
+
+### Bugs corregidos en esta sesión
+| # | Bug | Estado |
+|---|-----|--------|
+| 1 | Brush stamp performance (size 200) | Corregido |
+| 2 | Botón "+" timeline trabado | Corregido |
+| 3 | Crash fill tool en capa grande | Protegido |
+| 4 | FAP_TRACE_BUFFER_COMMIT sin frameIndex | Corregido |
+| 5 | Falta de traces en UI | Corregido |
+| 6 | Brush padding cap (16px) | Corregido |
+
+### Bugs pendientes (del informe original)
+Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5), pixel dedup load (1.2).
+
+### Tests
+- 154/154 pasan (100%)
+- 0 tests de UI, 0 tests de IO (DocumentManager), 0 tests de exportación
