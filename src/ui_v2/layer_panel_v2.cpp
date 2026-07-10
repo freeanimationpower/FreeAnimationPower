@@ -29,8 +29,8 @@ static const char* kMutedColor = "#6B7088";
 static const char* kAccentColor = "#FF4800";
 static const char* kBorderColor = "#2D3139";
 static const char* kInputBg = "#252830";
-static const char* kBtnBg = "#252830";
-static const char* kBtnHover = "#2D3139";
+static const char* kBtnBg = "#FF4800";
+static const char* kBtnHover = "#FF6A30";
 static const char* kDangerHover = "#4A2020";
 
 static const char* kInlineBtnBase =

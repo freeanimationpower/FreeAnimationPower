@@ -314,10 +314,10 @@ public:
         lockBtn_->setCheckable(true);
         lockBtn_->setToolTip("Lock / Unlock Sequence");
         lockBtn_->setStyleSheet(QString(
-            "QPushButton { background:transparent; border:1px solid transparent; "
+            "QPushButton { background:%1; border:1px solid transparent; "
             "border-radius:3px; }"
-            "QPushButton:hover { background:%1; border-color:%2; }")
-            .arg(kBtnHover.name(), kPlayheadColor.name()));
+            "QPushButton:hover { background:%2; border-color:%3; }")
+            .arg(kBtnPressed.name(), kBtnHover.name(), kPlayheadColor.name()));
         connect(lockBtn_, &QPushButton::clicked, this, [this](bool checked) {
             if (appState_) {
                 appState_->setSequenceLocked(seqIndex_, checked);
@@ -332,17 +332,21 @@ public:
         dupBtn_->setIconSize(QSize(20, 20));
         dupBtn_->setToolTip("Duplicate Sequence");
         dupBtn_->setStyleSheet(QString(
-            "QPushButton { background:transparent; border:1px solid transparent; "
+            "QPushButton { background:%1; border:1px solid transparent; "
             "border-radius:3px; }"
-            "QPushButton:hover { background:%1; border-color:%2; }")
-            .arg(kBtnHover.name(), kPlayheadColor.name()));
+            "QPushButton:hover { background:%2; }")
+            .arg(kBtnPressed.name(), kBtnHover.name()));
         connect(dupBtn_, &QPushButton::clicked, this, [this]() { panel_->onDupTrack(seqIndex_); });
 
         delBtn_ = new QPushButton(QIcon(":/icons/svg/delete.svg"), "", this);
         delBtn_->setFixedSize(28, 28);
         delBtn_->setIconSize(QSize(20, 20));
         delBtn_->setToolTip("Delete Sequence");
-        delBtn_->setStyleSheet(dupBtn_->styleSheet());
+        delBtn_->setStyleSheet(
+            QString("QPushButton { background:%1; border:1px solid transparent; "
+            "border-radius:3px; }"
+            "QPushButton:hover { background:#E05050; }")
+            .arg(kBtnPressed.name()));
         connect(delBtn_, &QPushButton::clicked, this, [this]() { panel_->onDelTrack(seqIndex_); });
 
         upBtn_ = new QPushButton(QIcon(":/icons/svg/move_up.svg"), "", this);

@@ -57,10 +57,10 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
     muteBtn_->setFixedSize(28, 28);
     muteBtn_->setToolTip("Mute / Unmute");
     muteBtn_->setStyleSheet(QString(
-        "QPushButton { background:transparent; border:1px solid transparent; "
+        "QPushButton { background:%1; border:1px solid transparent; "
         "border-radius:3px; font-size:14px; }"
-        "QPushButton:hover { background:%1; border-color:%2; }")
-        .arg(kBtnHover.name(), kPlayheadColor.name()));
+        "QPushButton:hover { background:%2; border-color:%3; }")
+        .arg(kPlayheadColor.name(), kBtnHover.name(), kPlayheadColor.name()));
     connect(muteBtn_, &QPushButton::clicked, this, [this]() {
         muted_ = !muted_;
         if (audioOutput_) audioOutput_->setMuted(muted_);
@@ -72,10 +72,10 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
     upBtn_->setIconSize(QSize(20, 20));
     upBtn_->setToolTip("Move Audio Track Up");
     upBtn_->setStyleSheet(QString(
-        "QPushButton { background:transparent; border:1px solid transparent; "
+        "QPushButton { background:%1; border:1px solid transparent; "
         "border-radius:3px; }"
-        "QPushButton:hover { background:%1; border-color:%2; }")
-        .arg(kBtnHover.name(), kPlayheadColor.name()));
+        "QPushButton:hover { background:%2; border-color:%3; }")
+        .arg(kPlayheadColor.name(), kBtnHover.name(), kPlayheadColor.name()));
     connect(upBtn_, &QPushButton::clicked, this, [this]() { emit moveUpRequested(); });
 
     downBtn_ = new QPushButton(QIcon(":/icons/svg/move_down.svg"), "", this);
@@ -83,20 +83,20 @@ AudioTrackWidget::AudioTrackWidget(const QString& filepath, int index,
     downBtn_->setIconSize(QSize(20, 20));
     downBtn_->setToolTip("Move Audio Track Down");
     downBtn_->setStyleSheet(QString(
-        "QPushButton { background:transparent; border:1px solid transparent; "
+        "QPushButton { background:%1; border:1px solid transparent; "
         "border-radius:3px; }"
-        "QPushButton:hover { background:%1; border-color:%2; }")
-        .arg(kBtnHover.name(), kPlayheadColor.name()));
+        "QPushButton:hover { background:%2; border-color:%3; }")
+        .arg(kPlayheadColor.name(), kBtnHover.name(), kPlayheadColor.name()));
     connect(downBtn_, &QPushButton::clicked, this, [this]() { emit moveDownRequested(); });
 
     delBtn_ = new QPushButton(QString::fromUtf8("\u2715"), this);
     delBtn_->setFixedSize(28, 28);
     delBtn_->setToolTip("Remove Audio Track");
     delBtn_->setStyleSheet(QString(
-        "QPushButton { background:transparent; color:%1; border:1px solid transparent; "
+        "QPushButton { background:%1; color:%2; border:1px solid transparent; "
         "border-radius:3px; font-size:12px; }"
-        "QPushButton:hover { background:%2; border-color:%3; }")
-        .arg(kBtnText.name(), kBtnHover.name(), kRedColor.name()));
+        "QPushButton:hover { background:%3; border-color:%4; }")
+        .arg(kPlayheadColor.name(), kBtnText.name(), kRedColor.name(), kRedColor.name()));
     connect(delBtn_, &QPushButton::clicked, this, [this]() {
         if (panel_ && player_) {
             player_->stop();

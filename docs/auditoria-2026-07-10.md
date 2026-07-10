@@ -449,6 +449,7 @@ Los traces se guardan en `./fap_traces/trace_YYYY-MM-DD_HH-MM-SS_sN.jsonl`. Cada
 | 10 | .tmp preservado en fallo de rename | Corregido |
 | 11 | processEvents(ExcludeUserInputEvents) durante save | Corregido |
 | 12 | Guardia saving_ en newProject/openProject | Corregido |
+| 13 | UI: botones de layers/sequence/audio track fondo naranja | Corregido |
 
 ### Bugs pendientes (del informe original)
 Prioridad: undo wrong-layer (1.3), layer rename crash (1.5), video export broken (1.1).
@@ -484,6 +485,31 @@ Prioridad: undo wrong-layer (1.3), layer rename crash (1.5), video export broken
 ### 12.4 Traces de Error en Save
 **Fix**: `FAP_TRACE_IO("save_error*")` en paths: zip_init, write, rename.
 **Archivo**: `document_manager.cpp`
+
+---
+
+## 13. UI STYLING — BOTONES CON FONDO NARANJA (Jul 10, 2026)
+
+**Objetivo**: Mejorar visibilidad de botones de acción cambiando el fondo gris/transparente por el naranja acento `#FF4800`.
+
+### 13.1 Panel de Layers (5 botones)
+**Archivo**: `layer_panel_v2.cpp`
+- Constantes `kBtnBg` → `#FF4800`, `kBtnHover` → `#FF6A30`
+- Afecta: + nueva capa, duplicar, subir, bajar, eliminar
+- Delete mantiene hover rojo `#E05050`
+
+### 13.2 Panel de Secuencias (5 botones)
+**Archivo**: `timeline_panel_v2.cpp`
+- `lockBtn_`, `dupBtn_`, `upBtn_`, `downBtn_`: `background:transparent` → `background:#FF4800`
+- `delBtn_`: fondo naranja + hover rojo `#E05050`
+
+### 13.3 Audio Track (4 botones)
+**Archivo**: `audio_track_widget.cpp`
+- `muteBtn_` (🔊), `upBtn_` (↑), `downBtn_` (↓): `background:transparent` → `background:#FF4800`
+- `delBtn_` (✕): fondo naranja + hover rojo `#FF4A4A`
+
+### Bugs pendientes (del informe original)
+Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5).
 
 ### Bugs pendientes (del informe original)
 Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer rename crash (1.5).
