@@ -332,19 +332,20 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
 
         QJsonArray framesArr;
         for (int f = 0; f < seq.totalFrames(); ++f) {
-            const auto* rootLayer = seq.peekRootLayerForFrame(f);
-            if (!rootLayer) continue;
             QJsonObject frameObj;
             frameObj[QStringLiteral("index")] = f;
             QJsonArray layersArr;
-            for (size_t li = 0; li < rootLayer->layerCount(); ++li) {
-                const auto& layerPtr = rootLayer->layers()[li];
-                QJsonObject lmeta = layerMetadataToJson(*layerPtr);
-                lmeta[QStringLiteral("pixel_file")] =
-                    buildLayerPath(f, static_cast<int>(si), static_cast<int>(li), "png");
-                lmeta[QStringLiteral("meta_file")] =
-                    buildLayerPath(f, static_cast<int>(si), static_cast<int>(li), "json");
-                layersArr.append(lmeta);
+            const auto* rootLayer = seq.peekRootLayerForFrame(f);
+            if (rootLayer) {
+                for (size_t li = 0; li < rootLayer->layerCount(); ++li) {
+                    const auto& layerPtr = rootLayer->layers()[li];
+                    QJsonObject lmeta = layerMetadataToJson(*layerPtr);
+                    lmeta[QStringLiteral("pixel_file")] =
+                        buildLayerPath(f, static_cast<int>(si), static_cast<int>(li), "png");
+                    lmeta[QStringLiteral("meta_file")] =
+                        buildLayerPath(f, static_cast<int>(si), static_cast<int>(li), "json");
+                    layersArr.append(lmeta);
+                }
             }
             frameObj[QStringLiteral("layers")] = layersArr;
             framesArr.append(frameObj);
@@ -667,6 +668,14 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         doc.removeSequence(doc.sequenceCount() - 1);
     }
 
+    // Post-load: ensure all sequences have frames up to totalFrames_
+    for (size_t si = 0; si < doc.sequenceCount(); ++si) {
+        auto& seq = doc.sequenceAt(si);
+        for (int f = 0; f < seq.totalFrames(); ++f) {
+            seq.rootLayerForFrame(f);
+        }
+    }
+
     // Parse audio tracks
     QJsonArray audioArr = root[QStringLiteral("audio")].toArray();
     doc.clearAudioTracks();
@@ -704,12 +713,12 @@ bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
                 if (shareIt != sharePixelMap_.end()) {
                     auto srcIt = loadedPixelBuffers.find(shareIt->second);
                     if (srcIt != loadedPixelBuffers.end()) {
-                        // Share the source layer's pixel buffer
-                        rl->ensureUnique();
                         rl->pixelBuffer()->pixels = srcIt->second->pixels;
-                        rl->setOrigin(rl->originX(), rl->originY());
                         rl->setHasContent(true);
                         rl->bufferEpochTick();
+                    } else {
+                        qDebug() << "LOAD: shared pixel source" << shareIt->second
+                                 << "not found in loadedPixelBuffers for layer" << rl->uid();
                     }
                     continue;
                 }
