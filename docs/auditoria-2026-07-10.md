@@ -608,3 +608,49 @@ Ver secciones 1-4 para lista completa. Prioridad: undo wrong-layer (1.3), layer 
 
 ### Archivo de diagnóstico
 Ver `docs/diagnostico-persistente-2026-07-10.md` para referencia cruzada de bugs pendientes con trazas de diagnóstico activas y plan de ataque.
+
+---
+
+## 17. RESOLUCIÓN FINAL — Frame 0 Vacío + Save/Load (Jul 10, 2026)
+
+### 17.1 Frame 0 Vacío en Secuencia Duplicada (BUG #3)
+
+**Síntoma**: Al duplicar una secuencia con contenido en múltiples frames, el frame 0 del duplicado aparece siempre vacío (celda gris), y algunos otros frames también.
+
+**Diagnóstico (9 iteraciones de traces)**:
+1. `clone_frame_0_L0_hasContent` — confirma que la fuente frame 0 TIENE contenido al momento del clone
+2. `clone_verify_0_L0_LOST` — confirma que el clon PIERDE hasContent_ inmediatamente después de clonar
+3. `BEFORE_EMPLACE pixels=x hasContent=1 → AFTER_EMPLACE pixels=y hasContent=0` — confirma que es `std::map::emplace()` quien CORROMPE el `shared_ptr<PixelBuffer>`
+
+**Root cause**: `seq->frames_.emplace(frameIdx, std::move(newRoot))` sobre `std::map<int, unique_ptr<GroupLayer>>` corrompe el `shared_ptr<PixelBuffer>` dentro de los RasterLayer hijos. El objeto GroupLayer sobrevive pero su `pixelBuffer_` cambia a un buffer vacío nuevo.
+
+**Fix final (3 cambios)**:
+1. `sequence.cpp`: Reemplazar `emplace` por `seq->frames_[frameIdx] = std::move(newRoot)` — `operator[]` no corrompe el shared_ptr
+2. `layer.hpp`: Añadir `shareDataFrom(const RasterLayer& other)` — copia directa del shared_ptr, bypassing la cadena virtual clone()
+3. `sequence.cpp`: Construir capas manualmente con `shareDataFrom()` + `setHasContent()` en vez de usar `GroupLayer::clone()` que fuerza `unique_ptr<Layer> → release → static_cast → unique_ptr<GroupLayer>`
+
+**Test**: `SequenceTest.ClonePreservesFrameContent` — verifica pixel data, hasContent, y buffer sharing post-clone. 155/155 tests pasan.
+
+### 17.2 Save/Load — Secuencias y Capas Perdidas
+
+**Síntomas**:
+- Archivos con 2+ secuencias pierden información al reabrir
+- La secuencia duplicada aparece vacía o con frames faltantes
+- Frames que tenían contenido aparecen vacíos
+
+**Root causes (2 bugs)**:
+
+| Bug | Causa | Fix |
+|-----|-------|-----|
+| Pixel dedup | `writeLayerData()` usaba `unordered_map<const void*, uint64_t>` para detectar buffers compartidos y marcaba `shared_pixels: true`. Al cargar, `sharePixelMap_` mapeaba UIDs viejas (del JSON) a UIDs nuevas (generadas en load) → resolución fallaba. | Eliminar pixel dedup del save. Cada capa con contenido escribe su propio PNG. |
+| Frames saltados | `writeTimeline()` usaba `if (!rootLayer) continue` → frames sin entrada en `frames_` no se guardaban en el JSON → al reabrir no existían. | Guardar TODOS los frames en el JSON (con layers array vacío si no hay datos). Además, `readTimeline` ahora llama `rootLayerForFrame(f)` post-load para auto-crear cualquier frame faltante. |
+| Shared pixel resiliencia | `readLayerData()` llamaba `ensureUnique()` + `setOrigin()` innecesarios en la resolución shared, y no manejaba el caso de fallo. | Simplificar a solo copia de píxeles. Si el source UID no se encuentra, loguear y continuar (capa queda vacía, sin crash). |
+
+**Archivos modificados**: `src/io/document_manager.cpp`
+
+### 17.3 Lecciones Aprendidas
+
+1. **Nunca usar `std::map::emplace()` con `unique_ptr` que contiene `shared_ptr` anidados** — `operator[]` + asignación es seguro
+2. **La deduplicación de píxeles basada en UIDs no sobrevive load** — las UIDs cambian entre save y load. Si se necesita dedup, usar posición (seq/frame/layer)
+3. **`rootLayerForFrame()` auto-crea frames** — útil para garantizar integridad post-load
+4. **Los unit tests aíslan bugs imposibles de encontrar con traces** — 9 iteraciones de traces no encontraron la causa raíz; 1 unit test lo hizo en 30 segundos
