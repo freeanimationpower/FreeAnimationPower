@@ -264,7 +264,7 @@ bool exportGIF(const Document& doc,
         QImage img = renderExportFrame(doc, f);
         QString framePath = tempDir.path() +
                             QString("/frame_%1.png")
-                                .arg(f, 4, 10, QLatin1Char('0'));
+                                .arg(f + 1, 4, 10, QLatin1Char('0'));
         if (!img.save(framePath, "PNG")) {
             qWarning("exportGIF: failed to save frame %d", f);
             return false;
@@ -284,7 +284,7 @@ bool exportGIF(const Document& doc,
                 << "-i" << pattern
                 << "-vf"
                 << "fps=" + QString::number(fps) +
-                       ",scale=320:-1:flags=lanczos,palettegen=stats_mode=diff"
+                       ",palettegen=stats_mode=diff"
                 << paletteFile;
 
     if (!executeFFmpeg(paletteArgs)) {
@@ -298,7 +298,7 @@ bool exportGIF(const Document& doc,
             << "-i" << paletteFile
             << "-lavfi"
             << "fps=" + QString::number(fps) +
-                   ",scale=320:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5"
+                   "[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5"
             << outPath;
 
     qInfo("exportGIF: running ffmpeg...");

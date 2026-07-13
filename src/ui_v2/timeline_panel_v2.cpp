@@ -1131,7 +1131,7 @@ void TimelinePanelV2::setFPS(int fps)
     fpsSpin_->setValue(fps_);
     fpsSpin_->blockSignals(false);
     if (playbackTimer_->isActive()) {
-        playbackTimer_->setInterval(1000 / fps_);
+        playbackTimer_->setInterval(static_cast<int>(std::round(1000.0 / fps_)));
     }
     updateLabels();
 }
@@ -1174,7 +1174,7 @@ void TimelinePanelV2::onPlayPause()
             at->player()->setPlaybackRate(rate);
             at->syncToFrame(currentFrame_, fps_, true);
         }
-        playbackTimer_->start(1000 / fps_);
+        playbackTimer_->start(static_cast<int>(std::round(1000.0 / fps_)));
         playing_ = true;
         playBtn_->setToolTip("Playing... Click to Pause (Space)");
         emit playbackToggled(true);

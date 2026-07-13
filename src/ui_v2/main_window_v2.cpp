@@ -165,62 +165,19 @@ void MainWindowV2::setupTopBar()
     auto* exportGifAct = toolbar->addAction(QIcon(":/icons/toolbar/export_gif.png"), "");
     exportGifAct->setToolTip("Export GIF");
     connect(exportGifAct, &QAction::triggered, this, [this]() {
-        if (!canvas_) return;
         QString path = QFileDialog::getSaveFileName(
             this, "Export GIF", "animation.gif",
             "GIF Animation (*.gif);;All Files (*)");
         if (path.isEmpty()) return;
 
-        QTemporaryDir tempDir;
-        if (!tempDir.isValid()) {
-            QMessageBox::warning(this, "Error", "Failed to create temporary directory.");
-            return;
-        }
+        statusBar()->showMessage("Exporting GIF...");
+        QApplication::processEvents();
 
-        statusBar()->showMessage("Rendering GIF frames...");
-        auto& doc = appState_->document();
-        int total = doc.totalFrames();
-        for (int frame = 0; frame < total; ++frame) {
-            if (canvas_) canvas_->setCurrentFrame(frame);
-            if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
-            qApp->processEvents();
-
-            QImage image(doc.width(), doc.height(), QImage::Format_ARGB32_Premultiplied);
-            image.fill(Qt::white);
-            QPainter painter(&image);
-            if (canvas_) canvas_->render(&painter);
-            painter.end();
-
-            QString framePath = tempDir.path() + QString("/frame_%1.png")
-                .arg(frame + 1, 4, 10, QLatin1Char('0'));
-            image.save(framePath, "PNG");
-            qApp->processEvents();
-        }
-
-        statusBar()->showMessage("Encoding GIF with FFmpeg...");
-        QProcess ffmpeg;
-        QString filter = QString("fps=%1,scale=%2:%3:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse")
-            .arg(doc.fps())
-            .arg(doc.width())
-            .arg(doc.height());
-        QStringList args;
-        args << "-y"
-             << "-framerate" << QString::number(doc.fps())
-             << "-i" << (tempDir.path() + "/frame_%04d.png")
-             << "-lavfi" << filter
-             << path;
-
-        ffmpeg.start("ffmpeg", args);
-        if (!ffmpeg.waitForFinished(120000)) {
-            QMessageBox::warning(this, "Error", "FFmpeg timed out. Is FFmpeg installed?");
-            statusBar()->showMessage("GIF export failed", 5000);
-            return;
-        }
-        if (ffmpeg.exitCode() == 0) {
+        if (fap::exportGIF(appState_->document(), path, appState_->document().fps())) {
             statusBar()->showMessage("GIF exported: " + path, 5000);
         } else {
             QMessageBox::warning(this, "Error",
-                "FFmpeg failed:\n" + QString::fromUtf8(ffmpeg.readAllStandardError()));
+                "FFmpeg failed. Is FFmpeg installed and in PATH?");
             statusBar()->showMessage("GIF export failed", 5000);
         }
     });

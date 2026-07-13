@@ -671,16 +671,11 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         doc.removeSequence(doc.sequenceCount() - 1);
     }
 
-    // Post-load: ensure all sequences have frames up to totalFrames_,
-    // but ONLY for frames that were not already restored from timeline.json.
-    // rootLayerForFrame() creates a default "Layer 1" which would overwrite
-    // layer names restored by readTimeline() above.
+    // Post-load: ensure all sequences have frames up to totalFrames_
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
         auto& seq = doc.sequenceAt(si);
         for (int f = 0; f < seq.totalFrames(); ++f) {
-            if (!seq.peekRootLayerForFrame(f)) {
-                seq.rootLayerForFrame(f);
-            }
+            seq.rootLayerForFrame(f);
         }
     }
 
