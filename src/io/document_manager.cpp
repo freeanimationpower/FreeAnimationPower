@@ -601,7 +601,10 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
     for (int si = 0; si < seqArr.size(); ++si) {
         QJsonObject seqObj = seqArr[si].toObject();
         int sframeCount = seqObj[QStringLiteral("total_frames")].toInt(1);
-        auto& seq = (si == 0) ? doc.activeSequence() : doc.addSequence("");
+        if (static_cast<size_t>(si) >= doc.sequenceCount()) {
+            doc.addSequence("");
+        }
+        auto& seq = doc.sequenceAt(static_cast<size_t>(si));
 
         // Restore sequence name from saved JSON
         QString sname = seqObj[QStringLiteral("name")].toString();

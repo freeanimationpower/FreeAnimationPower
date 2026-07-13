@@ -38,6 +38,7 @@ private:
     void exportSVGCurrentFrame();
     void exportSVGAllFrames();
     void syncAudioToDocument();
+    void closeEvent(QCloseEvent* event) override;
 
     std::shared_ptr<AppState> appState_;
 

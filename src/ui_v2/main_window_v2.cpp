@@ -10,6 +10,7 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLabel>
+#include <QtGui/QCloseEvent>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
@@ -44,6 +45,7 @@
 #include "core/undo_manager.hpp"
 #include "io/svg_export.hpp"
 #include "io/document_manager.hpp"
+#include "io/video_export.hpp"
 
 namespace fap {
 
@@ -521,6 +523,32 @@ void MainWindowV2::updateUIState()
     if (redoAct_) redoAct_->setEnabled(um.canRedo());
 }
 
+void MainWindowV2::closeEvent(QCloseEvent* event)
+{
+    if (!appState_->isModified()) {
+        event->accept();
+        return;
+    }
+
+    auto btn = QMessageBox::question(this, "Unsaved Changes",
+        QString::fromUtf8("The project has unsaved changes.\n\nSave before closing?"),
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+        QMessageBox::Save);
+
+    if (btn == QMessageBox::Save) {
+        saveProject();
+        if (!appState_->isModified()) {
+            event->accept();
+        } else {
+            event->ignore();
+        }
+    } else if (btn == QMessageBox::Discard) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
+}
+
 void MainWindowV2::newProject()
 {
     if (saving_) {
@@ -769,7 +797,10 @@ void MainWindowV2::exportVideo()
 
     QString path = QFileDialog::getSaveFileName(
         this, "Export Video", "animation.mp4",
-        "MP4 Video (*.mp4);;All Files (*)");
+        "MP4 H.264 (*.mp4);;"
+        "MOV QuickTime with Alpha (*.mov);;"
+        "WebM VP9 with Alpha (*.webm);;"
+        "All Files (*)");
     if (path.isEmpty())
         return;
 
@@ -779,20 +810,21 @@ void MainWindowV2::exportVideo()
         return;
     }
 
-    statusBar()->showMessage("Rendering frames...");
-
     auto& doc = appState_->document();
     int total = doc.totalFrames();
+    int fps = doc.fps();
+
+    bool alpha = path.endsWith(".mov", Qt::CaseInsensitive)
+              || path.endsWith(".webm", Qt::CaseInsensitive);
+
+    statusBar()->showMessage("Rendering frames...");
+
     for (int frame = 0; frame < total; ++frame) {
         if (canvas_) canvas_->setCurrentFrame(frame);
         if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
         qApp->processEvents();
 
-        QImage image(doc.width(), doc.height(), QImage::Format_ARGB32_Premultiplied);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-        if (canvas_) canvas_->render(&painter);
-        painter.end();
+        QImage image = renderExportFrame(doc, frame, alpha);
 
         QString framePath = tempDir.path() + QString("/frame_%1.png")
             .arg(frame + 1, 4, 10, QLatin1Char('0'));
@@ -805,12 +837,23 @@ void MainWindowV2::exportVideo()
     QProcess ffmpeg;
     QStringList args;
     args << "-y"
-         << "-framerate" << QString::number(doc.fps())
-         << "-i" << (tempDir.path() + "/frame_%04d.png")
-         << "-c:v" << "libx264"
-         << "-pix_fmt" << "yuv420p"
-         << "-vf" << "pad=ceil(iw/2)*2:ceil(ih/2)*2"
-         << path;
+         << "-framerate" << QString::number(fps)
+         << "-i" << (tempDir.path() + "/frame_%04d.png");
+
+    if (path.endsWith(".mov", Qt::CaseInsensitive)) {
+        args << "-c:v" << "qtrle"
+             << "-pix_fmt" << "argb";
+    } else if (path.endsWith(".webm", Qt::CaseInsensitive)) {
+        args << "-c:v" << "libvpx-vp9"
+             << "-pix_fmt" << "yuva420p"
+             << "-lossless" << "1";
+    } else {
+        args << "-c:v" << "libx264"
+             << "-pix_fmt" << "yuv420p"
+             << "-vf" << "pad=ceil(iw/2)*2:ceil(ih/2)*2";
+    }
+
+    args << path;
 
     ffmpeg.start("ffmpeg", args);
     if (!ffmpeg.waitForFinished(120000)) {

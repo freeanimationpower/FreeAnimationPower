@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "engine/compositor/node_graph.hpp"
+#include "core/layer.hpp"
 
 using namespace fap;
 using namespace fap::comp;
@@ -132,4 +133,83 @@ TEST(NodeGraphTest, GraphNodeCount) {
     graph.addNode(std::make_unique<OutputNode>());
 
     EXPECT_EQ(graph.nodes().size(), 3);
+}
+
+TEST(NodeGraphTest, EvaluateWritesToTarget) {
+    const int w = 64, h = 64;
+
+    RasterLayer source("src", w, h);
+    source.setPixel(10, 10, Color{1.0f, 0.0f, 0.0f, 1.0f});
+    source.setPixel(20, 20, Color{0.0f, 0.0f, 1.0f, 1.0f});
+    source.setPixel(30, 30, Color{0.0f, 1.0f, 0.0f, 0.5f});
+
+    NodeGraph graph;
+    auto* input = graph.addNode(std::make_unique<InputNode>("Input"));
+    auto* output = graph.addNode(std::make_unique<OutputNode>("Output"));
+    static_cast<InputNode*>(input)->setLayer(&source);
+    graph.connect(input->id(), 0, output->id(), 0);
+
+    RasterLayer target("target", w, h);
+    target.clear();
+
+    graph.evaluate(target);
+
+    auto sp = source.pixelAt(10, 10);
+    auto tp = target.pixelAt(10, 10);
+    EXPECT_NEAR(tp.r, sp.r, 0.01f);
+    EXPECT_NEAR(tp.g, sp.g, 0.01f);
+    EXPECT_NEAR(tp.b, sp.b, 0.01f);
+    EXPECT_NEAR(tp.a, sp.a, 0.01f);
+
+    sp = source.pixelAt(20, 20);
+    tp = target.pixelAt(20, 20);
+    EXPECT_NEAR(tp.r, sp.r, 0.01f);
+    EXPECT_NEAR(tp.g, sp.g, 0.01f);
+    EXPECT_NEAR(tp.b, sp.b, 0.01f);
+    EXPECT_NEAR(tp.a, sp.a, 0.01f);
+
+    // With alpha < 1.0
+    sp = source.pixelAt(30, 30);
+    tp = target.pixelAt(30, 30);
+    EXPECT_TRUE(tp.a > 0.0f) << "Target should have non-zero alpha at (30,30)";
+
+    // Pixel not set in source should be transparent in target
+    auto tp0 = target.pixelAt(0, 0);
+    EXPECT_FLOAT_EQ(tp0.a, 0.0f) << "Target (0,0) should be transparent";
+}
+
+TEST(NodeGraphTest, EvaluateWithDisabledInputSkipsTarget) {
+    const int w = 32, h = 32;
+
+    RasterLayer source("src", w, h);
+    source.setPixel(5, 5, Color{1.0f, 0.0f, 0.0f, 1.0f});
+
+    NodeGraph graph;
+    auto* input = graph.addNode(std::make_unique<InputNode>("Input"));
+    auto* output = graph.addNode(std::make_unique<OutputNode>("Output"));
+    static_cast<InputNode*>(input)->setLayer(&source);
+    input->setEnabled(false);
+    graph.connect(input->id(), 0, output->id(), 0);
+
+    RasterLayer target("target", w, h);
+    target.setPixel(0, 0, Color{0.0f, 0.0f, 0.0f, 1.0f});
+    graph.evaluate(target);
+
+    // Disabled input means target should be untouched (still has pixel at 0,0)
+    auto tp = target.pixelAt(5, 5);
+    EXPECT_FLOAT_EQ(tp.a, 0.0f) << "Disabled input should not write to target";
+}
+
+TEST(NodeGraphTest, EvaluateNoOutputNodeReturnsUnchanged) {
+    const int w = 16, h = 16;
+
+    NodeGraph graph;
+    graph.addNode(std::make_unique<InputNode>("Input"));
+
+    RasterLayer target("target", w, h);
+    target.setPixel(0, 0, Color{0.5f, 0.5f, 0.5f, 1.0f});
+    graph.evaluate(target);
+
+    auto tp = target.pixelAt(0, 0);
+    EXPECT_NEAR(tp.r, 0.5f, 0.01f) << "Without OutputNode, target should be unchanged";
 }

@@ -240,6 +240,7 @@ bool loadFAP(const QString& path, Document& doc) {
                                     uint32_t* dst = rl->pixelData() + static_cast<size_t>(y) * rl->width();
                                     if (src && dst) std::copy(src, src + copyW, dst);
                                 }
+                                rl->setHasContent(true);
                             }
                         }
                         frameRoot.addLayer(std::move(layer));
@@ -281,6 +282,7 @@ bool loadFAP(const QString& path, Document& doc) {
                                 uint32_t* dst = rl->pixelData() + static_cast<size_t>(y) * rl->width();
                                 if (src && dst) std::copy(src, src + copyW, dst);
                             }
+                            rl->setHasContent(true);
                         }
                     }
                     frameRoot.addLayer(std::move(layer));
@@ -323,6 +325,7 @@ bool loadFAP(const QString& path, Document& doc) {
                             std::copy(src, src + std::min(png.width(), w), dst);
                         }
                     }
+                    clone->setHasContent(true);
                 }
                 frameRoot.addLayer(std::move(clone));
             }

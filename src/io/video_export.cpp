@@ -1,6 +1,7 @@
 #include "core/document.hpp"
 #include "core/layer.hpp"
 #include "core/types.hpp"
+#include "video_export.hpp"
 
 #include <QDir>
 #include <QImage>
@@ -33,11 +34,13 @@ static QPainter::CompositionMode toQtCompositionMode(BlendMode mode) {
     return QPainter::CompositionMode_SourceOver;
 }
 
-static QImage renderFrame(const Document& doc, int frameIndex) {
+} // anonymous namespace
+
+QImage renderExportFrame(const Document& doc, int frameIndex, bool transparentBg) {
     int w = doc.width();
     int h = doc.height();
     QImage image(w, h, QImage::Format_ARGB32_Premultiplied);
-    image.fill(Qt::white);
+    image.fill(transparentBg ? Qt::transparent : Qt::white);
 
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing, false);
@@ -70,6 +73,8 @@ static QImage renderFrame(const Document& doc, int frameIndex) {
     return image;
 }
 
+namespace {
+
 static bool ffmpegAvailable() {
     QProcess proc;
     proc.setProcessChannelMode(QProcess::ForwardedChannels);
@@ -84,7 +89,11 @@ static bool executeFFmpeg(const QStringList& args) {
         qWarning("exportVideo: failed to start ffmpeg");
         return false;
     }
-    proc.waitForFinished(-1);
+    if (!proc.waitForFinished(120000)) {
+        qWarning("exportVideo: ffmpeg timed out after 120s");
+        proc.kill();
+        return false;
+    }
     if (proc.exitCode() != 0) {
         qWarning("exportVideo: ffmpeg exited with code %d", proc.exitCode());
         return false;
@@ -118,7 +127,7 @@ bool exportVideo(const Document& doc,
     QString pattern = tempDir.path() + "/frame_%04d.png";
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderFrame(doc, f);
+        QImage img = renderExportFrame(doc, f);
         QString framePath = tempDir.path() +
                             QString("/frame_%1.png")
                                 .arg(f, 4, 10, QLatin1Char('0'));
@@ -174,7 +183,7 @@ bool exportGIF(const Document& doc,
     QString pattern = tempDir.path() + "/frame_%04d.png";
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderFrame(doc, f);
+        QImage img = renderExportFrame(doc, f);
         QString framePath = tempDir.path() +
                             QString("/frame_%1.png")
                                 .arg(f, 4, 10, QLatin1Char('0'));
@@ -235,7 +244,7 @@ bool exportPNGSequence(const Document& doc, const QString& outputDir) {
     }
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderFrame(doc, f);
+        QImage img = renderExportFrame(doc, f);
         QString framePath = dir.filePath(
             QString("frame_%1.png").arg(f, 4, 10, QLatin1Char('0')));
         if (!img.save(framePath, "PNG")) {

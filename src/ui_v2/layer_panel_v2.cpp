@@ -435,6 +435,11 @@ void LayerPanelV2::startRename(int index, QWidget* row) {
     Layer* layer = root.layerAt(index);
     if (!layer) return;
 
+    qDebug() << "RENAME start: frame=" << currentFrame_
+             << "index=" << index
+             << "layer=" << layer->name().c_str()
+             << "total layers=" << root.layerCount();
+
     auto* hlay = qobject_cast<QHBoxLayout*>(row->layout());
     if (!hlay) return;
     if (hlay->count() < 3) return;
@@ -453,30 +458,45 @@ void LayerPanelV2::startRename(int index, QWidget* row) {
     nameLabel->hide();
     editor->setFocus();
 
-    auto commitRename = [hlay, editor, nameLabel, layer, this]() {
+    auto committed = std::make_shared<bool>(false);
+    auto commitRename = [hlay, editor, nameLabel, layer, committed, this]() {
+        if (*committed) return;
+        *committed = true;
+
         QString text = editor->text().trimmed();
+        qDebug() << "RENAME commit: text=" << text << "layer was=" << layer->name().c_str();
         if (!text.isEmpty()) {
             layer->setName(text.toStdString());
+            qDebug() << "RENAME done: layer now=" << layer->name().c_str();
         }
         hlay->removeWidget(editor);
         editor->deleteLater();
         nameLabel->show();
         appState_->document().setModified(true);
         refreshLayerList();
+        qDebug() << "RENAME refresh done";
         emit layerChanged(currentLayerIndex_);
     };
 
     QObject::connect(editor, &QLineEdit::returnPressed, this, commitRename);
+    QObject::connect(editor, &QLineEdit::editingFinished, this, commitRename);
 }
 
 void LayerPanelV2::refreshLayerList() {
     auto& doc = appState_->document();
     const GroupLayer* root = doc.peekRootLayerForFrame(currentFrame_);
     if (!root) {
+        qDebug() << "REFRESH: no root for frame" << currentFrame_;
         list_->blockSignals(true);
         list_->clear();
         list_->blockSignals(false);
         return;
+    }
+
+    qDebug() << "REFRESH: frame=" << currentFrame_ << "layerCount=" << root->layerCount();
+    for (size_t i = 0; i < root->layerCount(); ++i) {
+        const Layer* l = root->layerAt(static_cast<int>(i));
+        if (l) qDebug() << "  layer[" << i << "] name=" << l->name().c_str();
     }
 
     int prevRow = list_->currentRow();

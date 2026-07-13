@@ -381,6 +381,22 @@ void NodeGraph::evaluate(RasterLayer& target)
     std::unordered_map<NodeId, std::unique_ptr<RasterLayer>> cache;
     visited_.clear();
     evaluateNode(output, cache);
+
+    auto it = cache.find(output->id());
+    if (it == cache.end() || !it->second) return;
+
+    const auto& result = *it->second;
+    const int w = std::min(result.width(), target.width());
+    const int h = std::min(result.height(), target.height());
+    const auto* srcPx = result.pixelData();
+    auto* dstPx = target.pixelData();
+    for (int y = 0; y < h; ++y) {
+        std::memcpy(dstPx + static_cast<size_t>(y) * w,
+                    srcPx + static_cast<size_t>(y) * w,
+                    static_cast<size_t>(w) * sizeof(uint32_t));
+    }
+    target.bufferEpochTick();
+    target.setHasContent(true);
 }
 
 void NodeGraph::evaluateNode(CompositorNode* node,
