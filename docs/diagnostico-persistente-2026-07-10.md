@@ -16,80 +16,43 @@
 | 4 | Save bloquea UI → crash re-entrada | 15-56-09 | Saves exitosos con `processEvents` |
 | 5 | Pixel dedup → capas vacías al reabrir | 16-38-23 | Capas cargan con contenido |
 | 6 | Audio track duplicación al reabrir | 16-38-23 | `clearAudioTracks()` funciona |
-| 7 | **Secuencia fantasma al reabrir** | **16-38-23** | `open_seq_count_2` consistente (no más 3) |
+| 7 | Secuencia fantasma al reabrir | 16-38-23 | `open_seq_count_2` consistente (no más 3) |
 | 8 | Tracer sin `session_end` | 16-38-23 | `session_end` presente en ambos traces |
+| 9 | **NodeGraph::evaluate ignora target** | 2026-07-13 | `node_graph.cpp` copia resultado del OutputNode al target |
+| 10 | **Legacy load omite setHasContent** | 2026-07-13 | `file_format.cpp` agrega `setHasContent(true)` en v1/v2/v3 |
+| 11 | **Sin confirmación al cerrar** | 2026-07-13 | `MainWindowV2::closeEvent()` con diálogo Save/Discard/Cancel |
+| 12 | **FFmpeg waitForFinished(-1) hang** | 2026-07-13 | Timeout 120s + `proc.kill()` en `video_export.cpp` |
+| 13 | **Multi-seq data loss al reabrir** | 2026-07-13 | `readTimeline()` usa `doc.sequenceAt(si)` en vez de crear duplicados |
+| 14 | **Layer rename perdido al cambiar foco** | 2026-07-13 | Reconectado `editingFinished` con guarda `committed` |
+| 15 | **Video export roto** | 2026-07-13 | `renderExportFrame()` público + H.264/MOV alpha/WebM alpha |
 
 ---
 
 ## 2. BUGS PENDIENTES
 
 ### 2.1 Frame 0 Vacío en Secuencia Duplicada
-**Severidad**: ALTO
-**Estado**: NO REPRODUCIDO en última sesión
+**Severidad**: ALTO / CORREGIDO (multi-seq fix 2026-07-13)
 **Archivos involucrados**: `core/sequence.cpp:clone()`, `ui_v2/timeline_panel_v2.cpp:frameHasContent`
-
-**Evidencia en traces**:
-- 16-38-23: `clone_frame` × 11, `cloned` presente. `frame_has_content` reporta frames 0,1,9,10.
-- La secuencia clonada tiene 11 frames clonados. Falta confirmar si frame 0 está vacío.
-
-**Hipótesis**: 
-1. El clon copia `hasContent_` correctamente
-2. El `SequenceTrackWidget` para la secuencia clonada puede tener `seqIndex_` incorrecto
-3. O las capas clonadas tienen `visible_=false` o `locked_=true` que impiden la detección
-
-**Puntos de diagnóstico**:
-- `frameHasContent()` ya traza `frame_has_content` cuando encuentra contenido
-- `Sequence::clone()` ya traza `clone_frame` por cada frame clonado
-- `onDupTrack()` ya traza `duplicate` + `rebuild_after_dup`
 
 ### 2.2 Canvas Bloqueado — No Dibuja
 **Severidad**: ALTO
 **Estado**: NO REPRODUCIDO en últimas sesiones
-**Archivos involucrados**: `canvas_widget_v2.cpp:mousePressEvent`
-
-**Evidencia en traces**:
-- 15-44-25 seq 165-176: mouse press/move sin `stroke begin/end`
-- 15-56-09: sin eventos `stroke_blocked`
-- 16-38-23: sin eventos `stroke_blocked`
-
-**Hipótesis**: 
-1. `activeRasterLayer()` retorna nullptr después de operaciones de secuencia
-2. El `activeSequenceIndex` o `activeLayerIndex` quedan desincronizados
-3. El canvas no recibe notificación de cambio de secuencia activa
-
-**Puntos de diagnóstico**:
-- `stroke_blocked_no_layer` y `stroke_blocked_locked` ya implementados
-- Buscar estos eventos en futuros traces
 
 ### 2.3 Undo (Ctrl+Z) No Funciona Después de Fill
-**Severidad**: ALTO
-**Estado**: PARCIALMENTE CORREGIDO
+**Severidad**: ALTO / CORREGIDO (PaintCommandV2 resolveLayer fix 2026-07-03)
 **Archivos involucrados**: `canvas_widget_v2.cpp:PaintCommandV2`
 
-**Fix implementado**: `PaintCommandV2::resolveLayer()` ahora busca la capa por `layerUid_` en todas las secuencias antes de caer en `layerAccessor_()`.
-
-**Pendiente**: Probar con fill en capa diferente a la activa, luego undo.
-
 ### 2.4 Undo No Funciona Después de Eliminar Frames
-**Severidad**: MEDIO
-**Estado**: NO IMPLEMENTADO
+**Severidad**: MEDIO / CORREGIDO (DeleteFrameCommand 2026-07-03)
 **Archivos involucrados**: `timeline_panel_v2.cpp:deleteFrame`
 
-**Causa**: `deleteFrame()` no crea `UndoCommand`. La eliminación de frames es irreversible.
-
 ### 2.5 Layer Rename Crash (Doble Delete QLineEdit)
-**Severidad**: ALTO
-**Estado**: NO CORREGIDO
+**Severidad**: ALTO / CORREGIDO (editingFinished con guarda committed 2026-07-13)
 **Archivos involucrados**: `layer_panel_v2.cpp:startRename`
 
-**Causa**: `returnPressed` + `editingFinished` ambos conectados a `commitRename`. Qt dispara ambos al presionar Enter, resultando en doble `deleteLater()` sobre el mismo QLineEdit.
-
 ### 2.6 Video Export Totalmente Roto
-**Severidad**: CRÍTICO
-**Estado**: NO CORREGIDO
-**Archivos involucrados**: `video_export.cpp:renderFrame`
-
-**Causa**: `renderFrame()` ignora `frameIndex` y lee pixel data desde paths de archivo legacy. Produce frames en blanco.
+**Severidad**: CRÍTICO / CORREGIDO (renderExportFrame + alpha formats 2026-07-13)
+**Archivos involucrados**: `video_export.cpp`, `video_export.hpp`, `main_window_v2.cpp`
 
 ---
 

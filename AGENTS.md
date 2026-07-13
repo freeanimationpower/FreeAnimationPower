@@ -361,3 +361,64 @@ struct AudioTrackData {
 **Invariant**: Both `openProject()` and `newProject()` MUST call `toolbox_panel_->setActiveTool(0)` after `resetDocument()`. `ToolState::resetToDefaults()` sets active tool to `Eraser`, and the `QButtonGroup` in the toolbox is not automatically synced from `activeToolChanged` signal. The canvas reads `toolState().activeTool()` directly on each mouse event, so it picks up Eraser while the UI shows Brush.
 
 **Files affected**: `src/ui_v2/main_window_v2.cpp` — lines 582 (openProject) and 522 (newProject).
+
+## Bug Fix Session (v2.5.2 — Jul 2026)
+
+### #10 — Close confirmation for unsaved changes
+**Symptom**: Closing the window (X, Alt+F4) discarded unsaved work silently.
+
+**Fix**: Added `closeEvent(QCloseEvent*) override` in `MainWindowV2`. If `isModified()`, shows Save/Discard/Cancel dialog. Save calls `saveProject()`, Discard closes, Cancel stays.
+
+**Files**: `src/ui_v2/main_window_v2.hpp:42`, `src/ui_v2/main_window_v2.cpp:525-548`
+
+### #11 — FFmpeg `waitForFinished(-1)` infinite hang
+**Symptom**: If FFmpeg hung during video export, the entire app froze indefinitely.
+
+**Fix**: Changed `proc.waitForFinished(-1)` to `proc.waitForFinished(120000)` with `proc.kill()` on timeout in `executeFFmpeg()`.
+
+**Files**: `src/io/video_export.cpp:87`
+
+### #2 — NodeGraph::evaluate ignores target parameter
+**Symptom**: `evaluate(RasterLayer& target)` computed the graph but never wrote the result to `target`. The output was discarded.
+
+**Fix**: After `evaluateNode(output, cache)`, copies the OutputNode's cached `RasterLayer` pixel data into `target` via `std::memcpy` row-by-row, respecting `std::min` of dimensions. Sets `bufferEpochTick()` and `setHasContent(true)`.
+
+**Files**: `src/engine/compositor/node_graph.cpp:376-397` (+11 lines)
+**Tests**: `NodeGraphTest.EvaluateWritesToTarget`, `EvaluateWithDisabledInputSkipsTarget`, `EvaluateNoOutputNodeReturnsUnchanged`
+
+### #8 — Legacy load omits `setHasContent(true)`
+**Symptom**: Loading v1/v2/v3 legacy .fap files: pixel data loaded correctly but `hasContent_` was never set. Timeline cells appeared empty.
+
+**Fix**: Added `rl->setHasContent(true)` after successful PNG pixel copy in all 3 legacy load paths (v1, v2, v3).
+
+**Files**: `src/io/file_format.cpp:243,283,328` (3 lines)
+
+### Multi-sequence data loss on load (CRITICAL)
+**Symptom**: Projects with 2+ sequences lost all layer content on reopen. Layer names reverted to defaults.
+
+**Root cause**: `readTimeline()` called `doc.addSequence("")` for si>0, creating DUPLICATE sequences. But `readManifest()` already created them correctly. The cleanup loop removed the duplicates (which had the data), leaving the originals empty.
+
+**Fix**: `readTimeline()` now uses `doc.sequenceAt(si)` instead of `doc.addSequence("")`. Guard: if `si >= doc.sequenceCount()`, calls `addSequence("")` as fallback.
+
+**Files**: `src/io/document_manager.cpp:604-607` (4 lines)
+**Tests**: `FileFormatTest.BinaryZipSavesLayerNames`
+
+### Layer rename lost on focus change (UI)
+**Symptom**: Renaming a layer and clicking another layer without pressing Enter: the name was silently discarded.
+
+**Root cause**: The `editingFinished` signal was disconnected (fix for a previous double-delete QLineEdit crash). When the editor lost focus, no commit happened.
+
+**Fix**: Reconnected `editingFinished` with a `std::make_shared<bool> committed` guard. `returnPressed` sets `committed = true` first; `editingFinished` checks the guard. Both signals can fire safely — only the first one commits.
+
+**Files**: `src/ui_v2/layer_panel_v2.cpp:462-476`
+
+### Video export enhancements (H.264 MP4 + MOV/WebM with alpha)
+- Created `src/io/video_export.hpp` — public API for `renderExportFrame()`, `exportVideo()`, `exportGIF()`, `exportPNGSequence()`
+- `renderExportFrame()` extracted from anonymous namespace, added `transparentBg` parameter
+- `MainWindowV2::exportVideo()` now uses `renderExportFrame()` for clean compositing (no UI overlays)
+- File dialog now offers: MP4 H.264, MOV QuickTime with Alpha (qtrle+argb), WebM VP9 with Alpha (libvpx-vp9+yuva420p)
+- Format auto-detected from file extension, codec+background selected accordingly
+
+**Files**: `src/io/video_export.hpp` (new), `src/io/video_export.cpp`, `src/ui_v2/main_window_v2.cpp:793-871`
+
+**Tests**: 159/159 pass.

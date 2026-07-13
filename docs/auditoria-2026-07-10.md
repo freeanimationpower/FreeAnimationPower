@@ -3,6 +3,7 @@
 **Fecha**: 10 de Julio, 2026
 **Versión**: v2.5.1
 **Estado**: 154/154 tests pasan, software funcional con bugs de detalle
+**Actualización**: 13 de Julio, 2026 — 6 bugs corregidos (ver sección 2.6), 159/159 tests
 
 ---
 
