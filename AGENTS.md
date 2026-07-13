@@ -26,6 +26,9 @@ ctest --test-dir build
   - `video_export.cpp` — FFmpeg MP4/GIF export
   - `svg_export.cpp` — SVG export (single frame + multi-frame)
 - `src/platform/` — Input handling, tablet support
+  - `file_association.{hpp,cpp}` — Windows registry .fap file association
+- `scripts/` — Build helpers
+  - `embed_icon.py` — Post-build Win32 icon resource injector
 - `tests/` — GoogleTest test files
 - `docs/` — Architecture and build documentation
 - `docs/archive/` — Archived handoffs, old session reports
@@ -422,3 +425,94 @@ struct AudioTrackData {
 **Files**: `src/io/video_export.hpp` (new), `src/io/video_export.cpp`, `src/ui_v2/main_window_v2.cpp:793-871`
 
 **Tests**: 159/159 pass.
+
+## Bug Fix Session (v2.6 — Jul 2026)
+
+### #12 — Eraser tool produces no effect on any layer
+**Symptom**: After drawing on multiple layers, selecting the eraser tool and attempting to erase had no visible effect.
+
+**Root cause**: In `drawBrushStamp()`, the erasing branch applied a `DestinationOut`-like blend (`dst * (255 - srcA) / 255`) onto `strokeBuffer_`, which is initialized with transparent pixels (`fill(0)`). Since 0 × anything = 0, stamps never accumulated. At `commitStroke()`, the empty `strokeBuffer_` was composited with `CompositionMode_DestinationOut` — erasing nothing.
+
+**Fix**: Removed the broken erasing branch. Both brush and eraser now use the same `SourceOver` blend to accumulate stamps in `strokeBuffer_`. The distinction happens in `renderStampToImage()` (white stamps vs color stamps) and `commitStroke()` (`DestinationOut` vs `SourceOver`).
+
+**Files**: `src/ui_v2/canvas_widget_v2.cpp:2157-2176` (removed 11 lines, unified blend)
+
+### #13 — Layer names overlap visually after frame change
+**Symptom**: When switching frames or clicking a different layer during an in-progress rename, old layer name labels remained visible and overlapped with new ones, showing "LINEA" and "Layer" simultaneously.
+
+**Root cause**: `QListWidget::clear()` deletes `QListWidgetItem` objects but does NOT destroy `QWidget` children set via `setItemWidget()`. Old `QLabel` widgets remained as invisible orphans, overlapping new widgets on the next paint.
+
+**Fix**: Before `list_->clear()`, iterate all items and call `removeItemWidget()` + `hide()` + `deleteLater()` on each widget. Using `deleteLater()` (not `delete`) prevents crashes when in-progress rename lambdas still hold raw pointers to these widgets.
+
+**Files**: `src/ui_v2/layer_panel_v2.cpp:502-514`
+
+### #14 — App crash during layer rename
+**Symptom**: The application crashed abruptly after renaming a layer and then clicking another layer or frame.
+
+**Root cause**: The `startRename()` lambda captured raw pointers (`QHBoxLayout*`, `QLineEdit*`, `QLabel*`) to widgets that could be deleted by `refreshLayerList()` before the lambda's `editingFinished` signal fired. Accessing deleted widgets → use-after-free crash.
+
+**Fix**: Changed raw pointer captures to `QPointer<QHBoxLayout>`, `QPointer<QLineEdit>`, `QPointer<QLabel>`. The lambda now checks `if (!pHlay || !pEditor || !pNameLabel) return;` before accessing any widget.
+
+**Files**: `src/ui_v2/layer_panel_v2.cpp:462-466`
+
+### #15 — Video export: unified format support + audio mixing
+**Symptom**: Video export code was duplicated across `video_export.cpp` and `MainWindowV2::exportVideo()`. Format detection, codec selection, and frame rendering existed in two places. MOV/WebM alpha formats only worked from MainWindowV2, not from the public API. No audio was included in exports.
+
+**Fix:**
+- `exportVideo()` signature simplified to `exportVideo(doc, outputPath, fps)` — format auto-detected from file extension
+- All 3 formats unified: MP4 H.264, MOV QuickTime Alpha (qtrle+argb), WebM VP9 Alpha (libvpx-vp9+yuva420p)
+- Audio mixing: non-muted tracks with individual volumes → `amix` filter, codec per container (aac/pcm_s16le/libopus), `-shortest` for duration
+- `MainWindowV2::exportVideo()` reduced from 80 lines to 20 — delegates to `fap::exportVideo()`
+- GIF export also unified: `MainWindowV2` now calls `fap::exportGIF()` instead of 60 lines of duplicated inline code
+- `exportGIF()` fixed: removed hardcoded 320px scale, exports at full canvas resolution, corrected 1-based frame indexing
+
+**Files**: `src/io/video_export.hpp`, `src/io/video_export.cpp`, `src/ui_v2/main_window_v2.cpp:793-818`
+
+### #16 — Playback timer imprecision (FPS drift)
+**Symptom**: The program's animation playback appeared slightly slower than the exported GIF/video. The FPS display was correct but actual timing was off.
+
+**Root cause**: Timer interval used integer division `1000 / fps_`. At 24fps this produced 41ms instead of 41.67ms, compounded by `buildBackgroundCache()` rendering overhead for multi-layer 1080p compositions.
+
+**Fix**: Changed timer interval to `static_cast<int>(std::round(1000.0 / fps_))` in both `setFPS()` and the play button handler. Now uses floating-point math with rounding for better accuracy.
+
+**Files**: `src/ui_v2/timeline_panel_v2.cpp:1134,1177`
+
+### #17 — Copy layer to all frames (new feature)
+**Feature**: Button in the layer panel footer copies the selected layer's content, name, and properties to the same layer index across every frame in the sequence.
+
+**Implementation:**
+- `Sequence::copyLayerToAllFrames(sourceFrame, layerIndex)` — copies metadata + pixel data to all frames via `shareDataFrom()` + `ensureUnique()` (independent copies)
+- `CopyLayerToFramesCommand` — full undo/redo support with per-frame backups
+- UI button with tooltip in `LayerPanelV2` footer row (reuses duplicate icon)
+
+**Files**: `src/core/sequence.hpp:71`, `src/core/sequence.cpp:218-255`, `src/ui_v2/layer_panel_v2.hpp:47`, `src/ui_v2/layer_panel_v2.cpp`
+
+### #18 — Windows .fap file icon + file association
+**Feature**: Custom icon for `.fap` files in Windows Explorer.
+
+**Implementation:**
+- `resources/icons/fap.ico` — 7 resolutions (16-256px) generated from project logo PNGs
+- `scripts/embed_icon.py` — post-build Python script using Win32 `BeginUpdateResource`/`UpdateResource`/`EndUpdateResource` to inject the .ico into the .exe
+- `src/platform/file_association.{hpp,cpp}` — registry-based `.fap` → `FAP.Document` association (`HKCU\Software\Classes`)
+- `registerFileAssociation()` called from `MainWindowV2` constructor on startup
+
+**Files**: `resources/icons/fap.ico` (new), `scripts/embed_icon.py` (new), `src/platform/file_association.hpp` (new), `src/platform/file_association.cpp` (new), `src/ui_v2/main_window_v2.cpp:102,110-115`, `CMakeLists.txt`
+
+### Timeline Architecture — v2.6 addendum
+
+**Cross-frame layer operations** (`src/core/sequence.cpp:218`):
+- `copyLayerToAllFrames(int sourceFrame, int layerIndex)` — copies layer name, visibility, opacity, blend mode, lock, pixel data, and `hasContent_` flag from a source frame to all other frames
+- Uses `shareDataFrom()` + `ensureUnique()` pattern: target layers share the source buffer temporarily, then deep-copy via COW
+- Target frames with fewer layers are auto-expanded to match
+
+**Video export pipeline** (`src/io/video_export.cpp`):
+- Unified `exportVideo()` auto-detects container from extension
+- Audio mixing via FFmpeg `amix` filter with per-track volume
+- `executeFFmpeg()` with 120s timeout (was infinite) and `.kill()` on timeout
+- `exportGIF()` uses full canvas resolution (was hardcoded 320px)
+
+**Layer panel robustness** (`src/ui_v2/layer_panel_v2.cpp`):
+- `refreshLayerList()` now properly cleans up old `setItemWidget()` widgets before clearing
+- `startRename()` uses `QPointer` guards to prevent use-after-free crashes
+
+**Tests**: 160/160 pass.

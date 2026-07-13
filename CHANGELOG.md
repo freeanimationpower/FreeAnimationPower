@@ -1,5 +1,36 @@
 # Changelog — Free Animation Power
 
+## [v2.6] — 2026-07-13
+
+### Copy Layer to All Frames
+- Nuevo boton en Layer Panel: copia contenido, nombre y propiedades de una capa a todos los frames
+- `Sequence::copyLayerToAllFrames()` con `shareDataFrom()` + `ensureUnique()` (copias independientes)
+- `CopyLayerToFramesCommand` con undo/redo completo (backups por frame)
+- 4 archivos modificados (+150 lineas)
+
+### Video Export Unificado + Audio Mixing
+- `exportVideo()` unificada: auto-detecta formato por extension (mp4/mov/webm)
+- Audio mixing: `amix` filter con volumen por track, codec por contenedor (aac/pcm_s16le/libopus)
+- MOV QuickTime Alpha (qtrle+argb), WebM VP9 Alpha (libvpx-vp9+yuva420p)
+- `exportGIF()` exporta a resolucion completa (antes hardcodeado 320px)
+- `MainWindowV2` delegado a `fap::exportVideo()` y `fap::exportGIF()` (-120 lineas duplicadas)
+- `executeFFmpeg()` con timeout 120s + `.kill()` (antes infinito)
+
+### Bug Fixes Criticos
+- **Eraser no funciona**: `drawBrushStamp()` usaba `DestinationOut` sobre `strokeBuffer_` transparente (fix: unificado `SourceOver`)
+- **Solapamiento nombres de capa**: `QListWidget::clear()` no destruye widgets (fix: `removeItemWidget` + `deleteLater`)
+- **Crash al renombrar capa**: punteros crudos en lambda de rename (fix: `QPointer` guards)
+- **FPS timer imprecision**: division entera `1000/24=41ms` vs `41.67ms` real (fix: `std::round(1000.0/fps)`)
+
+### Icono .fap + Asociacion de Archivos
+- `resources/icons/fap.ico` — 7 resoluciones (16-256px) generado desde logos PNG
+- `scripts/embed_icon.py` — post-build Win32 `BeginUpdateResource` icon injector
+- `src/platform/file_association.{hpp,cpp}` — registro `HKCU\Software\Classes\.fap`
+- `registerFileAssociation()` llamado en constructor `MainWindowV2`
+
+### Tests
+- 160/160 tests pasan
+
 ## [v2.5.1] — 2026-07-08
 
 ### Audio Persistence — Embedido en .fap ZIP
