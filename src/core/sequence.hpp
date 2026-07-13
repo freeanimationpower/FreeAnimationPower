@@ -68,6 +68,7 @@ public:
     const GroupLayer* peekRootLayerForFrame(int frame) const;
     void shiftFrameData(int fromFrame, int delta);
     void removeFrameData(int frameIdx);
+    void copyLayerToAllFrames(int sourceFrame, int layerIndex);
 
     UndoManager& undoManager() { return undo_manager_; }
     const UndoManager& undoManager() const { return undo_manager_; }

@@ -2154,16 +2154,7 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
             uint32_t src = srcRow[srcX];
             if (src == 0) continue;
 
-            if (erasing) {
-                uint32_t srcA = (src >> 24) & 0xFF;
-                uint32_t dst = dstRow[dx];
-                uint32_t inv = 255 - srcA;
-                uint8_t nr = static_cast<uint8_t>(((dst >> 16) & 0xFF) * inv / 255);
-                uint8_t ng = static_cast<uint8_t>(((dst >> 8)  & 0xFF) * inv / 255);
-                uint8_t nb = static_cast<uint8_t>(( dst        & 0xFF) * inv / 255);
-                uint8_t na = static_cast<uint8_t>(((dst >> 24) & 0xFF) * inv / 255);
-                dstRow[dx] = (na << 24) | (nr << 16) | (ng << 8) | nb;
-            } else {
+            {
                 uint32_t sa = (src >> 24) & 0xFF;
                 if (sa == 255) {
                     dstRow[dx] = src;
@@ -2175,6 +2166,9 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
                     uint32_t nb = ( src        & 0xFF) + (( dst        & 0xFF) * inv / 255);
                     uint32_t na = sa + (((dst >> 24) & 0xFF) * inv / 255);
                     if (na > 255) na = 255;
+                    if (nr > 255) nr = 255;
+                    if (ng > 255) ng = 255;
+                    if (nb > 255) nb = 255;
                     dstRow[dx] = (na << 24) | (nr << 16) | (ng << 8) | nb;
                 }
             }

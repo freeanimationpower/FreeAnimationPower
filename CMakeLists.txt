@@ -168,11 +168,13 @@ set(IO_SOURCES
 )
 
 set(PLATFORM_HEADERS
+    src/platform/file_association.hpp
     src/platform/input_manager.hpp
     src/platform/tablet_handler.hpp
 )
 
 set(PLATFORM_SOURCES
+    src/platform/file_association.cpp
     src/platform/input_manager.cpp
     src/platform/tablet_handler.cpp
 )
@@ -193,6 +195,20 @@ set(ALL_SOURCES
 )
 
 add_executable(free-animation-power ${ALL_SOURCES})
+
+if(WIN32)
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_EXECUTABLE)
+        add_custom_command(TARGET free-animation-power POST_BUILD
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/embed_icon.py"
+                "$<TARGET_FILE:free-animation-power>"
+                "${CMAKE_SOURCE_DIR}/resources/icons/fap.ico"
+            COMMENT "Embedding app icon into EXE"
+        )
+    else()
+        message(WARNING "Python3 not found - icon will not be embedded")
+    endif()
+endif()
 
 target_include_directories(free-animation-power PRIVATE
     ${CMAKE_SOURCE_DIR}/src

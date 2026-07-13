@@ -9,6 +9,7 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QListWidgetItem>
 #include <QtWidgets/QLineEdit>
+#include <QtCore/QPointer>
 #include <QtWidgets/QFrame>
 #include <QtCore/QEvent>
 #include <QtCore/QTimer>
@@ -18,10 +19,79 @@
 #include "core/app_state.hpp"
 #include "core/document.hpp"
 #include "core/layer.hpp"
+#include "core/sequence.hpp"
 #include "core/types.hpp"
+#include "core/undo_manager.hpp"
 #include "core/diagnostic/tracer_macros.hpp"
 
 namespace fap {
+namespace {
+
+class CopyLayerToFramesCommand : public UndoCommand {
+public:
+    CopyLayerToFramesCommand(std::shared_ptr<AppState> state,
+                              int sourceFrame, int layerIndex,
+                              std::vector<std::pair<int, std::unique_ptr<Layer>>> backups)
+        : appState_(std::move(state))
+        , sourceFrame_(sourceFrame)
+        , layerIndex_(layerIndex)
+        , backups_(std::move(backups))
+    {}
+
+    void undo() override {
+        auto& seq = appState_->document().activeSequence();
+        for (auto& [frame, saved] : backups_) {
+            GroupLayer& root = seq.rootLayerForFrame(frame);
+            if (static_cast<int>(root.layerCount()) > layerIndex_) {
+                if (saved) {
+                    root.layers()[static_cast<size_t>(layerIndex_)] = std::move(saved);
+                } else {
+                    root.removeLayer(layerIndex_);
+                }
+            }
+        }
+        appState_->document().setModified(true);
+    }
+
+    void redo() override {
+        auto& seq = appState_->document().activeSequence();
+        GroupLayer& srcRoot = seq.rootLayerForFrame(sourceFrame_);
+        if (layerIndex_ < 0 || layerIndex_ >= static_cast<int>(srcRoot.layerCount())) return;
+        const Layer* srcLayer = srcRoot.layerAt(layerIndex_);
+        if (!srcLayer) return;
+
+        for (int f = 0; f < seq.totalFrames(); ++f) {
+            if (f == sourceFrame_) continue;
+            GroupLayer& dstRoot = seq.rootLayerForFrame(f);
+            while (static_cast<int>(dstRoot.layerCount()) <= layerIndex_) {
+                dstRoot.addLayer(srcLayer->clone());
+            }
+            Layer* dstLayer = dstRoot.layerAt(layerIndex_);
+            if (!dstLayer || dstLayer->type() != srcLayer->type()) continue;
+            dstLayer->setName(srcLayer->name());
+            dstLayer->setVisible(srcLayer->visible());
+            dstLayer->setOpacity(srcLayer->opacity());
+            dstLayer->setBlendMode(srcLayer->blendMode());
+            dstLayer->setLocked(srcLayer->locked());
+            if (srcLayer->type() == LayerType::Raster) {
+                const auto* srcRl = static_cast<const RasterLayer*>(srcLayer);
+                auto* dstRl = static_cast<RasterLayer*>(dstLayer);
+                dstRl->shareDataFrom(*srcRl);
+                dstRl->ensureUnique();
+                dstRl->setHasContent(srcRl->hasContent());
+            }
+        }
+        appState_->document().setModified(true);
+    }
+
+private:
+    std::shared_ptr<AppState> appState_;
+    int sourceFrame_;
+    int layerIndex_;
+    std::vector<std::pair<int, std::unique_ptr<Layer>>> backups_;
+};
+
+} // anonymous namespace
 
 static const char* kPanelBg = "#1A1D24";
 static const char* kTextColor = "#C8CCD8";
@@ -138,6 +208,12 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
             .arg(kDangerHover));
     QObject::connect(delBtn, &QPushButton::clicked, this, &LayerPanelV2::deleteLayer);
     btnRow->addWidget(delBtn);
+
+    auto* copyFramesBtn = makeIconButton(":/icons/svg/duplicate.svg",
+        "Copy to All Frames\nCopy this layer's content and name to the same layer\n"
+        "across every frame in the sequence.");
+    QObject::connect(copyFramesBtn, &QPushButton::clicked, this, &LayerPanelV2::copyLayerToAllFrames);
+    btnRow->addWidget(copyFramesBtn);
 
     layout->addLayout(btnRow);
 
@@ -459,19 +535,24 @@ void LayerPanelV2::startRename(int index, QWidget* row) {
     editor->setFocus();
 
     auto committed = std::make_shared<bool>(false);
-    auto commitRename = [hlay, editor, nameLabel, layer, committed, this]() {
+    QPointer<QHBoxLayout> pHlay(hlay);
+    QPointer<QLineEdit> pEditor(editor);
+    QPointer<QLabel> pNameLabel(nameLabel);
+    auto commitRename = [pHlay, pEditor, pNameLabel, layer, committed, this]() mutable {
         if (*committed) return;
         *committed = true;
 
-        QString text = editor->text().trimmed();
+        if (!pHlay || !pEditor || !pNameLabel) return;
+
+        QString text = pEditor->text().trimmed();
         qDebug() << "RENAME commit: text=" << text << "layer was=" << layer->name().c_str();
         if (!text.isEmpty()) {
             layer->setName(text.toStdString());
             qDebug() << "RENAME done: layer now=" << layer->name().c_str();
         }
-        hlay->removeWidget(editor);
-        editor->deleteLater();
-        nameLabel->show();
+        pHlay->removeWidget(pEditor);
+        pEditor->deleteLater();
+        pNameLabel->show();
         appState_->document().setModified(true);
         refreshLayerList();
         qDebug() << "RENAME refresh done";
@@ -501,6 +582,20 @@ void LayerPanelV2::refreshLayerList() {
 
     int prevRow = list_->currentRow();
     list_->blockSignals(true);
+
+    // Remove old item widgets before clearing (QListWidget::clear() does
+    // not delete widgets set via setItemWidget(), leaving them as invisible
+    // orphans that overlap with new widgets on the next paint).
+    // Use deleteLater() to avoid crashing in-progress renames that hold
+    // raw pointers to these widgets (see startRename lambda captures).
+    for (int i = 0; i < list_->count(); ++i) {
+        auto* item = list_->item(i);
+        if (auto* w = list_->itemWidget(item)) {
+            list_->removeItemWidget(item);
+            w->hide();
+            w->deleteLater();
+        }
+    }
     list_->clear();
 
     int count = static_cast<int>(root->layerCount());
@@ -532,6 +627,46 @@ void LayerPanelV2::refreshLayerList() {
     } else if (list_->count() > 0) {
         list_->setCurrentRow(0);
     }
+}
+
+void LayerPanelV2::copyLayerToAllFrames() {
+    auto& doc = appState_->document();
+    auto& seq = doc.activeSequence();
+    int srcFrame = seq.currentFrame();
+    int layerIdx = currentLayerIndex_;
+
+    GroupLayer& srcRoot = seq.rootLayerForFrame(srcFrame);
+    if (layerIdx < 0 || layerIdx >= static_cast<int>(srcRoot.layerCount()))
+        return;
+
+    const Layer* srcLayer = srcRoot.layerAt(layerIdx);
+    if (!srcLayer) return;
+
+    // Build backups for undo
+    std::vector<std::pair<int, std::unique_ptr<Layer>>> backups;
+    for (int f = 0; f < seq.totalFrames(); ++f) {
+        if (f == srcFrame) continue;
+        auto* root = seq.peekRootLayerForFrame(f);
+        if (root && static_cast<int>(root->layerCount()) > layerIdx) {
+            backups.emplace_back(f, root->layerAt(layerIdx)->clone());
+        } else {
+            backups.emplace_back(f, nullptr);
+        }
+    }
+
+    // Apply copy
+    seq.copyLayerToAllFrames(srcFrame, layerIdx);
+
+    doc.setModified(true);
+    refreshLayerList();
+    emit layerDisplayPropertiesChanged();
+
+    // Push undo command
+    auto cmd = std::make_unique<CopyLayerToFramesCommand>(
+        appState_, srcFrame, layerIdx, std::move(backups));
+    seq.undoManager().pushApplied(std::move(cmd));
+
+    emit layerChanged(layerIdx);
 }
 
 } // namespace fap

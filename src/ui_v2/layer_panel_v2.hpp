@@ -43,6 +43,7 @@ private:
     void deleteLayer();
     void toggleLayerVisibility(int index);
     void toggleLayerLock(int index);
+    void copyLayerToAllFrames();
     void onBlendModeChanged(int mode);
     void onRowSelected(int row);
 

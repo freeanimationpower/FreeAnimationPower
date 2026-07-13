@@ -4,13 +4,12 @@
 #include "video_export.hpp"
 
 #include <QDir>
+#include <QFileInfo>
 #include <QImage>
 #include <QPainter>
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QString>
-
-#include <cstdio>
 
 namespace fap {
 
@@ -103,9 +102,35 @@ static bool executeFFmpeg(const QStringList& args) {
 
 } // anonymous namespace
 
+struct VideoFormat {
+    const char* codec;
+    const char* pixFmt;
+    const char* extraArg = nullptr;
+    const char* extraVal = nullptr;
+    bool needsPad = false;
+    bool transparentBg = false;
+};
+
+static VideoFormat detectVideoFormat(const QString& path) {
+    if (path.endsWith(".mov", Qt::CaseInsensitive)) {
+        return {"qtrle", "argb", nullptr, nullptr, false, true};
+    }
+    if (path.endsWith(".webm", Qt::CaseInsensitive)) {
+        return {"libvpx-vp9", "yuva420p", "-lossless", "1", false, true};
+    }
+    return {"libx264", "yuv420p", nullptr, nullptr, true, false};
+}
+
+static const char* audioCodecForContainer(const VideoFormat& vf) {
+    if (vf.transparentBg) {
+        if (qstrcmp(vf.codec, "qtrle") == 0)     return "pcm_s16le";
+        if (qstrcmp(vf.codec, "libvpx-vp9") == 0) return "libopus";
+    }
+    return "aac";
+}
+
 bool exportVideo(const Document& doc,
                  const QString& outputPath,
-                 const QString& format,
                  int fps) {
     if (!ffmpegAvailable()) {
         qWarning("exportVideo: ffmpeg not found in PATH");
@@ -118,6 +143,8 @@ bool exportVideo(const Document& doc,
         return false;
     }
 
+    VideoFormat vf = detectVideoFormat(outputPath);
+
     QTemporaryDir tempDir;
     if (!tempDir.isValid()) {
         qWarning("exportVideo: cannot create temp directory");
@@ -127,34 +154,85 @@ bool exportVideo(const Document& doc,
     QString pattern = tempDir.path() + "/frame_%04d.png";
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderExportFrame(doc, f);
+        QImage img = renderExportFrame(doc, f, vf.transparentBg);
         QString framePath = tempDir.path() +
                             QString("/frame_%1.png")
-                                .arg(f, 4, 10, QLatin1Char('0'));
+                                .arg(f + 1, 4, 10, QLatin1Char('0'));
         if (!img.save(framePath, "PNG")) {
             qWarning("exportVideo: failed to save frame %d", f);
             return false;
         }
     }
 
-    QString ext = format;
-    if (!ext.startsWith('.')) {
-        ext.prepend('.');
-    }
-
-    QString outPath = outputPath;
-    if (!outPath.endsWith(ext, Qt::CaseInsensitive)) {
-        outPath += ext;
+    // Collect non-muted audio tracks with valid files
+    std::vector<QString> audioInputs;
+    std::vector<float> audioVolumes;
+    for (const auto& at : doc.audioTracks()) {
+        if (at.muted) continue;
+        QString path = QString::fromStdString(at.filepath);
+        if (!QFileInfo::exists(path)) {
+            qWarning("exportVideo: audio file not found: %s", qPrintable(path));
+            continue;
+        }
+        audioInputs.push_back(path);
+        audioVolumes.push_back(static_cast<float>(at.volume) / 100.0f);
     }
 
     QStringList args;
     args << "-y"
          << "-framerate" << QString::number(fps)
-         << "-i" << pattern
-         << "-c:v" << "libx264"
-         << "-pix_fmt" << "yuv420p"
-         << "-vf" << "pad=ceil(iw/2)*2:ceil(ih/2)*2"
-         << outPath;
+         << "-i" << pattern;
+
+    for (const auto& audioPath : audioInputs) {
+        args << "-i" << audioPath;
+    }
+
+    args << "-c:v" << vf.codec
+         << "-pix_fmt" << vf.pixFmt;
+
+    if (vf.extraArg && vf.extraVal) {
+        args << vf.extraArg << vf.extraVal;
+    }
+    if (vf.needsPad) {
+        args << "-vf" << "pad=ceil(iw/2)*2:ceil(ih/2)*2";
+    }
+
+    if (!audioInputs.empty()) {
+        args << "-c:a" << audioCodecForContainer(vf);
+
+        if (audioInputs.size() == 1) {
+            if (audioVolumes[0] < 0.99f || audioVolumes[0] > 1.01f) {
+                args << "-filter:a:0"
+                     << QString("volume=%1").arg(static_cast<double>(audioVolumes[0]));
+            }
+            args << "-map" << "0:v:0"
+                 << "-map" << "1:a:0";
+        } else {
+            // Build: [1:a]volume=V1[a0];[2:a]volume=V2[a1];[a0][a1]amix=inputs=N:...[a]
+            QStringList filterParts;
+            for (size_t i = 0; i < audioInputs.size(); ++i) {
+                int inputIdx = static_cast<int>(i) + 1;
+                filterParts.append(QString("[%1:a]volume=%2[a%3]")
+                    .arg(inputIdx)
+                    .arg(static_cast<double>(audioVolumes[i]))
+                    .arg(i));
+            }
+            QString mixInputs;
+            for (size_t i = 0; i < audioInputs.size(); ++i) {
+                mixInputs += QString("[a%1]").arg(i);
+            }
+            filterParts.append(QString("%1amix=inputs=%2:duration=longest:dropout_transition=0[a]")
+                .arg(mixInputs)
+                .arg(audioInputs.size()));
+
+            args << "-filter_complex" << filterParts.join(';');
+            args << "-map" << "0:v:0"
+                 << "-map" << "[a]";
+        }
+        args << "-shortest";
+    }
+
+    args << outputPath;
 
     qInfo("exportVideo: running ffmpeg...");
     return executeFFmpeg(args);

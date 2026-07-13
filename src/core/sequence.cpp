@@ -213,4 +213,41 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
     return seq;
 }
 
+void Sequence::copyLayerToAllFrames(int sourceFrame, int layerIndex) {
+    GroupLayer& srcRoot = rootLayerForFrame(sourceFrame);
+    if (layerIndex < 0 || layerIndex >= static_cast<int>(srcRoot.layerCount()))
+        return;
+
+    const Layer* srcLayer = srcRoot.layerAt(layerIndex);
+    if (!srcLayer) return;
+
+    for (int f = 0; f < total_frames_; ++f) {
+        if (f == sourceFrame) continue;
+
+        GroupLayer& dstRoot = rootLayerForFrame(f);
+
+        // Ensure target frame has enough layers
+        while (static_cast<int>(dstRoot.layerCount()) <= layerIndex) {
+            dstRoot.addLayer(srcLayer->clone());
+        }
+
+        Layer* dstLayer = dstRoot.layerAt(layerIndex);
+        if (!dstLayer || dstLayer->type() != srcLayer->type()) continue;
+
+        dstLayer->setName(srcLayer->name());
+        dstLayer->setVisible(srcLayer->visible());
+        dstLayer->setOpacity(srcLayer->opacity());
+        dstLayer->setBlendMode(srcLayer->blendMode());
+        dstLayer->setLocked(srcLayer->locked());
+
+        if (srcLayer->type() == LayerType::Raster) {
+            const auto* srcRl = static_cast<const RasterLayer*>(srcLayer);
+            auto* dstRl = static_cast<RasterLayer*>(dstLayer);
+            dstRl->shareDataFrom(*srcRl);
+            dstRl->ensureUnique();
+            dstRl->setHasContent(srcRl->hasContent());
+        }
+    }
+}
+
 } // namespace fap

@@ -34,6 +34,7 @@
 #include <QtGui/QImage>
 
 #include "core/diagnostic/tracer_macros.hpp"
+#include "platform/file_association.hpp"
 #include "toolbox_panel_v2.hpp"
 #include "color_panel_v2.hpp"
 #include "layer_panel_v2.hpp"
@@ -99,7 +100,7 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
     , appState_(std::move(state))
 {
     setWindowTitle("Free Animation Power - Untitled.fap");
-    setWindowIcon(QIcon(":/icons/toolbar/logo.png"));
+    setWindowIcon(QIcon(":/icons/toolbar/fap.ico"));
     resize(1600, 900);
     setMinimumSize(1024, 600);
 
@@ -114,6 +115,7 @@ MainWindowV2::MainWindowV2(std::shared_ptr<AppState> state, QWidget* parent)
             20, // DWMWA_USE_IMMERSIVE_DARK_MODE
             &dark, sizeof(dark));
     }
+    registerFileAssociation();
 #endif
 
     setupUI();
@@ -792,9 +794,6 @@ void MainWindowV2::saveProjectAs()
 
 void MainWindowV2::exportVideo()
 {
-    if (!canvas_)
-        return;
-
     QString path = QFileDialog::getSaveFileName(
         this, "Export Video", "animation.mp4",
         "MP4 H.264 (*.mp4);;"
@@ -804,69 +803,16 @@ void MainWindowV2::exportVideo()
     if (path.isEmpty())
         return;
 
-    QTemporaryDir tempDir;
-    if (!tempDir.isValid()) {
-        QMessageBox::warning(this, "Error", "Failed to create temporary directory.");
-        return;
-    }
-
     auto& doc = appState_->document();
-    int total = doc.totalFrames();
-    int fps = doc.fps();
 
-    bool alpha = path.endsWith(".mov", Qt::CaseInsensitive)
-              || path.endsWith(".webm", Qt::CaseInsensitive);
+    statusBar()->showMessage("Rendering and encoding video...");
+    QApplication::processEvents();
 
-    statusBar()->showMessage("Rendering frames...");
-
-    for (int frame = 0; frame < total; ++frame) {
-        if (canvas_) canvas_->setCurrentFrame(frame);
-        if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
-        qApp->processEvents();
-
-        QImage image = renderExportFrame(doc, frame, alpha);
-
-        QString framePath = tempDir.path() + QString("/frame_%1.png")
-            .arg(frame + 1, 4, 10, QLatin1Char('0'));
-        image.save(framePath, "PNG");
-        qApp->processEvents();
-    }
-
-    statusBar()->showMessage("Encoding video with FFmpeg...");
-
-    QProcess ffmpeg;
-    QStringList args;
-    args << "-y"
-         << "-framerate" << QString::number(fps)
-         << "-i" << (tempDir.path() + "/frame_%04d.png");
-
-    if (path.endsWith(".mov", Qt::CaseInsensitive)) {
-        args << "-c:v" << "qtrle"
-             << "-pix_fmt" << "argb";
-    } else if (path.endsWith(".webm", Qt::CaseInsensitive)) {
-        args << "-c:v" << "libvpx-vp9"
-             << "-pix_fmt" << "yuva420p"
-             << "-lossless" << "1";
-    } else {
-        args << "-c:v" << "libx264"
-             << "-pix_fmt" << "yuv420p"
-             << "-vf" << "pad=ceil(iw/2)*2:ceil(ih/2)*2";
-    }
-
-    args << path;
-
-    ffmpeg.start("ffmpeg", args);
-    if (!ffmpeg.waitForFinished(120000)) {
-        QMessageBox::warning(this, "Error", "FFmpeg timed out. Is FFmpeg installed?");
-        statusBar()->showMessage("Video export failed", 5000);
-        return;
-    }
-
-    if (ffmpeg.exitCode() == 0) {
+    if (fap::exportVideo(doc, path, doc.fps())) {
         statusBar()->showMessage("Video exported: " + path, 5000);
     } else {
         QMessageBox::warning(this, "Error",
-            "FFmpeg failed:\n" + QString::fromUtf8(ffmpeg.readAllStandardError()));
+            "FFmpeg failed. Is FFmpeg installed and in PATH?");
         statusBar()->showMessage("Video export failed", 5000);
     }
 }

@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/icons/toolbar">
         <file alias="logo.png">icons/toolbar/logo.png</file>
+        <file alias="fap.ico">icons/fap.ico</file>
         <file alias="new_project.png">icons/toolbar/new project.png</file>
         <file alias="open_project.png">icons/toolbar/open project.png</file>
         <file alias="save_project.png">icons/toolbar/save project.png</file>
