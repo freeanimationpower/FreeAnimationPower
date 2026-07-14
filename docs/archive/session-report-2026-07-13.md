@@ -72,3 +72,22 @@ v2.6 session: 6 bug fixes + 3 new features. 160 tests passing.
 - Playback at 1080p with 4+ layers may stutter due to `buildBackgroundCache()` full rebuild per frame
 - No auto-save/recovery mechanism
 - Layer name changes don't propagate across frames (by design — per-frame layer model)
+
+## Additional Changes (Jul 14)
+
+### 3-Layer Depth UI Color Scheme
+- QMainWindow workspace: `#101218` (deepest layer)
+- QDockWidget panels: `#161A24` with border `#252A36` (visible separation)
+- QDockWidget::title: `#1C2030` with hover `#222838`
+- Float button: orange `#FF4800` on hover
+- Layer/Color panels: `kPanelBg` → `#161A24` + `WA_StyledBackground`
+- Timeline: `kBgColor`/`kRulerBg`/`kScrollBg`/`kCellEmpty` updated
+- Canvas `fillRect`: `#1A1D24` → `#101218`
+- StatusBar: `#0B0D12` (darker anchor)
+- QListWidget::item:selected: `#FF4800` + white text for contrast
+
+### Next: Professional UI Refinement (planned)
+- Deeper workspace bg `#0C0D11`, lighter panels `#1A1E28` (higher Delta-E)
+- Micro-gloss borders via `rgba(255,255,255,0.06)`
+- `QGraphicsDropShadowEffect` on floating dock widgets
+- Orange reserved for focus/active state only, titles in light gray `#D0D5DE`
