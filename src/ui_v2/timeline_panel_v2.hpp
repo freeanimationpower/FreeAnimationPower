@@ -15,6 +15,7 @@ class QVBoxLayout;
 namespace fap {
 
 class AppState;
+class GroupLayer;
 class SequenceTrackWidget;
 class RulerWidget;
 class AudioTrackWidget;
@@ -24,6 +25,7 @@ class TimelinePanelV2 : public QWidget {
     Q_OBJECT
 public:
     explicit TimelinePanelV2(std::shared_ptr<AppState> state, QWidget* parent = nullptr);
+    ~TimelinePanelV2() override;
 
     void setTotalFrames(int count);
     void setCurrentFrame(int frame);
@@ -51,6 +53,12 @@ public:
     void onTrackFrameClicked(int frame);
     AudioTrackWidget* addAudioTrackFromData(const AudioTrackData& data);
     const std::vector<AudioTrackWidget*>& audioTrackWidgets() const { return audioTrackWidgets_; }
+
+    // Frame clipboard (right-click copy/cut/paste between frames)
+    void copyFrameToClipboard(int seqIndex, int frame);
+    void cutFrameToClipboard(int seqIndex, int frame);
+    void pasteFrameFromClipboard(int seqIndex, int frame);
+    bool hasFrameClipboard() const { return frameClipboard_.get() != nullptr; }
 
     static constexpr int kHeaderWidth = 280;
     static constexpr int kCellWidth = 32;
@@ -119,5 +127,8 @@ private:
     bool updatingFps_ = false;
 
     int scrollOffset_ = 0;
+
+    // Frame clipboard for copy/cut/paste between frames
+    std::unique_ptr<GroupLayer> frameClipboard_;
 };
 } // namespace fap

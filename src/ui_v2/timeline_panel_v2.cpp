@@ -16,6 +16,7 @@
 #include <QtWidgets/QMenu>
 #include <QtGui/QPainter>
 #include <QtGui/QMouseEvent>
+#include <QtGui/QContextMenuEvent>
 #include <QtGui/QWheelEvent>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QEnterEvent>
@@ -27,6 +28,7 @@
 
 #include "core/app_state.hpp"
 #include "core/document.hpp"
+#include "core/layer.hpp"
 #include "core/sequence.hpp"
 #include "core/undo_manager.hpp"
 #include "core/diagnostic/tracer_macros.hpp"
@@ -94,6 +96,78 @@ private:
     int sequenceIndex_;
     std::unique_ptr<GroupLayer> savedFrameData_;
     std::shared_ptr<AppState> appState_;
+};
+
+class CutFrameCommand : public UndoCommand {
+public:
+    CutFrameCommand(std::shared_ptr<AppState> state, int seqIndex, int frame,
+                     std::unique_ptr<Layer> savedRoot)
+        : appState_(std::move(state)), seqIndex_(seqIndex), frame_(frame),
+          savedRoot_(static_cast<GroupLayer*>(savedRoot.release()))
+    {}
+
+    void undo() override {
+        auto& seq = appState_->document().sequenceAt(seqIndex_);
+        GroupLayer& root = seq.rootLayerForFrame(frame_);
+        root.layers().clear();
+        for (size_t i = 0; i < savedRoot_->layerCount(); ++i) {
+            root.addLayer(savedRoot_->layerAt(static_cast<int>(i))->clone());
+        }
+        appState_->document().setModified(true);
+    }
+
+    void redo() override {
+        auto& seq = appState_->document().sequenceAt(seqIndex_);
+        GroupLayer& root = seq.rootLayerForFrame(frame_);
+        root.layers().clear();
+        appState_->document().setModified(true);
+    }
+
+private:
+    std::shared_ptr<AppState> appState_;
+    int seqIndex_;
+    int frame_;
+    std::unique_ptr<GroupLayer> savedRoot_;
+};
+
+class PasteFrameCommand : public UndoCommand {
+public:
+    PasteFrameCommand(std::shared_ptr<AppState> state, int seqIndex, int frame,
+                       std::unique_ptr<GroupLayer> pasteData,
+                       std::unique_ptr<Layer> previousData)
+        : appState_(std::move(state)), seqIndex_(seqIndex), frame_(frame),
+          pasteData_(std::move(pasteData)),
+          previousRoot_(static_cast<GroupLayer*>(previousData.release()))
+    {}
+
+    void undo() override {
+        auto& seq = appState_->document().sequenceAt(seqIndex_);
+        GroupLayer& root = seq.rootLayerForFrame(frame_);
+        root.layers().clear();
+        if (previousRoot_) {
+            for (size_t i = 0; i < previousRoot_->layerCount(); ++i) {
+                root.addLayer(previousRoot_->layerAt(static_cast<int>(i))->clone());
+            }
+        }
+        appState_->document().setModified(true);
+    }
+
+    void redo() override {
+        auto& seq = appState_->document().sequenceAt(seqIndex_);
+        GroupLayer& root = seq.rootLayerForFrame(frame_);
+        root.layers().clear();
+        for (size_t i = 0; i < pasteData_->layerCount(); ++i) {
+            root.addLayer(pasteData_->layerAt(static_cast<int>(i))->clone());
+        }
+        appState_->document().setModified(true);
+    }
+
+private:
+    std::shared_ptr<AppState> appState_;
+    int seqIndex_;
+    int frame_;
+    std::unique_ptr<GroupLayer> pasteData_;
+    std::unique_ptr<GroupLayer> previousRoot_;
 };
 
 // ========================================================================
@@ -636,6 +710,43 @@ protected:
         if (frame >= 0) panel_->onTrackFrameClicked(frame);
     }
 
+    void contextMenuEvent(QContextMenuEvent* event) override {
+        const int hdrW = TimelinePanelV2::kHeaderWidth;
+        int x = event->pos().x();
+        int y = event->pos().y();
+
+        if (x < hdrW) return;
+        if (y < 16 || y >= 16 + (TimelinePanelV2::kTrackHeight - 22)) return;
+
+        int frame = hitFrame(x);
+        if (frame < 0 || frame >= panel_->totalFrames()) return;
+
+        QMenu menu;
+        menu.setStyleSheet(QString(
+            "QMenu { background:#1E2128; color:#C8CCD8; border:1px solid #2D3139; border-radius:4px; padding:4px; }"
+            "QMenu::item { padding:6px 24px; border-radius:3px; }"
+            "QMenu::item:selected { background:#FF4800; color:#fff; }"
+            "QMenu::separator { height:1px; background:#2D3139; margin:4px 8px; }"));
+
+        QAction* copyAct = menu.addAction("Copy Frame");
+        QAction* cutAct = menu.addAction("Cut Frame");
+        menu.addSeparator();
+
+        QAction* pasteAct = menu.addAction("Paste Frame");
+        pasteAct->setEnabled(panel_->hasFrameClipboard());
+
+        QAction* chosen = menu.exec(event->globalPos());
+        if (!chosen) return;
+
+        if (chosen == copyAct) {
+            panel_->copyFrameToClipboard(seqIndex_, frame);
+        } else if (chosen == cutAct) {
+            panel_->cutFrameToClipboard(seqIndex_, frame);
+        } else if (chosen == pasteAct) {
+            panel_->pasteFrameFromClipboard(seqIndex_, frame);
+        }
+    }
+
     void mouseMoveEvent(QMouseEvent* event) override {
         int frame = hitFrame(event->pos().x());
         if (frame != hoveredFrame_) { hoveredFrame_ = frame; update(); }
@@ -758,6 +869,8 @@ TimelinePanelV2::TimelinePanelV2(std::shared_ptr<AppState> state, QWidget* paren
 
     setupUI();
 }
+
+TimelinePanelV2::~TimelinePanelV2() = default;
 
 void TimelinePanelV2::setupUI()
 {
@@ -1609,6 +1722,77 @@ void TimelinePanelV2::resizeEvent(QResizeEvent* event)
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
     for (auto* at : audioTrackWidgets_) at->update();
+}
+
+void TimelinePanelV2::copyFrameToClipboard(int seqIndex, int frame) {
+    auto& seq = appState_->document().sequenceAt(seqIndex);
+    const GroupLayer* src = seq.peekRootLayerForFrame(frame);
+    if (!src) return;
+    frameClipboard_ = std::unique_ptr<GroupLayer>(
+        static_cast<GroupLayer*>(src->clone().release()));
+}
+
+void TimelinePanelV2::cutFrameToClipboard(int seqIndex, int frame) {
+    auto& doc = appState_->document();
+    auto& seq = doc.sequenceAt(seqIndex);
+    const GroupLayer* src = seq.peekRootLayerForFrame(frame);
+    if (!src) return;
+
+    // Save full frame state for undo
+    auto saved = seq.peekRootLayerForFrame(frame)->clone();
+    frameClipboard_ = std::unique_ptr<GroupLayer>(
+        static_cast<GroupLayer*>(saved->clone().release()));
+
+    // Clear the frame
+    GroupLayer& root = seq.rootLayerForFrame(frame);
+    root.layers().clear();
+
+    doc.setModified(true);
+
+    // Push undo command
+    auto cmd = std::make_unique<CutFrameCommand>(
+        appState_, seqIndex, frame, std::move(saved));
+    seq.undoManager().pushApplied(std::move(cmd));
+
+    for (auto* t : trackWidgets_) t->update();
+    emit frameChanged(currentFrame_);
+}
+
+void TimelinePanelV2::pasteFrameFromClipboard(int seqIndex, int frame) {
+    if (!frameClipboard_) return;
+    auto& doc = appState_->document();
+    auto& seq = doc.sequenceAt(seqIndex);
+
+    // Save current frame state for undo
+    std::unique_ptr<Layer> saved;
+    const GroupLayer* current = seq.peekRootLayerForFrame(frame);
+    if (current) {
+        saved = current->clone();
+    }
+
+    // Replace frame layers with clipboard clone
+    GroupLayer& root = seq.rootLayerForFrame(frame);
+    root.layers().clear();
+    for (size_t i = 0; i < frameClipboard_->layerCount(); ++i) {
+        root.addLayer(frameClipboard_->layerAt(static_cast<int>(i))->clone());
+    }
+
+    doc.setModified(true);
+
+    // Push undo command
+    auto clipboardClone = std::unique_ptr<GroupLayer>(
+        static_cast<GroupLayer*>(frameClipboard_->clone().release()));
+    auto cmd = std::make_unique<PasteFrameCommand>(
+        appState_, seqIndex, frame,
+        std::move(clipboardClone),
+        std::move(saved));
+    seq.undoManager().pushApplied(std::move(cmd));
+
+    currentFrame_ = frame;
+    appState_->setCurrentFrame(frame);
+    updateLabels();
+    for (auto* t : trackWidgets_) t->update();
+    emit frameChanged(frame);
 }
 
 } // namespace fap
