@@ -854,7 +854,7 @@ void CanvasWidgetV2::paintEvent(QPaintEvent* event)
     const int docW = doc.width();
     const int docH = doc.height();
 
-    p.fillRect(rect(), QColor("#1A1D24"));
+    p.fillRect(rect(), QColor("#101218"));
 
     p.save();
     p.translate(width() / 2.0f + offsetX_, height() / 2.0f + offsetY_);

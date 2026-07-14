@@ -174,13 +174,13 @@ private:
 // Colors
 // ========================================================================
 
-static const QColor kBgColor("#14161C");
-static const QColor kTrackBg("#121418");
-static const QColor kTrackActiveBg("#191D26");
-static const QColor kTrackHoverBg("#161A22");
+static const QColor kBgColor("#161A24");
+static const QColor kTrackBg("#13161D");
+static const QColor kTrackActiveBg("#1D2230");
+static const QColor kTrackHoverBg("#191E28");
 static const QColor kHeaderBg("#0D1014");
 static const QColor kHeaderActiveBg("#11131B");
-static const QColor kCellEmpty("#161920");
+static const QColor kCellEmpty("#131820");
 static const QColor kCellFilled("#2E333D");
 static const QColor kCellBorder("#1E2128");
 static const QColor kCellActiveBorder("#FF4800");
@@ -193,10 +193,10 @@ static const QColor kBtnHover("#252838");
 static const QColor kBtnPressed("#FF4800");
 static const QColor kBtnText("#C8CCD8");
 static const QColor kFrameNumColor("#4A4E60");
-static const QColor kRulerBg("#0F1115");
+static const QColor kRulerBg("#1C2030");
 static const QColor kRulerTick("#3A3E48");
 static const QColor kRulerText("#5A5E68");
-static const QColor kScrollBg("#14161C");
+static const QColor kScrollBg("#161A24");
 static const QColor kScrollHandle("#2A2D38");
 static const QColor kTrackNameText("#8B8FA3");
 static const QColor kTrackNameActiveText("#FF4800");

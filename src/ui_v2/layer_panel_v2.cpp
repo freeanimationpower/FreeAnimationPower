@@ -93,7 +93,7 @@ private:
 
 } // anonymous namespace
 
-static const char* kPanelBg = "#1A1D24";
+static const char* kPanelBg = "#161A24";
 static const char* kTextColor = "#C8CCD8";
 static const char* kMutedColor = "#6B7088";
 static const char* kAccentColor = "#FF4800";
@@ -150,6 +150,7 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     : QWidget(parent)
     , appState_(std::move(state))
 {
+    setAttribute(Qt::WA_StyledBackground, true);
     setStyleSheet(QString("background:%1;").arg(kPanelBg));
 
     auto* layout = new QVBoxLayout(this);
@@ -171,11 +172,12 @@ LayerPanelV2::LayerPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     list_->setStyleSheet(
         QString("QListWidget{background:%1;color:%2;border:1px solid %3;border-radius:4px;outline:none;}")
             .arg(kInputBg, kTextColor, kBorderColor) +
-        QString("QListWidget::item{background:transparent;padding:0px;border:none;margin:1px 0;}")
-        + QString("QListWidget::item:selected{background:%1;border-radius:2px;}")
-            .arg("#3A3D45") +
+        QString("QListWidget::item{background:%1;padding:0px;border:none;margin:1px 0;}")
+            .arg(kInputBg) +
+        QString("QListWidget::item:selected{background:%1;border-radius:2px;color:%2;}")
+            .arg("#3A2820", "#FFFFFF") +
         QString("QListWidget::item:hover{background:%1;border-radius:2px;}")
-            .arg("#2D3139"));
+            .arg("#252838"));
     list_->setSpacing(0);
 
     QObject::connect(list_, &QListWidget::currentRowChanged, this, &LayerPanelV2::onRowSelected);

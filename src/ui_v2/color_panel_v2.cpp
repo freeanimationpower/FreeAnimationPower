@@ -12,7 +12,7 @@
 
 namespace fap {
 
-static const char* kPanelBg = "#1A1D24";
+static const char* kPanelBg = "#161A24";
 static const char* kTextColor = "#C8CCD8";
 static const char* kAccentColor = "#FF4800";
 static const char* kBorderColor = "#2D3139";
@@ -31,6 +31,7 @@ static const QColor kDefaultPalette[] = {
 };
 
 ColorPanelV2::ColorPanelV2(QWidget* parent) : QWidget(parent) {
+    setAttribute(Qt::WA_StyledBackground, true);
     setStyleSheet(QString("background:%1;").arg(kPanelBg));
 
     auto* layout = new QVBoxLayout(this);
