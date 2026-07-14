@@ -522,3 +522,121 @@ struct AudioTrackData {
 - Explicit `~TimelinePanelV2()` destructor needed for `unique_ptr<GroupLayer>` member
 
 **Tests**: 160/160 pass.
+
+## Bug Fix Session (v2.6.1 — Jul 2026)
+
+### Critical Fixes
+
+#### C1 — ABR importer endian swap broken (silent failure on x86)
+**Symptom**: All ABR v1/v2 brush files failed to load silently on little-endian machines.
+
+**Root cause**: `uint16_t` promoted to `int` before bit-shift, producing wrong version number (65537 instead of 1).
+
+**Fix**: Cast final result to `uint16_t` after shifts.
+
+**Files**: `src/engine/brush/abr_importer.cpp:31`
+
+#### C2 — Deformation mesh bilinear interpolation error
+**Symptom**: Bottom-right quadrant of deformed meshes had wrong Y coordinates.
+
+**Root cause**: `p11.y * fy * fy` instead of `p11.y * fx * fy` in `mapPointBilinear()`.
+
+**Fix**: Corrected the weighting factor.
+
+**Files**: `src/engine/deformation/deformation_mesh.cpp:89`
+
+#### C3 — `smoothstep(f)` NaN on equal edge values
+**Symptom**: Brush/render functions produced NaN when `hardness >= 1.0f`.
+
+**Root cause**: Division `(x - edge0) / (edge1 - edge0)` → 0/0 = NaN when edges equal. `clampf`/`std::clamp` propagates NaN.
+
+**Fix**: Added `if (edge0 == edge1) return (x >= edge1) ? 1.0f : 0.0f;` guard in both copies.
+
+**Files**: `src/core/types.hpp:218-220`, `src/engine/raster/raster_stroke.cpp:10-12`
+
+#### C4 — Pixel byte order conflict (0xAABBGGRR vs 0xAARRGGBB)
+**Symptom**: R/B channels swapped when compositor blended pixels from different engine modules.
+
+**Root cause**: `blend_utils.hpp` used 0xAABBGGRR (R at byte 0, B at byte 2) while `raster_stroke.cpp` and QImage used 0xAARRGGBB. The compositor read correctly but blended with wrong byte order, causing channel swaps.
+
+**Fix**: Standardized `unpackPixel`/`packPixel` in `blend_utils.hpp` to 0xAARRGGBB (Qt native). Updated compositor tests to match new byte order.
+
+**Files**: `src/engine/common/blend_utils.hpp:12-28`, `tests/test_compositor.cpp`
+
+#### C5 — Path traversal in audio extraction
+**Symptom**: Malicious .fap file could write files outside temp directory via `../../` in `displayName`.
+
+**Root cause**: `extractAudio()` used raw `displayName` from JSON as filename without sanitization.
+
+**Fix**: Added `QFileInfo(rawName).fileName()` to strip path components.
+
+**Files**: `src/io/document_manager.cpp:797-798`
+
+### High-Severity Fixes
+
+#### H1 — `pushFullLayerUndo` missing `hadContentBefore` (6 call sites)
+**Symptom**: After undoing fill, text, move, selection, or floating selection operations, timeline cells showed empty frames even though pixel data was restored.
+
+**Root cause**: `hadBefore = layer->hasContent()` was computed but never passed to the undo command. The `LayerModifyCommand` defaulted `hadContentBefore_ = false`, so undo always cleared `hasContent_`.
+
+**Fix**: Pass `hadBefore` as the 3rd argument to `pushFullLayerUndo` in all 6 call sites: `doFill`, `doText`, `clearTextRaster`, `commitMove`, `commitSelection`, `commitFloatingSelection`.
+
+**Files**: `src/ui_v2/canvas_widget_v2.cpp` (6 lines)
+
+#### H2 — Stale sequence callbacks emitting from inactive sequences
+**Symptom**: After switching sequences, the old sequence's `on_frame_changed_` callback still fired, emitting `currentFrameChanged` for the wrong sequence.
+
+**Root cause**: `wireSequenceSignals()` only set the callback on the new active sequence but never cleared it from the old one.
+
+**Fix**: `wireSequenceSignals()` now clears callbacks on ALL sequences before wiring the active one.
+
+**Files**: `src/core/app_state.cpp:41-45`
+
+#### H3 — Atomic save data loss via TOCTOU race
+**Symptom**: `commitAtomic()` explicitly deleted the target file before renaming the temp file. If rename failed after delete, data was permanently lost. On Windows, `QFile::rename` already replaces the target; the explicit delete was unnecessary and dangerous.
+
+**Fix**: Removed the explicit `QFile::remove` call. `commitAtomic` now uses `QFile::rename` directly.
+
+**Files**: `src/io/document_manager.cpp:214-223`
+
+#### H7 — Compositor inverted z-order (painter's algorithm)
+**Symptom**: Layers were composited in reverse order — the bottom layer was drawn on top and vice versa.
+
+**Root cause**: `compositeLayer()` iterated GroupLayer children with `rbegin()`/`rend()`, drawing the topmost layer first.
+
+**Fix**: Changed to `begin()`/`end()` forward iteration for correct painter's algorithm (bottom→top).
+
+**Files**: `src/engine/compositor/compositor.cpp:61`, `tests/test_compositor.cpp` (updated MoveLayerChangesOrder expectations)
+
+#### H8 — NodeGraph dangling pointers after node removal
+**Symptom**: After removing a node, other nodes' `outputs_` vectors retained raw pointers to the freed node, risking use-after-free.
+
+**Root cause**: `removeNode()` only disconnected other nodes' inputs pointing TO the removed node, but never disconnected the removed node's own inputs (which had `outputs_` back-references in other nodes).
+
+**Fix**: Added a second loop to disconnect all inputs of the to-be-removed node before erasing it, cleaning up `outputs_` back-references in source nodes.
+
+**Files**: `src/engine/compositor/node_graph.cpp:329-347`
+
+### Medium Fixes
+
+#### M1 — Dead `Project` class
+**File**: `src/core/project.cpp` — defined class entirely in .cpp with no header. Unreachable from any translation unit. Removed from filesystem and CMakeLists.
+
+#### M8 — Dead `refreshSequenceFields`
+**Files**: `src/ui_v2/property_editor_v2.cpp:950-954`, `.hpp`, `main_window_v2.cpp:421` — empty stub method still connected to `sequenceChanged` signal. Removed method body, declaration, and signal connection.
+
+### Text Tool Fixes
+
+| Bug | Symptom | Fix |
+|-----|---------|-----|
+| `textSelectionAnchor_` not reset on new entry | Weird selection behavior when clicking between text entries | Set `textSelectionAnchor_ = -1` on new entry |
+| `brushColor_` desync on new entry | Text preview shown with wrong color until first keystroke | Sync `brushColor_` from `ToolState::primaryColor()` on new entry click |
+| `doText` undo missing `hadContentBefore` | Timeline cells empty after undoing text placement | Pass `hadBefore` to `pushFullLayerUndo` |
+| `clearTextRaster` undo missing `hadContentBefore` | Timeline cells empty after undoing text delete | Pass `hadBefore` to `pushFullLayerUndo` |
+
+### Cleanup
+- Removed dead `tests/test_timeline.cpp` (referenced nonexistent `core/timeline.hpp`)
+- Removed dead `project.cpp` from `CORE_SOURCES` in CMakeLists
+- Removed commented-out SEQUENCE/DURATION member variables from property_editor_v2.hpp
+
+**Tests**: 160/160 pass.
