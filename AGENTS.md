@@ -515,4 +515,10 @@ struct AudioTrackData {
 - `refreshLayerList()` now properly cleans up old `setItemWidget()` widgets before clearing
 - `startRename()` uses `QPointer` guards to prevent use-after-free crashes
 
+**Frame clipboard — right-click context menu** (`src/ui_v2/timeline_panel_v2.cpp`):
+- Right-click on any frame cell in the timeline → Copy/Cut/Paste menu
+- Clipboard stores complete `GroupLayer` clone (all layers + pixel data)
+- `CutFrameCommand` and `PasteFrameCommand` provide full undo/redo
+- Explicit `~TimelinePanelV2()` destructor needed for `unique_ptr<GroupLayer>` member
+
 **Tests**: 160/160 pass.

@@ -1,7 +1,7 @@
 # Session Report — 2026-07-13
 
 ## Summary
-v2.6 session: 6 bug fixes + 2 new features. 160 tests passing.
+v2.6 session: 6 bug fixes + 3 new features. 160 tests passing.
 
 ## Bug Fixes
 
@@ -26,6 +26,14 @@ v2.6 session: 6 bug fixes + 2 new features. 160 tests passing.
 - `scripts/embed_icon.py` — Win32 `BeginUpdateResource` post-build injector
 - `src/platform/file_association.{hpp,cpp}` — registry-based `.fap` handler
 
+### Frame Clipboard — Right-Click Context Menu (#19)
+- Right-click on any frame cell in timeline → Copy Frame / Cut Frame / Paste Frame
+- Clipboard stores complete `GroupLayer` clone (all layers + pixel data)
+- `CutFrameCommand` and `PasteFrameCommand` with full undo/redo
+- `TimelinePanelV2` stores `std::unique_ptr<GroupLayer> frameClipboard_`
+- Paste disabled when clipboard empty
+- Explicit `~TimelinePanelV2()` needed for incomplete type in `unique_ptr`
+
 ## Video Export Unification
 - `exportVideo(doc, path, fps)` — auto-detects format from extension
 - Audio mixing via FFmpeg `amix` filter with per-track volume
@@ -45,7 +53,8 @@ v2.6 session: 6 bug fixes + 2 new features. 160 tests passing.
 | `src/ui_v2/layer_panel_v2.hpp` | + copyLayerToAllFrames slot |
 | `src/ui_v2/layer_panel_v2.cpp` | Widget cleanup fix + QPointer guards + copy button + CopyLayerToFramesCommand |
 | `src/ui_v2/main_window_v2.cpp` | Simplified exportVideo + exportGIF delegation + file association |
-| `src/ui_v2/timeline_panel_v2.cpp` | Timer precision fix |
+| `src/ui_v2/timeline_panel_v2.cpp` | Timer precision fix + context menu + CutFrameCommand + PasteFrameCommand + clipboard methods |
+| `src/ui_v2/timeline_panel_v2.hpp` | + frameClipboard_ member + clipboard methods + explicit destructor |
 | `CMakeLists.txt` | Icon embedding post-build step |
 | `resources/resources.qrc` | + fap.ico entry |
 

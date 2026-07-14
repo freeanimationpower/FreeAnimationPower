@@ -28,6 +28,12 @@
 - `src/platform/file_association.{hpp,cpp}` — registro `HKCU\Software\Classes\.fap`
 - `registerFileAssociation()` llamado en constructor `MainWindowV2`
 
+### Frame Clipboard — Click Derecho en Timeline
+- Menu contextual en celdas del timeline: Copy Frame, Cut Frame, Paste Frame
+- Portapapeles almacena `GroupLayer` completo (todas las capas + pixeles)
+- `CutFrameCommand` y `PasteFrameCommand` con undo/redo completo
+- `TimelinePanelV2` con `unique_ptr<GroupLayer> frameClipboard_`
+
 ### Tests
 - 160/160 tests pasan
 
