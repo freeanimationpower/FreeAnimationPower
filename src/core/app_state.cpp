@@ -39,6 +39,9 @@ void AppState::wireSignals() {
 }
 
 void AppState::wireSequenceSignals() {
+    for (size_t i = 0; i < document_->sequenceCount(); ++i) {
+        document_->sequenceAt(i).setOnFrameChanged(nullptr);
+    }
     activeSequence().setOnFrameChanged([this](int frame) {
         emit currentFrameChanged(frame);
     });

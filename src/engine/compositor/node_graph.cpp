@@ -338,6 +338,9 @@ void NodeGraph::removeNode(NodeId id)
     auto it = std::find_if(nodes_.begin(), nodes_.end(),
         [id](const auto& n) { return n->id() == id; });
     if (it != nodes_.end()) {
+        for (int i = 0; i < (*it)->inputCount(); ++i) {
+            (*it)->disconnectInput(i);
+        }
         nodes_.erase(it);
     }
 }

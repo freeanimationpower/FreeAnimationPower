@@ -18,17 +18,17 @@ TEST(CompositorTest, SingleRasterLayer) {
     comp.composite(root, target);
 
     Color c11 = Color::fromRGBA(
-        static_cast<uint8_t>(target.pixels()[1 * 4 + 1] & 0xFF),
-        static_cast<uint8_t>((target.pixels()[1 * 4 + 1] >> 8) & 0xFF),
         static_cast<uint8_t>((target.pixels()[1 * 4 + 1] >> 16) & 0xFF),
+        static_cast<uint8_t>((target.pixels()[1 * 4 + 1] >> 8) & 0xFF),
+        static_cast<uint8_t>(target.pixels()[1 * 4 + 1] & 0xFF),
         static_cast<uint8_t>((target.pixels()[1 * 4 + 1] >> 24) & 0xFF)
     );
     EXPECT_EQ(c11, Color::fromRGBA(255, 0, 0, 255));
 
     Color c22 = Color::fromRGBA(
-        static_cast<uint8_t>(target.pixels()[2 * 4 + 2] & 0xFF),
-        static_cast<uint8_t>((target.pixels()[2 * 4 + 2] >> 8) & 0xFF),
         static_cast<uint8_t>((target.pixels()[2 * 4 + 2] >> 16) & 0xFF),
+        static_cast<uint8_t>((target.pixels()[2 * 4 + 2] >> 8) & 0xFF),
+        static_cast<uint8_t>(target.pixels()[2 * 4 + 2] & 0xFF),
         static_cast<uint8_t>((target.pixels()[2 * 4 + 2] >> 24) & 0xFF)
     );
     EXPECT_EQ(c22, Color::fromRGBA(0, 255, 0, 255));
@@ -83,9 +83,9 @@ TEST(CompositorTest, GroupLayerRecursive) {
 
     uint32_t p = target.pixels()[0];
     Color got = Color::fromRGBA(
-        static_cast<uint8_t>(p & 0xFF),
-        static_cast<uint8_t>((p >> 8) & 0xFF),
         static_cast<uint8_t>((p >> 16) & 0xFF),
+        static_cast<uint8_t>((p >> 8) & 0xFF),
+        static_cast<uint8_t>(p & 0xFF),
         static_cast<uint8_t>((p >> 24) & 0xFF)
     );
     EXPECT_EQ(got, Color::fromRGBA(0, 0, 255, 255));
@@ -105,15 +105,15 @@ TEST(CompositorTest, MoveLayerChangesOrder) {
 
     comp.composite(root, target);
     uint32_t p1 = target.pixels()[0];
-    EXPECT_GT(static_cast<uint8_t>(p1 & 0xFF), 0u);
     EXPECT_EQ(static_cast<uint8_t>((p1 >> 16) & 0xFF), 0u);
+    EXPECT_GT(static_cast<uint8_t>(p1 & 0xFF), 0u);
 
     root.moveLayer(0, 1);
     target.clear();
     comp.composite(root, target);
     uint32_t p2 = target.pixels()[0];
-    EXPECT_EQ(static_cast<uint8_t>(p2 & 0xFF), 0u);
     EXPECT_GT(static_cast<uint8_t>((p2 >> 16) & 0xFF), 0u);
+    EXPECT_EQ(static_cast<uint8_t>(p2 & 0xFF), 0u);
 }
 
 TEST(CompositorTest, VisibilityToggleReflected) {

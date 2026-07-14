@@ -76,9 +76,9 @@ set(CORE_SOURCES
     src/core/types.cpp
     src/core/layer.cpp
     src/core/sequence.cpp
-    src/core/document.cpp    src/core/stroke.cpp
+    src/core/document.cpp
+    src/core/stroke.cpp
     src/core/canvas.cpp
-    src/core/project.cpp
     src/core/undo_manager.cpp
     src/core/tool_state.cpp
     src/core/app_state.cpp

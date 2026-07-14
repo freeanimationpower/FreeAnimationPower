@@ -216,6 +216,9 @@ inline float lerpf(float a, float b, float t) {
 }
 
 inline float smoothstepf(float edge0, float edge1, float x) {
+    if (edge0 == edge1) {
+        return (x >= edge1) ? 1.0f : 0.0f;
+    }
     float t = clampf((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
     return t * t * (3.0f - 2.0f * t);
 }

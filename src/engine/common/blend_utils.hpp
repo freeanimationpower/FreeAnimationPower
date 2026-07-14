@@ -11,9 +11,9 @@ struct FloatPixel { float r, g, b, a; };
 
 inline FloatPixel unpackPixel(uint32_t p) {
     return {
-        static_cast<float>(p & 0xFF) / 255.0f,
-        static_cast<float>((p >> 8) & 0xFF) / 255.0f,
         static_cast<float>((p >> 16) & 0xFF) / 255.0f,
+        static_cast<float>((p >> 8) & 0xFF) / 255.0f,
+        static_cast<float>(p & 0xFF) / 255.0f,
         static_cast<float>((p >> 24) & 0xFF) / 255.0f
     };
 }
@@ -22,9 +22,9 @@ inline uint32_t packPixel(const FloatPixel& fp) {
     auto clampRound = [](float v) -> uint8_t {
         return static_cast<uint8_t>(std::clamp(std::round(v * 255.0f), 0.0f, 255.0f));
     };
-    return (static_cast<uint32_t>(clampRound(fp.r)) << 0)
+    return (static_cast<uint32_t>(clampRound(fp.b)) << 0)
          | (static_cast<uint32_t>(clampRound(fp.g)) << 8)
-         | (static_cast<uint32_t>(clampRound(fp.b)) << 16)
+         | (static_cast<uint32_t>(clampRound(fp.r)) << 16)
          | (static_cast<uint32_t>(clampRound(fp.a)) << 24);
 }
 

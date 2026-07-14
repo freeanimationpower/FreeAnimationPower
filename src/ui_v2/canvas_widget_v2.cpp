@@ -1400,6 +1400,8 @@ void CanvasWidgetV2::mousePressEvent(QMouseEvent* event)
         textEditPos_ = cp;
         editingEntryIndex_ = -1;
         textCursorPos_ = 0;
+        textSelectionAnchor_ = -1;
+        brushColor_ = appState_->toolState().primaryColor();
         caretVisible_ = true;
         if (!caretTimer_) {
             caretTimer_ = new QTimer(this);
@@ -2597,7 +2599,7 @@ void CanvasWidgetV2::doFill(QPointF cpos)
     layer->bufferEpochTick();
     layer->setHasContent(true);
 
-    pushFullLayerUndo(layer, before);
+    pushFullLayerUndo(layer, before, hadBefore);
 
     FAP_TRACE_BUFFER_COMMIT(layer->uid(), layer->originX(), layer->originY(),
                             layer->width(), layer->height(), currentFrame_);
@@ -2957,13 +2959,11 @@ void CanvasWidgetV2::doText(QPointF cpos)
     layer->bufferEpochTick();
     layer->setHasContent(true);
 
-    pushFullLayerUndo(layer, before);
-
-    auto& ts2 = appState_->toolState();
+    pushFullLayerUndo(layer, before, hadBefore);
     TextEntry entry;
     entry.pos = cpos;
     entry.text = text;
-    entry.font = ts2.textFont();
+    entry.font = ts.textFont();
     entry.color = brushColor_;
     entry.undoImage = textUndo;
     entry.undoRect = textUndoRect;
@@ -3062,7 +3062,7 @@ void CanvasWidgetV2::clearTextRaster(const TextEntry& entry)
     }
 
     layer->bufferEpochTick();
-    pushFullLayerUndo(layer, before);
+    pushFullLayerUndo(layer, before, hadBefore);
     invalidateBackgroundCache();
 }
 
@@ -3169,7 +3169,7 @@ void CanvasWidgetV2::commitMove()
     moveOffset_ = QPointF(0, 0);
     moveImage_ = QImage();
 
-    pushFullLayerUndo(layer, before);
+    pushFullLayerUndo(layer, before, hadBefore);
     invalidateBackgroundCache();  // pixel data translated
     update();
     emit canvasUpdated();
@@ -3235,7 +3235,7 @@ void CanvasWidgetV2::commitSelection()
     floatingActive_ = true;
     marchingTimer_.start();
 
-    pushFullLayerUndo(layer, before);
+    pushFullLayerUndo(layer, before, hadBefore);
     invalidateBackgroundCache();  // selected region cleared from pixelBuffer_
     update();
     emit canvasUpdated();
@@ -3305,7 +3305,7 @@ void CanvasWidgetV2::commitFloatingSelection()
     selRect_ = QRectF();
     selState_ = SelectionState::None;
 
-    pushFullLayerUndo(layer, before);
+    pushFullLayerUndo(layer, before, hadBefore);
     invalidateBackgroundCache();  // floating composited into pixelBuffer_
     update();
     emit canvasUpdated();

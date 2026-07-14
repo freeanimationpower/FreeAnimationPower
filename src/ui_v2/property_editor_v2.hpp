@@ -21,7 +21,7 @@ public:
     explicit PropertyEditorV2(std::shared_ptr<AppState> state, QWidget* parent = nullptr);
 
     void refreshFields();
-    void refreshSequenceFields();  // no-op: duration control now lives in Timeline panel
+      // no-op: duration control now lives in Timeline panel
     void updateColorVariations();
 
 signals:
@@ -110,10 +110,6 @@ private:
 
     // Text tool controls
     QWidget* textGroup_ = nullptr;
-
-    // Sequence / Timeline controls
-    // QWidget* timelineGroup_ = nullptr;  // [REMOVED] SEQUENCE group removed from property panel
-    // QSpinBox* durationSpin_ = nullptr;  // [REMOVED] DURATION spinbox removed from property panel
 
     QPushButton* fontBtn_ = nullptr;
     QComboBox* fontStyleCombo_ = nullptr;

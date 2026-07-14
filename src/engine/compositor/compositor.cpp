@@ -58,7 +58,7 @@ void compositeLayer(const Layer* layer, RasterEngine& target) {
         compositeRasterLayer(*static_cast<const RasterLayer*>(layer), target);
     } else if (layer->type() == LayerType::Group) {
         const auto* group = static_cast<const GroupLayer*>(layer);
-        for (auto it = group->layers().rbegin(); it != group->layers().rend(); ++it) {
+        for (auto it = group->layers().begin(); it != group->layers().end(); ++it) {
             compositeLayer(it->get(), target);
         }
     }

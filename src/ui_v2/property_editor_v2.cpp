@@ -539,8 +539,6 @@ void PropertyEditorV2::refreshFields()
 {
     if (!appState_) return;
 
-    // refreshSequenceFields();   // [REMOVED] duration control now lives in Timeline panel
-
     auto tool = appState_->toolState().activeTool();
 
     bool showBrush = false;
@@ -945,12 +943,6 @@ void PropertyEditorV2::updateColorVariations()
         fillTypeCombo_->setCurrentIndex(ts.fillType());
         fillTypeCombo_->blockSignals(false);
     }
-}
-
-void PropertyEditorV2::refreshSequenceFields()
-{
-    // No-op: SEQUENCE + DURATION group removed from property panel.
-    // Duration control now lives exclusively in the Timeline panel.
 }
 
 QColor PropertyEditorV2::generateVariation(const QColor& base, int index, int total) const

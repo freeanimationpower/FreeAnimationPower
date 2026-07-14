@@ -86,7 +86,7 @@ Vec2 DeformationMesh::mapPointBilinear(const Vec2& p) const
     float x = p00.x * (1 - fx) * (1 - fy) + p10.x * fx * (1 - fy)
             + p01.x * (1 - fx) * fy + p11.x * fx * fy;
     float y = p00.y * (1 - fx) * (1 - fy) + p10.y * fx * (1 - fy)
-            + p01.y * (1 - fx) * fy + p11.y * fy * fy;
+            + p01.y * (1 - fx) * fy + p11.y * fx * fy;
 
     return { x, y };
 }

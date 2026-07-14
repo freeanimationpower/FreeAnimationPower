@@ -213,18 +213,10 @@ bool DocumentManager::prepareAtomicTarget(const QString& finalPath,
 
 bool DocumentManager::commitAtomic(const QString& tmpPath,
                                    const QString& finalPath) {
-    if (QFile::exists(finalPath)) {
-        if (!QFile::remove(finalPath)) {
-            lastError_ = QStringLiteral("Cannot remove existing file: ") + finalPath;
-            QFile::remove(tmpPath);
-            return false;
-        }
-    }
     if (!QFile::rename(tmpPath, finalPath)) {
         lastError_ = QStringLiteral("Atomic rename failed: ") + tmpPath
                    + QStringLiteral(" -> ") + finalPath
                    + QStringLiteral(". Temp file preserved at: ") + tmpPath;
-        // Keep .tmp for manual recovery
         return false;
     }
     return true;
@@ -794,7 +786,8 @@ bool DocumentManager::extractAudio(mz_zip_archive* zip, Document& doc) {
             continue;
         }
 
-        QString fileName = QString::fromStdString(at.displayName);
+        QString rawName = QString::fromStdString(at.displayName);
+        QString fileName = QFileInfo(rawName).fileName();
         QString outPath = audioTempDir_ + "/" + fileName;
         QFile outFile(outPath);
         if (outFile.open(QIODevice::WriteOnly)) {

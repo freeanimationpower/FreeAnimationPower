@@ -28,7 +28,8 @@ bool AbrImporter::loadFile(const std::string& path)
     AbrHeader header;
     std::memcpy(&header, data.data(), sizeof(AbrHeader));
 
-    auto version = (static_cast<uint16_t>(header.version) << 8) | (static_cast<uint16_t>(header.version) >> 8);
+    uint16_t raw = header.version;
+    uint16_t version = static_cast<uint16_t>((raw << 8) | (raw >> 8));
 
     switch (version) {
     case 1:
