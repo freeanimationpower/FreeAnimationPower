@@ -102,6 +102,7 @@ set(ENGINE_HEADERS
     src/engine/animation/tween_engine.hpp
     src/engine/animation/frame_thumbnail.hpp
     src/engine/animation/audio_file_decoder.hpp
+    src/engine/animation/video_decoder.hpp
 )
 
 set(ENGINE_SOURCES
@@ -117,6 +118,7 @@ set(ENGINE_SOURCES
     src/engine/animation/tween_engine.cpp
     src/engine/animation/frame_thumbnail.cpp
     src/engine/animation/audio_file_decoder.cpp
+    src/engine/animation/video_decoder.cpp
     src/engine/brush/brush_engine.cpp
     src/engine/brush/brush_preset.cpp
     src/engine/brush/paper_texture.cpp
@@ -138,6 +140,7 @@ set(UI_HEADERS
     src/ui_v2/layer_panel_v2.hpp
     src/ui_v2/property_editor_v2.hpp
     src/ui_v2/audio_track_widget.hpp
+    src/ui_v2/video_track_widget.hpp
 )
 
 set(UI_SOURCES
@@ -150,6 +153,7 @@ set(UI_SOURCES
     src/ui_v2/layer_lock_button.cpp
     src/ui_v2/property_editor_v2.cpp
     src/ui_v2/audio_track_widget.cpp
+    src/ui_v2/video_track_widget.cpp
 )
 
 set(IO_HEADERS

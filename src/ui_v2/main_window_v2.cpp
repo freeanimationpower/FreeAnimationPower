@@ -44,6 +44,7 @@
 #include "canvas_widget_v2.hpp"
 #include "timeline_panel_v2.hpp"
 #include "audio_track_widget.hpp"
+#include "video_track_widget.hpp"
 #include "property_editor_v2.hpp"
 #include "core/document.hpp"
 #include "core/undo_manager.hpp"
@@ -354,6 +355,9 @@ void MainWindowV2::setupDocks()
     timelineDock->setWidget(timeline_panel_);
     addDockWidget(Qt::BottomDockWidgetArea, timelineDock);
 
+    canvas_->setVideoTrackWidgets(const_cast<std::vector<VideoTrackWidget*>*>(
+        &timeline_panel_->videoTrackWidgets()));
+
     // Apply orange title color via title bar widget (CSS QDockWidget::title unreliable on Win)
     const char* kDockTitleStyle =
         "QLabel { color: #FF4800; font-size: 10px; font-weight: 600;"
@@ -566,6 +570,7 @@ void MainWindowV2::newProject()
     setWindowTitle("Free Animation Power - Untitled.fap");
     if (timeline_panel_) {
         timeline_panel_->clearAudioTracks();
+        timeline_panel_->clearVideoTracks();
     }
     layer_panel_->refreshLayerList();
     if (canvas_) {
@@ -668,6 +673,10 @@ void MainWindowV2::openProject(const QString& path)
             for (const auto& at : appState_->document().audioTracks()) {
                 timeline_panel_->addAudioTrackFromData(at);
             }
+            timeline_panel_->clearVideoTracks();
+            for (const auto& vt : appState_->document().videoTracks()) {
+                timeline_panel_->addVideoTrackFromData(vt);
+            }
         }
     } else {
         QMessageBox::warning(this, "Error", "Failed to open project:\n" + path);
@@ -682,6 +691,7 @@ void MainWindowV2::saveProject()
     }
 
     syncAudioToDocument();
+    syncVideoToDocument();
 
     saving_ = true;
     QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -747,6 +757,7 @@ void MainWindowV2::saveProjectAs()
     if (path.isEmpty()) return;
 
     syncAudioToDocument();
+    syncVideoToDocument();
 
     saving_ = true;
     QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -888,6 +899,30 @@ void MainWindowV2::syncAudioToDocument()
             .arg(doc.audioTracks().size())
             .arg(fi.suffix().toLower()).toStdString();
         doc.addAudioTrack(at);
+    }
+}
+
+void MainWindowV2::syncVideoToDocument()
+{
+    auto& doc = appState_->document();
+    doc.clearVideoTracks();
+    if (!timeline_panel_) return;
+    for (auto* w : timeline_panel_->videoTrackWidgets()) {
+        VideoTrackData vt;
+        vt.filepath    = w->filepath().toStdString();
+        vt.displayName = w->displayName().toStdString();
+        vt.muted       = w->isMuted();
+        vt.volume      = w->volume();
+        vt.opacity     = w->opacity();
+        vt.width       = w->videoWidth();
+        vt.height      = w->videoHeight();
+        vt.fps         = static_cast<int>(w->videoFps());
+        vt.totalFrames = w->totalFrames();
+        QFileInfo fi(w->filepath());
+        vt.zipEntry = QString("video/track_%1.%2")
+            .arg(doc.videoTracks().size())
+            .arg(fi.suffix().toLower()).toStdString();
+        doc.addVideoTrack(vt);
     }
 }
 

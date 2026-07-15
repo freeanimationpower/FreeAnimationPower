@@ -17,6 +17,19 @@ struct AudioTrackData {
     int volume = 80;           // 0-100
 };
 
+struct VideoTrackData {
+    std::string filepath;
+    std::string displayName;
+    std::string zipEntry;
+    int width = 0;
+    int height = 0;
+    int fps = 24;
+    int totalFrames = 0;
+    bool muted = false;
+    int volume = 80;
+    float opacity = 1.0f;
+};
+
 class Document : public NonCopyable {
 public:
     Document();
@@ -74,6 +87,12 @@ public:
     void addAudioTrack(const AudioTrackData& track) { audioTracks_.push_back(track); }
     void clearAudioTracks() { audioTracks_.clear(); }
 
+    // Video tracks
+    std::vector<VideoTrackData>& videoTracks() { return videoTracks_; }
+    const std::vector<VideoTrackData>& videoTracks() const { return videoTracks_; }
+    void addVideoTrack(const VideoTrackData& track) { videoTracks_.push_back(track); }
+    void clearVideoTracks() { videoTracks_.clear(); }
+
 private:
     std::string filepath_;
     int width_ = 1920;
@@ -83,6 +102,7 @@ private:
     std::vector<std::unique_ptr<Sequence>> sequences_;
     size_t active_sequence_ = 0;
     std::vector<AudioTrackData> audioTracks_;
+    std::vector<VideoTrackData> videoTracks_;
 };
 
 } // namespace fap

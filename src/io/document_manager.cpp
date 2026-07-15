@@ -401,6 +401,25 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
     }
     root[QStringLiteral("audio")] = audioArr;
 
+    QJsonArray videoArr;
+    int vi = 0;
+    for (const auto& vt : doc.videoTracks()) {
+        QJsonObject vo;
+        vo[QStringLiteral("filepath")]     = QString::fromStdString(vt.filepath);
+        vo[QStringLiteral("display_name")] = QString::fromStdString(vt.displayName);
+        vo[QStringLiteral("zip_entry")]    = QString::fromStdString(vt.zipEntry);
+        vo[QStringLiteral("width")]        = vt.width;
+        vo[QStringLiteral("height")]       = vt.height;
+        vo[QStringLiteral("fps")]          = vt.fps;
+        vo[QStringLiteral("total_frames")] = vt.totalFrames;
+        vo[QStringLiteral("muted")]        = vt.muted;
+        vo[QStringLiteral("volume")]       = vt.volume;
+        vo[QStringLiteral("opacity")]      = static_cast<double>(vt.opacity);
+        videoArr.append(vo);
+        ++vi;
+    }
+    root[QStringLiteral("video")] = videoArr;
+
     QJsonDocument jdoc(root);
     QByteArray data = jdoc.toJson(QJsonDocument::Indented);
     if (!mz_zip_writer_add_mem(zip, kTimelineEntry, data.constData(),
@@ -515,6 +534,25 @@ bool DocumentManager::writeLayerData(mz_zip_archive* zip, const Document& doc) {
         } else {
             qWarning() << "Cannot open audio file for embedding:"
                        << QString::fromStdString(at.filepath);
+        }
+    }
+
+    // Embed video files into ZIP
+    for (size_t vi = 0; vi < doc.videoTracks().size(); ++vi) {
+        const auto& vt = doc.videoTracks()[vi];
+        QFile videoFile(QString::fromStdString(vt.filepath));
+        if (videoFile.open(QIODevice::ReadOnly)) {
+            QByteArray videoData = videoFile.readAll();
+            videoFile.close();
+            QByteArray entryPathUtf8 = QByteArray::fromStdString(vt.zipEntry);
+            if (!mz_zip_writer_add_mem(zip, entryPathUtf8.constData(),
+                                        videoData.constData(), videoData.size(),
+                                        MZ_DEFAULT_COMPRESSION)) {
+                qWarning() << "Failed to embed video:" << QString::fromStdString(vt.zipEntry);
+            }
+        } else {
+            qWarning() << "Cannot open video file for embedding:"
+                       << QString::fromStdString(vt.filepath);
         }
     }
 
@@ -725,6 +763,25 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         doc.addAudioTrack(at);
     }
 
+    // Parse video tracks
+    QJsonArray videoArr = root[QStringLiteral("video")].toArray();
+    doc.clearVideoTracks();
+    for (const auto& vv : videoArr) {
+        QJsonObject vo = vv.toObject();
+        VideoTrackData vt;
+        vt.filepath    = vo[QStringLiteral("filepath")].toString().toStdString();
+        vt.displayName = vo[QStringLiteral("display_name")].toString().toStdString();
+        vt.zipEntry    = vo[QStringLiteral("zip_entry")].toString().toStdString();
+        vt.width       = vo[QStringLiteral("width")].toInt(0);
+        vt.height      = vo[QStringLiteral("height")].toInt(0);
+        vt.fps         = vo[QStringLiteral("fps")].toInt(24);
+        vt.totalFrames = vo[QStringLiteral("total_frames")].toInt(0);
+        vt.muted       = vo[QStringLiteral("muted")].toBool(false);
+        vt.volume      = vo[QStringLiteral("volume")].toInt(80);
+        vt.opacity     = static_cast<float>(vo[QStringLiteral("opacity")].toDouble(1.0));
+        doc.addVideoTrack(vt);
+    }
+
     return true;
 }
 
@@ -840,6 +897,34 @@ bool DocumentManager::extractAudio(mz_zip_archive* zip, Document& doc) {
         }
 
         mz_free(audioData);
+    }
+
+    // Extract video files
+    auto& videoTracks = doc.videoTracks();
+    for (auto& vt : videoTracks) {
+        if (vt.zipEntry.empty()) continue;
+
+        size_t videoSize = 0;
+        QByteArray entryUtf8 = QByteArray::fromStdString(vt.zipEntry);
+        void* videoData = mz_zip_reader_extract_file_to_heap(
+            zip, entryUtf8.constData(), &videoSize, 0);
+        if (!videoData) {
+            qWarning() << "Video entry not found in ZIP:" << vt.zipEntry.c_str();
+            continue;
+        }
+
+        QString rawName = QString::fromStdString(vt.displayName);
+        QString fileName = QFileInfo(rawName).fileName();
+        QString outPath = audioTempDir_ + "/" + fileName;
+        QFile outFile(outPath);
+        if (outFile.open(QIODevice::WriteOnly)) {
+            outFile.write(static_cast<const char*>(videoData), videoSize);
+            outFile.close();
+            vt.filepath = outPath.toStdString();
+        } else {
+            qWarning() << "Failed to write extracted video:" << outPath;
+        }
+        mz_free(videoData);
     }
 
     return true;

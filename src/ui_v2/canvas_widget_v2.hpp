@@ -82,6 +82,10 @@ public:
     void deleteSelection();
     void resetView();
 
+    void setVideoTrackWidgets(std::vector<class VideoTrackWidget*>* tracks) {
+        videoTracks_ = tracks;
+    }
+
     void invalidateBackgroundCache();
     void resetState();
     bool isSequenceLocked() const;
@@ -146,6 +150,8 @@ private:
     // Pre-composited display cache (DISPLAY domain):
     // white background + onion skin + all visible layers blended in order.
     QImage backgroundCache_;
+
+    std::vector<class VideoTrackWidget*>* videoTracks_ = nullptr;
 
     // Validity gate for backgroundCache_. Set false on frame change,
     // layer property change, zoom/pan. Set true after buildBackgroundCache().

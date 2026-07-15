@@ -19,7 +19,9 @@ class GroupLayer;
 class SequenceTrackWidget;
 class RulerWidget;
 class AudioTrackWidget;
+class VideoTrackWidget;
 struct AudioTrackData;
+struct VideoTrackData;
 
 class TimelinePanelV2 : public QWidget {
     Q_OBJECT
@@ -50,12 +52,17 @@ public:
     void onDelTrack(int seqIndex);
     void onMoveTrack(int seqIndex, int delta);
     void onImportAudio();
+    void onImportVideo();
     void removeAudioTrack(AudioTrackWidget* track);
+    void removeVideoTrack(VideoTrackWidget* track);
     void clearAudioTracks();
+    void clearVideoTracks();
     void onTrackFrameClicked(int frame);
     void deleteFrameAt(int frame);
     AudioTrackWidget* addAudioTrackFromData(const AudioTrackData& data);
+    VideoTrackWidget* addVideoTrackFromData(const VideoTrackData& data);
     const std::vector<AudioTrackWidget*>& audioTrackWidgets() const { return audioTrackWidgets_; }
+    const std::vector<VideoTrackWidget*>& videoTrackWidgets() const { return videoTrackWidgets_; }
 
     // Frame clipboard (right-click copy/cut/paste between frames)
     void copyFrameToClipboard(int seqIndex, int frame);
@@ -99,6 +106,7 @@ private:
     void onNewSequence();
     void onAddMarker();
     void onMoveAudioTrack(int index, int delta);
+    void onMoveVideoTrack(int index, int delta);
     void updateScrollBarRange();
 
     std::shared_ptr<AppState> appState_;
@@ -123,6 +131,7 @@ private:
 
     std::vector<SequenceTrackWidget*> trackWidgets_;
     std::vector<AudioTrackWidget*> audioTrackWidgets_;
+    std::vector<VideoTrackWidget*> videoTrackWidgets_;
 
     QTimer* playbackTimer_ = nullptr;
 

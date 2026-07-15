@@ -11,6 +11,7 @@
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
 #include <QtWidgets/QSlider>
 #include <QtCore/QFileInfo>
 #include <QtWidgets/QMenu>
@@ -38,6 +39,7 @@
 #include "core/undo_manager.hpp"
 #include "core/diagnostic/tracer_macros.hpp"
 #include "audio_track_widget.hpp"
+#include "video_track_widget.hpp"
 #include "engine/animation/frame_thumbnail.hpp"
 
 namespace fap {
@@ -1323,6 +1325,7 @@ void TimelinePanelV2::setupUI()
         .arg(kBtnBg.name(), kBtnText.name(), kAccentColor.name(), kAccentColor.name()));
     addMenu->addAction("Add Animation Sequence", this, &TimelinePanelV2::onNewSequence);
     addMenu->addAction("Add Audio Track", this, &TimelinePanelV2::onImportAudio);
+    addMenu->addAction("Add Video Track", this, &TimelinePanelV2::onImportVideo);
     newSeqBtn_->setMenu(addMenu);
     topBar->addWidget(newSeqBtn_);
 
@@ -1421,6 +1424,10 @@ void TimelinePanelV2::rebuildTracks()
         tracksLayout_->removeWidget(at);
     }
 
+    for (auto* vt : videoTrackWidgets_) {
+        tracksLayout_->removeWidget(vt);
+    }
+
     for (auto* tw : trackWidgets_) {
         tracksLayout_->removeWidget(tw);
         delete tw;
@@ -1439,6 +1446,10 @@ void TimelinePanelV2::rebuildTracks()
         for (auto* at : audioTrackWidgets_) {
             tracksLayout_->addWidget(at);
             at->positionHeader();
+        }
+        for (auto* vt : videoTrackWidgets_) {
+            tracksLayout_->addWidget(vt);
+            vt->positionHeader();
         }
         tracksLayout_->addStretch();
         return;
@@ -1471,11 +1482,17 @@ void TimelinePanelV2::rebuildTracks()
         at->positionHeader();
     }
 
+    for (auto* vt : videoTrackWidgets_) {
+        tracksLayout_->addWidget(vt);
+        vt->positionHeader();
+    }
+
     tracksLayout_->addStretch();
     tracksLayout_->update();
     updateScrollBarRange();
     rulerWidget_->update();
     for (auto* at : audioTrackWidgets_) at->update();
+    for (auto* vt : videoTrackWidgets_) vt->update();
 
     FAP_TRACE_APP("rebuild_tracks_end");
 }
@@ -1487,6 +1504,7 @@ void TimelinePanelV2::refreshTimelineLayout()
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
     for (auto* at : audioTrackWidgets_) at->update();
+    for (auto* vt : videoTrackWidgets_) vt->update();
 }
 
 void TimelinePanelV2::updateScrollBarRange()
@@ -2000,6 +2018,150 @@ void TimelinePanelV2::onMoveAudioTrack(int index, int delta)
     if (index < 0 || index >= static_cast<int>(audioTrackWidgets_.size())) return;
 
     auto* widget = audioTrackWidgets_[index];
+    int oldPos = tracksLayout_->indexOf(widget);
+    if (oldPos < 0) return;
+
+    int newPos = oldPos + delta;
+    int maxPos = tracksLayout_->count() - 2;
+    if (newPos < 0 || newPos > maxPos) return;
+
+    auto* item = tracksLayout_->takeAt(oldPos);
+    if (item) {
+        tracksLayout_->insertItem(newPos, item);
+        tracksLayout_->update();
+        widget->positionHeader();
+        widget->update();
+    }
+}
+
+void TimelinePanelV2::onImportVideo()
+{
+    QString path = QFileDialog::getOpenFileName(this, "Import Video", "",
+        "Video Files (*.mp4 *.mov *.webm *.avi);;All Files (*)");
+    if (path.isEmpty()) return;
+
+    auto meta = fap::probeVideoMetadata(path);
+    if (!meta.valid) {
+        QMessageBox::warning(this, "Import Error",
+            "Could not read video metadata. Make sure FFmpeg is installed.");
+        return;
+    }
+
+    bool warnDuration = false, warnSize = false;
+    QString warnMsg;
+
+    if (meta.durationSecs > 60.0) {
+        warnDuration = true;
+        warnMsg += QString("Video is %1s (max: 60s). It will be trimmed.\n")
+                       .arg(meta.durationSecs, 0, 'f', 1);
+    }
+    if (meta.width > 1920 || meta.height > 1080) {
+        warnSize = true;
+        warnMsg += QString("Video is %1x%2 (max: 1920x1080). It will be scaled.\n")
+                       .arg(meta.width).arg(meta.height);
+    }
+
+    if (warnDuration || warnSize) {
+        auto btn = QMessageBox::question(this, "Video Import Limits",
+            warnMsg + "\nContinue with import?",
+            QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Yes);
+        if (btn != QMessageBox::Yes) return;
+    }
+
+    auto* track = new VideoTrackWidget(path,
+        static_cast<int>(videoTrackWidgets_.size()),
+        appState_, this, tracksContainer_);
+
+    connect(track, &VideoTrackWidget::moveUpRequested, this, [this, track]() {
+        auto it = std::find(videoTrackWidgets_.begin(), videoTrackWidgets_.end(), track);
+        if (it != videoTrackWidgets_.end())
+            onMoveVideoTrack(static_cast<int>(std::distance(videoTrackWidgets_.begin(), it)), -1);
+    });
+    connect(track, &VideoTrackWidget::moveDownRequested, this, [this, track]() {
+        auto it = std::find(videoTrackWidgets_.begin(), videoTrackWidgets_.end(), track);
+        if (it != videoTrackWidgets_.end())
+            onMoveVideoTrack(static_cast<int>(std::distance(videoTrackWidgets_.begin(), it)), 1);
+    });
+
+    int insertPos = std::max(0, tracksLayout_->count() - 1);
+    tracksLayout_->insertWidget(insertPos, track);
+    videoTrackWidgets_.push_back(track);
+    track->positionHeader();
+
+    VideoTrackData vt;
+    vt.filepath    = path.toStdString();
+    vt.displayName = QFileInfo(path).fileName().toStdString();
+    vt.zipEntry    = QString("video/track_%1.%2")
+        .arg(videoTrackWidgets_.size() - 1)
+        .arg(QFileInfo(path).suffix().toLower()).toStdString();
+    vt.width       = track->videoWidth();
+    vt.height      = track->videoHeight();
+    vt.fps         = static_cast<int>(track->videoFps());
+    vt.totalFrames = track->totalFrames();
+    vt.muted       = track->isMuted();
+    vt.volume      = track->volume();
+    vt.opacity     = track->opacity();
+    appState_->document().addVideoTrack(vt);
+
+    QTimer::singleShot(0, track, [track]() { track->update(); });
+}
+
+VideoTrackWidget* TimelinePanelV2::addVideoTrackFromData(const VideoTrackData& data)
+{
+    auto* track = new VideoTrackWidget(
+        QString::fromStdString(data.filepath),
+        static_cast<int>(videoTrackWidgets_.size()),
+        appState_, this, tracksContainer_);
+
+    track->setMuted(data.muted);
+    track->setVolume(data.volume);
+    track->setOpacity(data.opacity);
+
+    connect(track, &VideoTrackWidget::moveUpRequested, this, [this, track]() {
+        auto it = std::find(videoTrackWidgets_.begin(), videoTrackWidgets_.end(), track);
+        if (it != videoTrackWidgets_.end())
+            onMoveVideoTrack(static_cast<int>(std::distance(videoTrackWidgets_.begin(), it)), -1);
+    });
+    connect(track, &VideoTrackWidget::moveDownRequested, this, [this, track]() {
+        auto it = std::find(videoTrackWidgets_.begin(), videoTrackWidgets_.end(), track);
+        if (it != videoTrackWidgets_.end())
+            onMoveVideoTrack(static_cast<int>(std::distance(videoTrackWidgets_.begin(), it)), 1);
+    });
+
+    int insertPos = std::max(0, tracksLayout_->count() - 1);
+    tracksLayout_->insertWidget(insertPos, track);
+    videoTrackWidgets_.push_back(track);
+    track->positionHeader();
+
+    QTimer::singleShot(0, track, [track]() { track->update(); });
+    return track;
+}
+
+void TimelinePanelV2::clearVideoTracks()
+{
+    for (auto* vt : videoTrackWidgets_) {
+        tracksLayout_->removeWidget(vt);
+        delete vt;
+    }
+    videoTrackWidgets_.clear();
+}
+
+void TimelinePanelV2::removeVideoTrack(VideoTrackWidget* track)
+{
+    auto it = std::find(videoTrackWidgets_.begin(), videoTrackWidgets_.end(), track);
+    if (it != videoTrackWidgets_.end()) {
+        videoTrackWidgets_.erase(it);
+        tracksLayout_->removeWidget(track);
+        delete track;
+        for (size_t i = 0; i < videoTrackWidgets_.size(); ++i)
+            videoTrackWidgets_[i]->setTrackIndex(static_cast<int>(i));
+    }
+}
+
+void TimelinePanelV2::onMoveVideoTrack(int index, int delta)
+{
+    if (index < 0 || index >= static_cast<int>(videoTrackWidgets_.size())) return;
+    auto* widget = videoTrackWidgets_[index];
     int oldPos = tracksLayout_->indexOf(widget);
     if (oldPos < 0) return;
 

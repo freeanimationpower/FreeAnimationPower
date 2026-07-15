@@ -1,4 +1,5 @@
 #include "canvas_widget_v2.hpp"
+#include "video_track_widget.hpp"
 
 #include <QtWidgets/QApplication>
 #include <QtGui/QPainter>
@@ -738,6 +739,24 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
                 p.setRenderHint(QPainter::Antialiasing, false);
                 p.setRenderHint(QPainter::SmoothPixmapTransform, false);
                 p.drawImage(QPoint(rl.originX(), rl.originY()), display);
+            }
+        }
+
+        // Video frames on top of drawing layers
+        if (videoTracks_) {
+            for (auto* vt : *videoTracks_) {
+                if (!vt || !vt->isVisible()) continue;
+                QImage frame = vt->currentFrame(currentFrame_);
+                if (frame.isNull()) continue;
+
+                QRect target = frame.scaled(docW, docH, Qt::KeepAspectRatio,
+                                            Qt::SmoothTransformation).rect();
+                target.moveCenter(QPoint(docW/2, docH/2));
+
+                p.setOpacity(static_cast<qreal>(vt->opacity()));
+                p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+                p.drawImage(target, frame.scaled(target.width(), target.height(),
+                              Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
             }
         }
 
