@@ -16,6 +16,7 @@ struct Marker {
     int frame = 0;
     int duration = 0;
     std::string comment;
+    std::string detail;
     int colorLabel = 0;
     int64_t uid = 0;
 

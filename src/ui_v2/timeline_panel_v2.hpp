@@ -68,7 +68,7 @@ public:
     static constexpr int kCellSpacing = 1;
     static constexpr int kCellTotal = kCellWidth + kCellSpacing;
     static constexpr int kTrackHeight = 64;
-    static constexpr int kRulerHeight = 18;
+    static constexpr int kRulerHeight = 22;
 
 signals:
     void frameChanged(int frame);

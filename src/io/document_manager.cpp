@@ -147,6 +147,7 @@ QJsonObject DocumentManager::documentToJson(const Document& doc) {
             mo[QStringLiteral("frame")]       = m.frame;
             mo[QStringLiteral("duration")]    = m.duration;
             mo[QStringLiteral("comment")]     = QString::fromStdString(m.comment);
+            mo[QStringLiteral("detail")]      = QString::fromStdString(m.detail);
             mo[QStringLiteral("color")]       = m.colorLabel;
             markerArr.append(mo);
         }
@@ -196,6 +197,7 @@ bool DocumentManager::documentFromJson(const QJsonObject& root, Document& doc) {
             m.frame      = mo[QStringLiteral("frame")].toInt(0);
             m.duration   = mo[QStringLiteral("duration")].toInt(0);
             m.comment    = mo[QStringLiteral("comment")].toString("").toStdString();
+            m.detail     = mo[QStringLiteral("detail")].toString("").toStdString();
             m.colorLabel = mo[QStringLiteral("color")].toInt(0);
             m.uid        = Marker::nextUid();
             seq.addMarker(m);

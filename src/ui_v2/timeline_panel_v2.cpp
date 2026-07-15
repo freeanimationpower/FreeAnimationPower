@@ -18,6 +18,7 @@
 #include <QtWidgets/QFormLayout>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QPlainTextEdit>
 #include <QtGui/QPainter>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QContextMenuEvent>
@@ -333,12 +334,22 @@ protected:
                 if (!m.comment.empty()) {
                     QFont lblFont("Avenir", 6);
                     p.setFont(lblFont);
-                    QColor lblCol = mc; lblCol.setAlpha(200);
-                    p.setPen(lblCol);
                     QString label = QString::fromStdString(m.comment);
-                    int textW = p.fontMetrics().horizontalAdvance(label) + 4;
-                    p.drawText(QRect(mx - textW/2, 0, textW, 10),
-                               Qt::AlignHCenter, label);
+                    int textW = p.fontMetrics().horizontalAdvance(label) + 6;
+                    int textH = 10;
+                    int textX = mx - textW / 2;
+                    int textY = 1;
+
+                    QColor pillBg = QColor(0, 0, 0, 140);
+                    p.setPen(Qt::NoPen);
+                    p.setBrush(pillBg);
+                    p.drawRoundedRect(QRect(textX, textY, textW, textH), 3, 3);
+
+                    QColor lblCol = mc; lblCol.setAlpha(240);
+                    p.setPen(lblCol);
+                    p.setBrush(Qt::NoBrush);
+                    p.drawText(QRect(textX, textY, textW, textH),
+                               Qt::AlignHCenter | Qt::AlignVCenter, label);
                 }
             }
         }
@@ -562,22 +573,17 @@ private:
 
         QDialog dlg(this->window());
         dlg.setWindowTitle("Marker Settings");
-        dlg.setMinimumWidth(320);
+        dlg.setMinimumWidth(360);
         auto* form = new QFormLayout(&dlg);
 
-        auto* commentEdit = new QLineEdit(QString::fromStdString(m.comment), &dlg);
-        form->addRow("Comment:", commentEdit);
+        auto* titleEdit = new QLineEdit(QString::fromStdString(m.comment), &dlg);
+        titleEdit->setPlaceholderText("Marker title");
+        form->addRow("Title:", titleEdit);
 
         auto* timeSpin = new QSpinBox(&dlg);
         timeSpin->setRange(0, 999999);
         timeSpin->setValue(m.frame);
         form->addRow("Frame:", timeSpin);
-
-        auto* durSpin = new QSpinBox(&dlg);
-        durSpin->setRange(0, 999999);
-        durSpin->setValue(m.duration);
-        durSpin->setToolTip("0 = single-point marker");
-        form->addRow("Duration (frames):", durSpin);
 
         auto* colorCombo = new QComboBox(&dlg);
         for (int c = 0; c < 9; ++c)
@@ -585,16 +591,21 @@ private:
         colorCombo->setCurrentIndex(std::clamp(m.colorLabel, 0, 8));
         form->addRow("Color Label:", colorCombo);
 
+        auto* detailEdit = new QPlainTextEdit(QString::fromStdString(m.detail), &dlg);
+        detailEdit->setPlaceholderText("Notes (not visible in timeline)");
+        detailEdit->setMaximumHeight(100);
+        form->addRow("Detail:", detailEdit);
+
         auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
         form->addRow(buttons);
         QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
         QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
 
         if (dlg.exec() == QDialog::Accepted) {
-            m.comment    = commentEdit->text().toStdString();
+            m.comment    = titleEdit->text().toStdString();
             m.frame      = timeSpin->value();
-            m.duration   = durSpin->value();
             m.colorLabel = colorCombo->currentIndex();
+            m.detail     = detailEdit->toPlainText().toStdString();
             seq.updateMarker(index, m);
             update();
         }

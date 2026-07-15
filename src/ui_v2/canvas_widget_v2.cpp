@@ -1846,7 +1846,6 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
             Marker m;
             m.frame = currentFrame_;
             m.uid = Marker::nextUid();
-            m.comment = std::to_string(seq.markerCount() + 1);
             seq.addMarker(m);
             emit statusMessage(QString("Marker added at frame %1").arg(currentFrame_ + 1));
             emit canvasUpdated();
