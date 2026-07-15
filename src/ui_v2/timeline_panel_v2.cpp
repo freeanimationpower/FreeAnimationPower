@@ -332,21 +332,20 @@ protected:
                 p.drawPolygon(tri);
 
                 if (!m.comment.empty()) {
-                    QFont lblFont("Avenir", 6);
+                    QFont lblFont("Avenir", 7);
+                    lblFont.setBold(true);
                     p.setFont(lblFont);
                     QString label = QString::fromStdString(m.comment);
-                    int textW = p.fontMetrics().horizontalAdvance(label) + 6;
-                    int textH = 10;
+                    int textW = p.fontMetrics().horizontalAdvance(label) + 8;
+                    int textH = 13;
                     int textX = mx - textW / 2;
                     int textY = 1;
 
-                    QColor pillBg = QColor(0, 0, 0, 140);
                     p.setPen(Qt::NoPen);
-                    p.setBrush(pillBg);
+                    p.setBrush(QColor(18, 22, 32, 210));
                     p.drawRoundedRect(QRect(textX, textY, textW, textH), 3, 3);
 
-                    QColor lblCol = mc; lblCol.setAlpha(240);
-                    p.setPen(lblCol);
+                    p.setPen(QColor(255, 255, 255));
                     p.setBrush(Qt::NoBrush);
                     p.drawText(QRect(textX, textY, textW, textH),
                                Qt::AlignHCenter | Qt::AlignVCenter, label);
