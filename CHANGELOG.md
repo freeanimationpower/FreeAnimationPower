@@ -37,6 +37,10 @@
 - El campo Frame en Marker Settings ahora empieza en 1 (coincide con la regla del timeline)
 - Conversion interna: display = frame + 1, guardado = value - 1
 
+### Undo/Redo — canvasUpdated faltante tras Ctrl+Z/Ctrl+Y
+- `undo()` y `redo()` ahora emiten `canvasUpdated`, lo que refresca el timeline y layer panel
+- Antes: solo el canvas se repintaba; las celdas del timeline y el layer panel quedaban congelados
+
 ### Tests
 - 160/160 tests pasan
 

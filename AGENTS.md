@@ -713,6 +713,17 @@ struct Marker {
 
 **Tests**: 160/160 pass.
 
+### Undo/Redo — missing canvasUpdated signal
+**Symptom**: After pressing Ctrl+Z or Ctrl+Y, the canvas repainted correctly but the timeline cells and layer panel stayed stale — showing the previous state visually even though pixel data was restored.
+
+**Root cause**: `CanvasWidgetV2::undo()` and `redo()` called `invalidateBackgroundCache()` + `update()` (refreshing only the canvas) but never emitted `canvasUpdated`. The `canvasUpdated` signal is connected in `MainWindowV2` to `timeline_panel_->update()` and `layer_panel_->refreshLayerList()`, so those widgets never refreshed.
+
+**Fix**: Added `emit canvasUpdated()` in both `undo()` and `redo()`.
+
+**Files**: `src/ui_v2/canvas_widget_v2.cpp:386-403`
+
+**Tests**: 160/160 pass (9 undo-specific tests).
+
 ## Bug Fix Session (v2.6.2 — Jul 2026)
 
 ### H3 Regression — commitAtomic fails on Windows when target file exists
