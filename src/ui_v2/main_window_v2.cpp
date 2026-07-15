@@ -433,11 +433,14 @@ void MainWindowV2::setupConnections()
         if (canvas_) { canvas_->setCurrentFrame(frame); canvas_->update(); }
         if (layer_panel_) layer_panel_->setCurrentFrame(frame);
         statusBar()->showMessage(QString("Frame: %1 / %2")
-            .arg(frame + 1).arg(appState_->document().totalFrames()), 3000);
+            .arg(frame + 1).arg(appState_->activeSequence().durationFrames()), 3000);
     });
 
     connect(timeline_panel_, &TimelinePanelV2::frameCountChanged, [this](int count) {
-        if (canvas_) canvas_->setTotalFrames(count);
+        if (canvas_) {
+            canvas_->setTotalFrames(count);
+            canvas_->setDurationFrames(appState_->activeSequence().durationFrames());
+        }
         appState_->document().setTotalFrames(count);
     });
 
@@ -461,7 +464,7 @@ void MainWindowV2::setupConnections()
         if (timeline_panel_) timeline_panel_->setCurrentFrame(frame);
         if (layer_panel_) layer_panel_->setCurrentFrame(frame);
         statusBar()->showMessage(QString("Frame: %1 / %2")
-            .arg(frame + 1).arg(appState_->document().totalFrames()), 3000);
+            .arg(frame + 1).arg(appState_->activeSequence().durationFrames()), 3000);
     });
 
     connect(canvas_, &CanvasWidgetV2::canvasUpdated, [this]() {
@@ -570,12 +573,14 @@ void MainWindowV2::newProject()
         canvas_->invalidateBackgroundCache();
         canvas_->setCurrentFrame(0);
         canvas_->setTotalFrames(appState_->document().totalFrames());
+        canvas_->setDurationFrames(appState_->activeSequence().durationFrames());
         canvas_->setCurrentLayer(0);
         canvas_->fit();
         canvas_->update();
     }
     if (timeline_panel_) {
         timeline_panel_->setTotalFrames(appState_->document().totalFrames());
+        timeline_panel_->setDurationFrames(appState_->activeSequence().durationFrames());
         timeline_panel_->setCurrentFrame(0);
         timeline_panel_->setFPS(appState_->document().fps());
         timeline_panel_->rebuildTracks();
@@ -631,6 +636,7 @@ void MainWindowV2::openProject(const QString& path)
         if (canvas_) {
             canvas_->setCurrentFrame(seq.currentFrame());
             canvas_->setTotalFrames(seq.totalFrames());
+            canvas_->setDurationFrames(seq.durationFrames());
             canvas_->setCurrentLayer(0);
             ViewState vs = dm.viewState();
             qDebug() << "RESTORE viewState zoom:" << vs.zoom
@@ -646,6 +652,7 @@ void MainWindowV2::openProject(const QString& path)
         }
         if (timeline_panel_) {
             timeline_panel_->setTotalFrames(seq.totalFrames());
+            timeline_panel_->setDurationFrames(seq.durationFrames());
             timeline_panel_->setCurrentFrame(seq.currentFrame());
             timeline_panel_->setFPS(seq.fps());
             timeline_panel_->rebuildTracks();

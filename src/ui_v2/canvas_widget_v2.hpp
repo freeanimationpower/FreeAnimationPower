@@ -45,6 +45,7 @@ public:
 
     void setCurrentFrame(int frame);
     void setTotalFrames(int count);
+    void setDurationFrames(int count);
     void setCurrentLayer(int index);
     void setTool(int toolIndex);
     void setColor(const QColor& color);
@@ -108,6 +109,7 @@ private:
 
     int currentFrame_ = 0;
     int totalFrames_ = 24;
+    int durationFrames_ = 24;
     int currentLayerIndex_ = 0;
 
     bool onionEnabled_ = true;

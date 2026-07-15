@@ -28,11 +28,13 @@ public:
     ~TimelinePanelV2() override;
 
     void setTotalFrames(int count);
+    void setDurationFrames(int count);
     void setCurrentFrame(int frame);
     void setFPS(int fps);
 
     int currentFrame() const { return currentFrame_; }
     int totalFrames() const { return totalFrames_; }
+    int durationFrames() const { return durationFrames_; }
     int sharedScrollOffset() const { return scrollOffset_; }
     std::shared_ptr<AppState> appState() const { return appState_; }
 
@@ -51,6 +53,7 @@ public:
     void removeAudioTrack(AudioTrackWidget* track);
     void clearAudioTracks();
     void onTrackFrameClicked(int frame);
+    void deleteFrameAt(int frame);
     AudioTrackWidget* addAudioTrackFromData(const AudioTrackData& data);
     const std::vector<AudioTrackWidget*>& audioTrackWidgets() const { return audioTrackWidgets_; }
 
@@ -90,6 +93,7 @@ private:
     void onPlaybackTick();
     void onScrollChanged(int value);
     void addFrame();
+    void hideFrame();
     void duplicateFrame();
     void deleteFrame();
     void onNewSequence();
@@ -122,6 +126,7 @@ private:
 
     int currentFrame_ = 0;
     int totalFrames_ = 24;
+    int durationFrames_ = 24;
     int fps_ = 24;
     bool playing_ = false;
     bool updatingFps_ = false;

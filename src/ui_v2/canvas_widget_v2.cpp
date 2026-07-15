@@ -162,6 +162,7 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
 
     auto& doc = appState_->document();
     totalFrames_ = doc.totalFrames();
+    durationFrames_ = doc.activeSequence().durationFrames();
 
     auto& ts = appState_->toolState();
     brushColor_ = ts.primaryColor();
@@ -174,6 +175,7 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
     connect(appState_.get(), &AppState::activeSequenceChanged,
             this, [this](int) {
         totalFrames_ = appState_->document().totalFrames();
+        durationFrames_ = appState_->document().activeSequence().durationFrames();
         currentFrame_ = appState_->document().currentFrame();
         invalidateBackgroundCache();
         update();
@@ -192,7 +194,7 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
 
 void CanvasWidgetV2::setCurrentFrame(int frame)
 {
-    int clamped = std::clamp(frame, 0, totalFrames_ - 1);
+    int clamped = std::clamp(frame, 0, durationFrames_ - 1);
     if (clamped == currentFrame_) return;
     currentFrame_ = clamped;
     invalidateBackgroundCache();
@@ -203,7 +205,15 @@ void CanvasWidgetV2::setTotalFrames(int count)
 {
     totalFrames_ = std::max(1, count);
     if (currentFrame_ >= totalFrames_) currentFrame_ = totalFrames_ - 1;
-    invalidateBackgroundCache();  // frame range changed
+    invalidateBackgroundCache();
+    update();
+}
+
+void CanvasWidgetV2::setDurationFrames(int count)
+{
+    durationFrames_ = std::max(1, count);
+    if (currentFrame_ >= durationFrames_) currentFrame_ = durationFrames_ - 1;
+    invalidateBackgroundCache();
     update();
 }
 
@@ -630,7 +640,7 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
         if (onionEnabled_) {
             for (int i = onionPrevFrames_; i >= 1; --i) {
                 int f = currentFrame_ - i;
-                if (f < 0 || f >= totalFrames_) continue;
+                if (f < 0 || f >= durationFrames_) continue;
                 float alpha = (onionOpacity_ / 100.0f) * (1.0f - static_cast<float>(i - 1) / onionPrevFrames_);
                 QColor tint(255, 100, 80, static_cast<int>(alpha * 255.0f));
 
@@ -666,7 +676,7 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
             }
             for (int i = 1; i <= onionNextFrames_; ++i) {
                 int f = currentFrame_ + i;
-                if (f < 0 || f >= totalFrames_) continue;
+                if (f < 0 || f >= durationFrames_) continue;
                 float alpha = (onionOpacity_ / 100.0f) * (1.0f - static_cast<float>(i - 1) / onionNextFrames_);
                 QColor tint(80, 180, 255, static_cast<int>(alpha * 255.0f));
 
@@ -785,14 +795,14 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
 
             for (int i = onionPrevFrames_; i >= 1; --i) {
                 int f = currentFrame_ - i;
-                if (f < 0 || f >= totalFrames_) continue;
+                if (f < 0 || f >= durationFrames_) continue;
                 float alpha = (onionOpacity_ / 100.0f)
                     * (1.0f - static_cast<float>(i - 1) / onionPrevFrames_);
                 drawOnionPartial(f, QColor(255, 100, 80), alpha);
             }
             for (int i = 1; i <= onionNextFrames_; ++i) {
                 int f = currentFrame_ + i;
-                if (f < 0 || f >= totalFrames_) continue;
+                if (f < 0 || f >= durationFrames_) continue;
                 float alpha = (onionOpacity_ / 100.0f)
                     * (1.0f - static_cast<float>(i - 1) / onionNextFrames_);
                 drawOnionPartial(f, QColor(80, 180, 255), alpha);
@@ -1870,7 +1880,7 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
             break;
         }
         case Qt::Key_Right: {
-            int frame = std::min(totalFrames_ - 1, currentFrame_ + 1);
+            int frame = std::min(durationFrames_ - 1, currentFrame_ + 1);
             currentFrame_ = frame;
             appState_->setCurrentFrame(frame);
             emit frameChanged(frame);

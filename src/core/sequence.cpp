@@ -27,7 +27,7 @@ Sequence::Sequence(std::string name, int canvasWidth, int canvasHeight,
 }
 
 void Sequence::setCurrentFrame(int frame) {
-    frame = std::clamp(frame, 0, total_frames_ - 1);
+    frame = std::clamp(frame, 0, durationFrames_ - 1);
     if (current_frame_ != frame) {
         current_frame_ = frame;
         if (on_frame_changed_) {
@@ -49,7 +49,7 @@ void Sequence::stop() {
 }
 
 void Sequence::nextFrame() {
-    if (current_frame_ < total_frames_ - 1) {
+    if (current_frame_ < durationFrames_ - 1) {
         setCurrentFrame(current_frame_ + 1);
     } else if (looping_) {
         setCurrentFrame(0);
@@ -60,23 +60,23 @@ void Sequence::prevFrame() {
     if (current_frame_ > 0) {
         setCurrentFrame(current_frame_ - 1);
     } else if (looping_) {
-        setCurrentFrame(total_frames_ - 1);
+        setCurrentFrame(durationFrames_ - 1);
     }
 }
 
 int Sequence::effectiveWorkAreaEnd() const {
     if (workAreaEnd_ > 0) {
-        return std::min(workAreaEnd_, total_frames_);
+        return std::min(workAreaEnd_, durationFrames_);
     }
-    return total_frames_;
+    return durationFrames_;
 }
 
 int Sequence::advanceFrame() {
-    int waStart = std::clamp(workAreaStart_, 0, total_frames_ - 1);
+    int waStart = std::clamp(workAreaStart_, 0, durationFrames_ - 1);
     int waEnd = effectiveWorkAreaEnd();
 
     if (waEnd <= waStart) {
-        waEnd = total_frames_;
+        waEnd = durationFrames_;
     }
 
     if (current_frame_ >= waEnd - 1) {

@@ -226,16 +226,18 @@ protected:
         const int cellW = TimelinePanelV2::kCellWidth;
         const int hdrW = TimelinePanelV2::kHeaderWidth;
         const int totalFrames = panel_->totalFrames();
+        const int durFrames = panel_->durationFrames();
         const int curFrame = panel_->currentFrame();
         const int w = width();
         const int h = height();
 
         int firstVisible = std::max(0, offset / cellTotal);
-        int lastVisible = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
 
         QFont tickFont("Avenir", 7);
         p.setFont(tickFont);
 
+        // Visible ticks (0 to durFrames-1)
+        int lastVisible = std::min(durFrames - 1, (offset + w - hdrW) / cellTotal + 1);
         for (int f = firstVisible; f <= lastVisible; ++f) {
             int x = hdrW + f * cellTotal - offset + cellW / 2;
 
@@ -248,6 +250,31 @@ protected:
 
             if (isMajor) {
                 p.setPen(kRulerText);
+                p.drawText(QRect(x - 16, 0, 32, h - tickH - 1),
+                           Qt::AlignHCenter | Qt::AlignBottom,
+                           QString::number(f + 1));
+            }
+        }
+
+        // Dimmed ticks for hidden frames (durFrames to totalFrames-1)
+        int hiddenFirst = std::max(durFrames, firstVisible);
+        int hiddenLast = std::min(totalFrames - 1, (offset + w - hdrW) / cellTotal + 1);
+        for (int f = hiddenFirst; f <= hiddenLast; ++f) {
+            int x = hdrW + f * cellTotal - offset + cellW / 2;
+
+            bool isMajor = (f % 5 == 0);
+            int tickH = isMajor ? 12 : 6;
+            QColor dimColor = isMajor
+                ? QColor(kRulerText.red(), kRulerText.green(), kRulerText.blue(), 60)
+                : QColor(kRulerTick.red(), kRulerTick.green(), kRulerTick.blue(), 40);
+
+            p.setPen(QPen(dimColor, 1));
+            p.drawLine(x, h - tickH, x, h);
+
+            if (isMajor) {
+                QColor dimNum = kRulerText;
+                dimNum.setAlpha(50);
+                p.setPen(dimNum);
                 p.drawText(QRect(x - 16, 0, 32, h - tickH - 1),
                            Qt::AlignHCenter | Qt::AlignBottom,
                            QString::number(f + 1));
@@ -336,9 +363,9 @@ protected:
 
         if (currentDrag_ == DragTarget::WorkAreaOut) {
             int waStart = seq.workAreaStart();
-            int totalFrames = seq.totalFrames();
+            int durFrames = seq.durationFrames();
             int frame = std::max(waStart + 1, (mx - hdrW + offset) / cellTotal);
-            frame = std::min(frame, totalFrames);
+            frame = std::min(frame, durFrames);
             panel_->appState()->setWorkAreaEnd(frame);
             update();
             return;
@@ -398,7 +425,7 @@ private:
         if (rel < 0) return -1;
         int cellTotal = TimelinePanelV2::kCellTotal;
         int frame = rel / cellTotal;
-        if (frame >= panel_->totalFrames()) return -1;
+        if (frame >= panel_->durationFrames()) return -1;
         return frame;
     }
 
@@ -658,6 +685,39 @@ protected:
             }
         }
 
+        // Dimmed cells for hidden frames (beyond durationFrames_ but within totalFrames_)
+        int hiddenFirst = std::max(durFrames, firstVisible);
+        int hiddenLast = std::min(seqTotal - 1,
+                                   (offset + w - hdrW) / cellTotal + 1);
+        for (int f = hiddenFirst; f <= hiddenLast; ++f) {
+            int cx = hdrW + f * cellTotal - offset;
+            QRect cellRect(cx, cellY, cellW, cellH);
+
+            bool hasContent = frameHasContent(f);
+
+            QColor hiddenFill = hasContent
+                ? QColor(30, 34, 48, 120)
+                : QColor(22, 26, 35, 80);
+            QColor hiddenBorder = QColor(45, 50, 60, 60);
+
+            p.setPen(Qt::NoPen);
+            p.setBrush(hiddenFill);
+            p.drawRoundedRect(cellRect, 2, 2);
+
+            p.setPen(QPen(hiddenBorder, 0.5));
+            p.setBrush(Qt::NoBrush);
+            p.drawRoundedRect(cellRect.adjusted(0, 0, -1, -1), 2, 2);
+
+            if (f % 5 == 0) {
+                QColor dimNum = kFrameNumColor;
+                dimNum.setAlpha(40);
+                p.setPen(dimNum);
+                QFont numFont("Avenir", 5);
+                p.setFont(numFont);
+                p.drawText(cellRect, Qt::AlignCenter, QString::number(f + 1));
+            }
+        }
+
         int addX = hdrW + durFrames * cellTotal - offset;
         if (addX < w) {
             QRect addRect(addX + 1, cellY, cellW, cellH);
@@ -690,6 +750,7 @@ protected:
         const int hdrW = TimelinePanelV2::kHeaderWidth;
         const int cellTotal = TimelinePanelV2::kCellTotal;
         const int totalFrames = panel_->totalFrames();
+        const int durFrames = panel_->durationFrames();
         int x = event->pos().x();
 
         if (x < hdrW) {
@@ -699,15 +760,15 @@ protected:
             return;
         }
 
-        int addX = hdrW + totalFrames * cellTotal - panel_->sharedScrollOffset();
+        int addX = hdrW + durFrames * cellTotal - panel_->sharedScrollOffset();
         if (x >= addX && event->pos().y() >= 16 && event->pos().y() < 16 + (TimelinePanelV2::kTrackHeight - 22)) {
             panel_->onTrackFrameClicked(-1);
             return;
         }
 
         int frame = hitFrame(x);
-        if (frame >= 0 && !isActive_) panel_->onActivateTrack(seqIndex_);
-        if (frame >= 0) panel_->onTrackFrameClicked(frame);
+        if (frame >= 0 && frame < durFrames && !isActive_) panel_->onActivateTrack(seqIndex_);
+        if (frame >= 0 && frame < durFrames) panel_->onTrackFrameClicked(frame);
     }
 
     void contextMenuEvent(QContextMenuEvent* event) override {
@@ -719,7 +780,7 @@ protected:
         if (y < 16 || y >= 16 + (TimelinePanelV2::kTrackHeight - 22)) return;
 
         int frame = hitFrame(x);
-        if (frame < 0 || frame >= panel_->totalFrames()) return;
+        if (frame < 0 || frame >= panel_->durationFrames()) return;
 
         QMenu menu;
         menu.setStyleSheet(QString(
@@ -735,6 +796,9 @@ protected:
         QAction* pasteAct = menu.addAction("Paste Frame");
         pasteAct->setEnabled(panel_->hasFrameClipboard());
 
+        menu.addSeparator();
+        QAction* delAct = menu.addAction("Delete Frame");
+
         QAction* chosen = menu.exec(event->globalPos());
         if (!chosen) return;
 
@@ -744,6 +808,8 @@ protected:
             panel_->cutFrameToClipboard(seqIndex_, frame);
         } else if (chosen == pasteAct) {
             panel_->pasteFrameFromClipboard(seqIndex_, frame);
+        } else if (chosen == delAct) {
+            panel_->deleteFrameAt(frame);
         }
     }
 
@@ -762,7 +828,7 @@ private:
         int rel = x - TimelinePanelV2::kHeaderWidth + panel_->sharedScrollOffset();
         if (rel < 0) return -1;
         int frame = rel / TimelinePanelV2::kCellTotal;
-        if (frame >= panel_->totalFrames()) return -1;
+        if (frame >= panel_->durationFrames()) return -1;
         return frame;
     }
 
@@ -965,13 +1031,13 @@ void TimelinePanelV2::setupUI()
     minusFrameBtn->setIcon(QIcon(":/icons/timeline/remove_frame.png"));
     minusFrameBtn->setIconSize(QSize(22, 18));
     minusFrameBtn->setFixedSize(26, 22);
-    minusFrameBtn->setToolTip("Remove Frame");
+    minusFrameBtn->setToolTip("Hide Frame");
     minusFrameBtn->setStyleSheet(QString(
         "QPushButton { background:%1; border:none; border-radius:3px; }"
         "QPushButton:hover { background:%2; }"
         "QPushButton:pressed { background:%3; }")
         .arg(kBtnBg.name(), kBtnHover.name(), kBtnPressed.name()));
-    connect(minusFrameBtn, &QPushButton::clicked, this, &TimelinePanelV2::deleteFrame);
+    connect(minusFrameBtn, &QPushButton::clicked, this, &TimelinePanelV2::hideFrame);
     topBar->addWidget(minusFrameBtn);
 
     auto* plusFrameBtn = new QPushButton(this);
@@ -1199,9 +1265,19 @@ void TimelinePanelV2::setTotalFrames(int count)
     for (auto* t : trackWidgets_) t->update();
 }
 
+void TimelinePanelV2::setDurationFrames(int count)
+{
+    durationFrames_ = std::max(1, count);
+    if (currentFrame_ >= durationFrames_) currentFrame_ = durationFrames_ - 1;
+    updateScrollBarRange();
+    updateLabels();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
+}
+
 void TimelinePanelV2::setCurrentFrame(int frame)
 {
-    frame = std::clamp(frame, 0, totalFrames_ - 1);
+    frame = std::clamp(frame, 0, durationFrames_ - 1);
     if (frame == currentFrame_) return;
 
     currentFrame_ = frame;
@@ -1258,7 +1334,7 @@ void TimelinePanelV2::togglePlayback() { onPlayPause(); }
 
 void TimelinePanelV2::updateLabels()
 {
-    frameLabel_->setText(QString("%1 / %2").arg(currentFrame_ + 1).arg(totalFrames_));
+    frameLabel_->setText(QString("%1 / %2").arg(currentFrame_ + 1).arg(durationFrames_));
 }
 
 void TimelinePanelV2::onPlayPause()
@@ -1426,15 +1502,45 @@ void TimelinePanelV2::onScrollChanged(int value)
 
 void TimelinePanelV2::addFrame()
 {
-    totalFrames_++;
-    appState_->document().setTotalFrames(totalFrames_);
-    appState_->activeSequence().setDurationFrames(totalFrames_);
+    int dur = appState_->activeSequence().durationFrames();
+    int total = appState_->activeSequence().totalFrames();
+
+    if (dur < total) {
+        durationFrames_ = dur + 1;
+        appState_->activeSequence().setDurationFrames(durationFrames_);
+    } else {
+        totalFrames_++;
+        durationFrames_ = totalFrames_;
+        appState_->document().setTotalFrames(totalFrames_);
+        appState_->activeSequence().setDurationFrames(totalFrames_);
+    }
     updateScrollBarRange();
     updateLabels();
     rulerWidget_->update();
     for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
-    FAP_TRACE_FRAME("add", totalFrames_ - 1);
+    FAP_TRACE_FRAME("add", durationFrames_ - 1);
+}
+
+void TimelinePanelV2::hideFrame()
+{
+    int dur = appState_->activeSequence().durationFrames();
+    if (dur <= 1) return;
+
+    durationFrames_ = dur - 1;
+    appState_->activeSequence().setDurationFrames(durationFrames_);
+
+    if (currentFrame_ >= durationFrames_) {
+        currentFrame_ = durationFrames_ - 1;
+        appState_->setCurrentFrame(currentFrame_);
+        emit frameChanged(currentFrame_);
+    }
+
+    updateScrollBarRange();
+    updateLabels();
+    rulerWidget_->update();
+    for (auto* t : trackWidgets_) t->update();
+    FAP_TRACE_FRAME("hide", durationFrames_);
 }
 
 void TimelinePanelV2::duplicateFrame()
@@ -1501,6 +1607,17 @@ void TimelinePanelV2::deleteFrame()
     for (auto* t : trackWidgets_) t->update();
     emit frameCountChanged(totalFrames_);
     emit frameChanged(currentFrame_);
+}
+
+void TimelinePanelV2::deleteFrameAt(int frame)
+{
+    if (totalFrames_ <= 1) return;
+    if (frame < 0 || frame >= totalFrames_) return;
+
+    int prevFrame = currentFrame_;
+    currentFrame_ = frame;
+    appState_->setCurrentFrame(currentFrame_);
+    deleteFrame();
 }
 
 void TimelinePanelV2::onNewSequence()
