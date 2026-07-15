@@ -172,6 +172,7 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
     seq->workAreaStart_ = workAreaStart_;
     seq->workAreaEnd_ = workAreaEnd_;
     seq->durationFrames_ = durationFrames_;
+    seq->markers_ = markers_;
 
     for (const auto& [frameIdx, rootLayer] : frames_) {
         auto newRoot = std::make_unique<GroupLayer>(rootLayer->name());
@@ -248,6 +249,74 @@ void Sequence::copyLayerToAllFrames(int sourceFrame, int layerIndex) {
             dstRl->setHasContent(srcRl->hasContent());
         }
     }
+}
+
+void Sequence::addMarker(const Marker& marker) {
+    Marker m = marker;
+    if (m.uid == 0) m.uid = Marker::nextUid();
+    if (m.comment.empty()) m.comment = std::to_string(markers_.size() + 1);
+
+    for (auto& existing : markers_) {
+        if (existing.frame == m.frame) {
+            existing = m;
+            return;
+        }
+    }
+    markers_.push_back(m);
+
+    std::sort(markers_.begin(), markers_.end(),
+              [](const Marker& a, const Marker& b) { return a.frame < b.frame; });
+}
+
+void Sequence::removeMarker(int index) {
+    if (index >= 0 && index < static_cast<int>(markers_.size())) {
+        markers_.erase(markers_.begin() + index);
+    }
+}
+
+void Sequence::removeMarkerByUid(int64_t uid) {
+    markers_.erase(
+        std::remove_if(markers_.begin(), markers_.end(),
+                       [uid](const Marker& m) { return m.uid == uid; }),
+        markers_.end());
+}
+
+void Sequence::updateMarker(int index, const Marker& marker) {
+    if (index >= 0 && index < static_cast<int>(markers_.size())) {
+        markers_[index] = marker;
+        if (markers_[index].comment.empty())
+            markers_[index].comment = std::to_string(index + 1);
+        std::sort(markers_.begin(), markers_.end(),
+                  [](const Marker& a, const Marker& b) { return a.frame < b.frame; });
+    }
+}
+
+Marker* Sequence::markerAtFrame(int frame) {
+    for (auto& m : markers_) {
+        if (m.frame == frame) return &m;
+    }
+    return nullptr;
+}
+
+const Marker* Sequence::markerAtFrame(int frame) const {
+    for (auto& m : markers_) {
+        if (m.frame == frame) return &m;
+    }
+    return nullptr;
+}
+
+int Sequence::markerIndexAtFrame(int frame) const {
+    for (size_t i = 0; i < markers_.size(); ++i) {
+        if (markers_[i].frame == frame) return static_cast<int>(i);
+    }
+    return -1;
+}
+
+std::vector<const Marker*> Sequence::sortedMarkers() const {
+    std::vector<const Marker*> result;
+    result.reserve(markers_.size());
+    for (auto& m : markers_) result.push_back(&m);
+    return result;
 }
 
 } // namespace fap

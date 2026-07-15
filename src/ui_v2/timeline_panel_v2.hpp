@@ -97,6 +97,7 @@ private:
     void duplicateFrame();
     void deleteFrame();
     void onNewSequence();
+    void onAddMarker();
     void onMoveAudioTrack(int index, int delta);
     void updateScrollBarRange();
 
@@ -112,6 +113,7 @@ private:
     QPushButton* fpsPlusBtn_ = nullptr;
     QLabel* frameLabel_ = nullptr;
     QPushButton* newSeqBtn_ = nullptr;
+    QPushButton* markerBtn_ = nullptr;
 
     RulerWidget* rulerWidget_ = nullptr;
     QScrollArea* scrollArea_ = nullptr;

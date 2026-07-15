@@ -140,6 +140,18 @@ QJsonObject DocumentManager::documentToJson(const Document& doc) {
         so[QStringLiteral("work_area_end")]   = seq.workAreaEnd();
         so[QStringLiteral("duration_frames")] = seq.durationFrames();
         so[QStringLiteral("looping")]         = seq.looping();
+
+        QJsonArray markerArr;
+        for (auto& m : seq.markers()) {
+            QJsonObject mo;
+            mo[QStringLiteral("frame")]       = m.frame;
+            mo[QStringLiteral("duration")]    = m.duration;
+            mo[QStringLiteral("comment")]     = QString::fromStdString(m.comment);
+            mo[QStringLiteral("color")]       = m.colorLabel;
+            markerArr.append(mo);
+        }
+        so[QStringLiteral("markers")] = markerArr;
+
         seqArr.append(so);
     }
     root[QStringLiteral("sequences")] = seqArr;
@@ -176,6 +188,18 @@ bool DocumentManager::documentFromJson(const QJsonObject& root, Document& doc) {
         seq.setWorkAreaEnd(so[QStringLiteral("work_area_end")].toInt(0));
         seq.setDurationFrames(so[QStringLiteral("duration_frames")].toInt(seq.totalFrames()));
         seq.setLooping(so[QStringLiteral("looping")].toBool(false));
+
+        QJsonArray markerArr = so[QStringLiteral("markers")].toArray();
+        for (int mi = 0; mi < markerArr.size(); ++mi) {
+            QJsonObject mo = markerArr[mi].toObject();
+            Marker m;
+            m.frame      = mo[QStringLiteral("frame")].toInt(0);
+            m.duration   = mo[QStringLiteral("duration")].toInt(0);
+            m.comment    = mo[QStringLiteral("comment")].toString("").toStdString();
+            m.colorLabel = mo[QStringLiteral("color")].toInt(0);
+            m.uid        = Marker::nextUid();
+            seq.addMarker(m);
+        }
     }
 
     int activeIdx = root[QStringLiteral("active_sequence")].toInt(0);

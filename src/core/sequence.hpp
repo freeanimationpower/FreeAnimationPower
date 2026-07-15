@@ -12,6 +12,26 @@
 
 namespace fap {
 
+struct Marker {
+    int frame = 0;
+    int duration = 0;
+    std::string comment;
+    int colorLabel = 0;
+    int64_t uid = 0;
+
+    bool isDuration() const { return duration > 0; }
+    int outPoint() const { return frame + duration; }
+    static constexpr const char* kColors[] = {
+        "None", "Red", "Orange", "Yellow", "Green",
+        "Cyan", "Blue", "Purple", "Magenta"
+    };
+    static constexpr int kColorCount = 9;
+    static int nextUid() {
+        static int64_t s = 1;
+        return static_cast<int>(s++);
+    }
+};
+
 class Sequence : public NonCopyable {
 public:
     using FrameCallback = std::function<void(int frame)>;
@@ -75,6 +95,18 @@ public:
 
     void setOnFrameChanged(FrameCallback cb) { on_frame_changed_ = std::move(cb); }
 
+    void addMarker(const Marker& marker);
+    void removeMarker(int index);
+    void removeMarkerByUid(int64_t uid);
+    void updateMarker(int index, const Marker& marker);
+    Marker* markerAtFrame(int frame);
+    const Marker* markerAtFrame(int frame) const;
+    int markerIndexAtFrame(int frame) const;
+    int markerCount() const { return static_cast<int>(markers_.size()); }
+    const std::vector<Marker>& markers() const { return markers_; }
+    // Returns sorted list of markers by frame position
+    std::vector<const Marker*> sortedMarkers() const;
+
     std::unique_ptr<Sequence> clone(const std::string& newName = "") const;
 
 private:
@@ -96,6 +128,7 @@ private:
 
     std::vector<std::vector<bool>> keyframes_;
     std::map<int, std::unique_ptr<GroupLayer>> frames_;
+    std::vector<Marker> markers_;
 
     UndoManager undo_manager_;
     FrameCallback on_frame_changed_;

@@ -1873,17 +1873,47 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
             break;
         }
         case Qt::Key_Left: {
-            int frame = std::max(0, currentFrame_ - 1);
-            currentFrame_ = frame;
-            appState_->setCurrentFrame(frame);
-            emit frameChanged(frame);
+            if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
+                auto& seq = appState_->activeSequence();
+                const auto& markers = seq.markers();
+                int best = -1;
+                for (auto& m : markers) {
+                    if (m.frame < currentFrame_ && (best < 0 || m.frame > best))
+                        best = m.frame;
+                }
+                if (best >= 0) {
+                    currentFrame_ = best;
+                    appState_->setCurrentFrame(best);
+                    emit frameChanged(best);
+                }
+            } else {
+                int frame = std::max(0, currentFrame_ - 1);
+                currentFrame_ = frame;
+                appState_->setCurrentFrame(frame);
+                emit frameChanged(frame);
+            }
             break;
         }
         case Qt::Key_Right: {
-            int frame = std::min(durationFrames_ - 1, currentFrame_ + 1);
-            currentFrame_ = frame;
-            appState_->setCurrentFrame(frame);
-            emit frameChanged(frame);
+            if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
+                auto& seq = appState_->activeSequence();
+                const auto& markers = seq.markers();
+                int best = -1;
+                for (auto& m : markers) {
+                    if (m.frame > currentFrame_ && (best < 0 || m.frame < best))
+                        best = m.frame;
+                }
+                if (best >= 0) {
+                    currentFrame_ = best;
+                    appState_->setCurrentFrame(best);
+                    emit frameChanged(best);
+                }
+            } else {
+                int frame = std::min(durationFrames_ - 1, currentFrame_ + 1);
+                currentFrame_ = frame;
+                appState_->setCurrentFrame(frame);
+                emit frameChanged(frame);
+            }
             break;
         }
         default: handled = false; break;

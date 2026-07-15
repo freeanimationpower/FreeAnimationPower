@@ -14,6 +14,10 @@
 #include <QtWidgets/QSlider>
 #include <QtCore/QFileInfo>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QFormLayout>
+#include <QtWidgets/QDialogButtonBox>
+#include <QtWidgets/QComboBox>
 #include <QtGui/QPainter>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QContextMenuEvent>
@@ -202,6 +206,16 @@ static const QColor kTrackNameText("#8B8FA3");
 static const QColor kTrackNameActiveText("#FF4800");
 static const QColor kAddBtnColor("#3A5A40");
 
+static const QColor kMarkerColors[] = {
+    QColor("#8A8D94"), QColor("#E85D5D"), QColor("#E8923D"),
+    QColor("#E8C93D"), QColor("#5DBA4E"), QColor("#3DA8B8"),
+    QColor("#5D7EE8"), QColor("#A05DE8"), QColor("#E85DC9"),
+};
+static const char* kMarkerColorNames[] = {
+    "None", "Red", "Orange", "Yellow", "Green",
+    "Cyan", "Blue", "Purple", "Magenta"
+};
+
 // ========================================================================
 // RulerWidget
 // ========================================================================
@@ -293,6 +307,40 @@ protected:
                 p.drawLine(x1, 0, x1, h);
                 p.drawLine(x2, 0, x2, h);
             }
+
+            // Markers
+            for (auto& m : seq.markers()) {
+                if (m.frame < firstVisible || m.frame > (offset + w - hdrW) / cellTotal + 1) continue;
+                int mx = hdrW + m.frame * cellTotal - offset + cellW / 2;
+                if (mx < hdrW - 10 || mx > w) continue;
+
+                QColor mc = (m.colorLabel > 0 && m.colorLabel < 9)
+                    ? kMarkerColors[m.colorLabel] : kMarkerColors[0];
+                QColor mcdim = mc; mcdim.setAlpha(120);
+
+                if (m.isDuration()) {
+                    int mEnd = hdrW + m.outPoint() * cellTotal - offset;
+                    p.fillRect(QRect(mx, 0, mEnd - mx, h),
+                               QColor(mc.red(), mc.green(), mc.blue(), 30));
+                }
+
+                QPolygon tri;
+                tri << QPoint(mx, 1) << QPoint(mx - 5, h - 1) << QPoint(mx + 5, h - 1);
+                p.setPen(QPen(mc, 1));
+                p.setBrush(mcdim);
+                p.drawPolygon(tri);
+
+                if (!m.comment.empty()) {
+                    QFont lblFont("Avenir", 6);
+                    p.setFont(lblFont);
+                    QColor lblCol = mc; lblCol.setAlpha(200);
+                    p.setPen(lblCol);
+                    QString label = QString::fromStdString(m.comment);
+                    int textW = p.fontMetrics().horizontalAdvance(label) + 4;
+                    p.drawText(QRect(mx - textW/2, 0, textW, 10),
+                               Qt::AlignHCenter, label);
+                }
+            }
         }
 
         int px = hdrW + curFrame * cellTotal - offset + cellW / 2;
@@ -306,17 +354,44 @@ protected:
     }
 
     void mousePressEvent(QMouseEvent* event) override {
-        if (event->button() != Qt::LeftButton) return;
-
         int hdrW = TimelinePanelV2::kHeaderWidth;
         int cellTotal = TimelinePanelV2::kCellTotal;
         int offset = panel_->sharedScrollOffset();
         int mx = event->pos().x();
 
+        if (!panel_->appState()) return;
+
+        auto& seq = panel_->appState()->activeSequence();
+
+        if (event->button() == Qt::LeftButton && event->modifiers() == Qt::ControlModifier) {
+            int mi = hitMarker(mx);
+            if (mi >= 0) { seq.removeMarker(mi); update(); }
+            return;
+        }
+
+        if (event->button() == Qt::LeftButton) {
+            int mi = hitMarker(mx);
+            if (mi >= 0) {
+                auto& m = seq.markers()[mi];
+                int markerX = hdrW + m.frame * cellTotal - offset + cellTotal / 2;
+                if (m.isDuration()) {
+                    int outX = hdrW + m.outPoint() * cellTotal - offset;
+                    if (std::abs(mx - outX) <= 6) {
+                        currentDrag_ = DragTarget::MarkerOutPoint;
+                        dragMarkerIndex_ = mi;
+                        return;
+                    }
+                }
+                currentDrag_ = DragTarget::MarkerInPoint;
+                dragMarkerIndex_ = mi;
+                return;
+            }
+        }
+
         if (panel_->appState()) {
-            auto& seq = panel_->appState()->activeSequence();
-            int waStart = seq.workAreaStart();
-            int waEnd = seq.effectiveWorkAreaEnd();
+            auto& seq2 = panel_->appState()->activeSequence();
+            int waStart = seq2.workAreaStart();
+            int waEnd = seq2.effectiveWorkAreaEnd();
             int x1 = hdrW + waStart * cellTotal - offset;
             int x2 = hdrW + waEnd * cellTotal - offset;
 
@@ -351,6 +426,30 @@ protected:
         int mx = event->pos().x();
 
         auto& seq = panel_->appState()->activeSequence();
+
+        if (currentDrag_ == DragTarget::MarkerInPoint && dragMarkerIndex_ >= 0) {
+            int frame = std::max(0, (mx - hdrW + offset) / cellTotal);
+            auto& markers = seq.markers();
+            if (dragMarkerIndex_ < static_cast<int>(markers.size())) {
+                Marker m = markers[dragMarkerIndex_];
+                m.frame = frame;
+                seq.updateMarker(dragMarkerIndex_, m);
+                update();
+            }
+            return;
+        }
+
+        if (currentDrag_ == DragTarget::MarkerOutPoint && dragMarkerIndex_ >= 0) {
+            auto& markers = seq.markers();
+            if (dragMarkerIndex_ < static_cast<int>(markers.size())) {
+                Marker m = markers[dragMarkerIndex_];
+                int rawFrame = std::max(0, (mx - hdrW + offset) / cellTotal);
+                m.duration = std::max(0, rawFrame - m.frame);
+                seq.updateMarker(dragMarkerIndex_, m);
+                update();
+            }
+            return;
+        }
 
         if (currentDrag_ == DragTarget::WorkAreaIn) {
             int frame = std::max(0, (mx - hdrW + offset) / cellTotal);
@@ -388,13 +487,47 @@ protected:
 
         if (waEnd > waStart && (std::abs(mx - x1) <= 5 || std::abs(mx - x2) <= 5)) {
             setCursor(Qt::SizeHorCursor);
+        } else if (hitMarker(mx) >= 0) {
+            setCursor(Qt::PointingHandCursor);
         } else {
             setCursor(Qt::ArrowCursor);
         }
     }
 
+    void mouseDoubleClickEvent(QMouseEvent* event) override {
+        if (event->button() != Qt::LeftButton) return;
+        int mi = hitMarker(event->pos().x());
+        if (mi >= 0) openMarkerDialog(mi);
+    }
+
+    void contextMenuEvent(QContextMenuEvent* event) override {
+        int mi = hitMarker(event->pos().x());
+        if (mi < 0) return;
+
+        QMenu menu;
+        menu.setStyleSheet(QString(
+            "QMenu { background:#1E2128; color:#C8CCD8; border:1px solid #2D3139; border-radius:4px; padding:4px; }"
+            "QMenu::item { padding:6px 24px; border-radius:3px; }"
+            "QMenu::item:selected { background:#FF4800; color:#fff; }"
+            "QMenu::separator { height:1px; background:#2D3139; margin:4px 8px; }"));
+
+        QAction* editAct = menu.addAction("Edit Marker...");
+        menu.addSeparator();
+        QAction* delAct = menu.addAction("Delete Marker");
+
+        QAction* chosen = menu.exec(event->globalPos());
+        if (!chosen) return;
+
+        if (chosen == editAct) openMarkerDialog(mi);
+        else if (chosen == delAct) {
+            if (panel_->appState()) panel_->appState()->activeSequence().removeMarker(mi);
+            update();
+        }
+    }
+
     void mouseReleaseEvent(QMouseEvent*) override {
-        if (currentDrag_ == DragTarget::None) return;
+        currentDrag_ = DragTarget::None;
+        dragMarkerIndex_ = -1;
         currentDrag_ = DragTarget::None;
 
         if (panel_->appState()) {
@@ -412,6 +545,8 @@ protected:
 
             if (waEnd > waStart && (std::abs(mx - x1) <= 5 || std::abs(mx - x2) <= 5)) {
                 setCursor(Qt::SizeHorCursor);
+            } else if (hitMarker(mx) >= 0) {
+                setCursor(Qt::PointingHandCursor);
             } else {
                 setCursor(Qt::ArrowCursor);
             }
@@ -419,6 +554,72 @@ protected:
     }
 
 private:
+    void openMarkerDialog(int index) {
+        if (!panel_->appState() || index < 0) return;
+        auto& seq = panel_->appState()->activeSequence();
+        if (index >= seq.markerCount()) return;
+        Marker m = seq.markers()[index];
+
+        QDialog dlg(this->window());
+        dlg.setWindowTitle("Marker Settings");
+        dlg.setMinimumWidth(320);
+        auto* form = new QFormLayout(&dlg);
+
+        auto* commentEdit = new QLineEdit(QString::fromStdString(m.comment), &dlg);
+        form->addRow("Comment:", commentEdit);
+
+        auto* timeSpin = new QSpinBox(&dlg);
+        timeSpin->setRange(0, 999999);
+        timeSpin->setValue(m.frame);
+        form->addRow("Frame:", timeSpin);
+
+        auto* durSpin = new QSpinBox(&dlg);
+        durSpin->setRange(0, 999999);
+        durSpin->setValue(m.duration);
+        durSpin->setToolTip("0 = single-point marker");
+        form->addRow("Duration (frames):", durSpin);
+
+        auto* colorCombo = new QComboBox(&dlg);
+        for (int c = 0; c < 9; ++c)
+            colorCombo->addItem(kMarkerColorNames[c]);
+        colorCombo->setCurrentIndex(std::clamp(m.colorLabel, 0, 8));
+        form->addRow("Color Label:", colorCombo);
+
+        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+        form->addRow(buttons);
+        QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+        QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+        if (dlg.exec() == QDialog::Accepted) {
+            m.comment    = commentEdit->text().toStdString();
+            m.frame      = timeSpin->value();
+            m.duration   = durSpin->value();
+            m.colorLabel = colorCombo->currentIndex();
+            seq.updateMarker(index, m);
+            update();
+        }
+    }
+
+    int hitMarker(int x) const {
+        if (!panel_->appState()) return -1;
+        auto& seq = panel_->appState()->activeSequence();
+        int cellW = TimelinePanelV2::kCellWidth;
+        int cellTotal = TimelinePanelV2::kCellTotal;
+        int hdrW = TimelinePanelV2::kHeaderWidth;
+        int offset = panel_->sharedScrollOffset();
+        int hitRadius = cellW / 2 + 4;
+        for (size_t i = 0; i < seq.markers().size(); ++i) {
+            auto& m = seq.markers()[i];
+            int mx = hdrW + m.frame * cellTotal - offset + cellW / 2;
+            int x1 = mx - hitRadius;
+            int x2 = m.isDuration()
+                ? hdrW + m.outPoint() * cellTotal - offset + hitRadius
+                : mx + hitRadius;
+            if (x >= x1 && x <= x2) return static_cast<int>(i);
+        }
+        return -1;
+    }
+
     int hitFrame(int x) const {
         int hdrW = TimelinePanelV2::kHeaderWidth;
         int rel = x - hdrW + panel_->sharedScrollOffset();
@@ -431,8 +632,10 @@ private:
 
     TimelinePanelV2* panel_;
 
-    enum class DragTarget { None, Playhead, WorkAreaIn, WorkAreaOut };
+    enum class DragTarget { None, Playhead, WorkAreaIn, WorkAreaOut,
+                            MarkerInPoint, MarkerOutPoint };
     DragTarget currentDrag_ = DragTarget::None;
+    int dragMarkerIndex_ = -1;
 };
 
 // ========================================================================
@@ -1051,6 +1254,18 @@ void TimelinePanelV2::setupUI()
 
     topBar->addStretch();
 
+    markerBtn_ = new QPushButton("\u2666", this);
+    markerBtn_->setFixedSize(32, 24);
+    markerBtn_->setToolTip("Add Marker at current frame");
+    markerBtn_->setStyleSheet(QString(
+        "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
+        "font-size:11px; }"
+        "QPushButton:hover { background:%4; color:%5; }")
+        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
+             kBtnHover.name(), kAccentColor.name()));
+    connect(markerBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onAddMarker);
+    topBar->addWidget(markerBtn_);
+
     newSeqBtn_ = new QPushButton("+ Track \u25BE", this);
     newSeqBtn_->setFixedSize(94, 24);
     newSeqBtn_->setToolTip("Add track");
@@ -1618,6 +1833,21 @@ void TimelinePanelV2::deleteFrameAt(int frame)
     currentFrame_ = frame;
     appState_->setCurrentFrame(currentFrame_);
     deleteFrame();
+}
+
+void TimelinePanelV2::onAddMarker()
+{
+    if (!appState_) return;
+
+    auto& seq = appState_->activeSequence();
+    Marker m;
+    m.frame = currentFrame_;
+    m.uid = Marker::nextUid();
+    m.comment = std::to_string(seq.markerCount() + 1);
+    seq.addMarker(m);
+
+    rulerWidget_->update();
+    emit frameChanged(currentFrame_);
 }
 
 void TimelinePanelV2::onNewSequence()
