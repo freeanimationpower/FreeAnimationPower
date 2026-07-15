@@ -1,5 +1,45 @@
 # Changelog — Free Animation Power
 
+## [v2.7] — 2026-07-15
+
+### Non-destructive Frame Hiding — +/- controlan visibilidad, no borran
+- Boton `+`: revela frame oculto si existe; crea nuevo solo si no hay ocultos
+- Boton `-`: reduce `durationFrames_` (oculta ultimo frame visible), NO borra datos
+- Frames ocultos: celdas y ticks atenuados en el timeline, bloqueados de navegacion
+- Eliminacion real: click derecho → Delete Frame (unica forma de borrar datos)
+- `durationFrames_` desacoplado de `totalFrames_`: navegacion, playback, onion skin usan `durationFrames_`
+- **Archivos**: `sequence.cpp`, `timeline_panel_v2.{hpp,cpp}`, `canvas_widget_v2.{hpp,cpp}`, `main_window_v2.cpp`
+
+### Timeline Markers (estilo After Effects)
+- Boton `◆ Marker` en barra del timeline, o tecla `*` (numpad)
+- Triangulos de color en el ruler con banda de duracion y titulo visible
+- 9 colores: None, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Magenta
+- Dialogo Marker Settings: Title, Frame (1-based), Color Label, Detail (multilinea)
+- Detail = notas internas, solo visibles en el dialogo (no en el ruler)
+- Duracion se crea arrastrando borde derecho del marker
+- Interacciones: drag para mover, doble click para editar, Ctrl+click para eliminar
+- Navegacion: Ctrl+Shift+← / Ctrl+Shift+→
+- Persistencia en manifest.json (retrocompatible con archivos viejos)
+- Ruler height: 18px → 22px para mejor visibilidad
+- Titulo: 7px bold blanco sobre pill oscuro para maxima legibilidad
+- **Archivos**: `sequence.hpp`, `sequence.cpp`, `document_manager.cpp`, `timeline_panel_v2.{hpp,cpp}`, `canvas_widget_v2.cpp`
+
+### Marker dialog — dark theme stylesheet
+- QSpinBox, QLineEdit, QComboBox, QPlainTextEdit, QPushButton con estilos de tema oscuro
+- Texto #E8ECF0 sobre fondo #13161D, borde focus #FF4800
+- Flechas del QSpinBox visibles y funcionales
+
+### updateMarker — restriccion de unicidad por frame
+- `updateMarker()` ahora reemplaza marker existente en el frame destino (misma logica que `addMarker`)
+- Repaint sincrono tras cerrar el dialogo modal
+
+### Marker Frame — enumeracion 1-based
+- El campo Frame en Marker Settings ahora empieza en 1 (coincide con la regla del timeline)
+- Conversion interna: display = frame + 1, guardado = value - 1
+
+### Tests
+- 160/160 tests pasan
+
 ## [v2.6.2] — 2026-07-15
 
 ### H3 Regression — Guardado falla tras exportar GIF en Windows

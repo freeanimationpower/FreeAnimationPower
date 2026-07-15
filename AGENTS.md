@@ -641,6 +641,78 @@ struct AudioTrackData {
 
 **Tests**: 160/160 pass.
 
+## Bug Fix Session (v2.7 — Jul 2026)
+
+### Non-destructive frame hiding — +/- control visibility, not deletion
+**Feature**: `+`/`-` buttons in the timeline toolbar now control which frames are VISIBLE, not which exist. Frame data is never deleted when hiding.
+
+| Button | Before | After |
+|--------|--------|-------|
+| `+` | Always creates new frame | Reveals hidden frame if one exists; creates new only when no hidden frames remain |
+| `-` | Deletes current frame data permanently | Reduces `durationFrames_` — hides last visible frame, preserves data |
+
+**Architecture**: `durationFrames_` (visible count) is decoupled from `totalFrames_` (data count). All navigation, playback, onion skin, and work area bounds use `durationFrames_`. Hidden frames render as dimmed cells and dimmed ruler ticks. Right-click → "Delete Frame" is the only way to permanently delete frame data.
+
+**Model changes** (`sequence.cpp`): `setCurrentFrame`, `advanceFrame`, `effectiveWorkAreaEnd`, `nextFrame`, `prevFrame` all bind to `durationFrames_` instead of `totalFrames_`.
+
+**Files**: `src/core/sequence.cpp`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/canvas_widget_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.cpp`
+
+### Timeline Markers (After Effects-style)
+
+**Data model** (`sequence.hpp`):
+```cpp
+struct Marker {
+    int frame = 0;           // 0-based position
+    int duration = 0;        // 0 = single-point, >0 = range marker
+    std::string comment;     // Title (visible on ruler)
+    std::string detail;      // Long-form notes (dialog only)
+    int colorLabel = 0;      // 0-8: None, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Magenta
+    int64_t uid = 0;         // Unique ID
+};
+```
+
+**Key constraints**: One marker per frame position (unique — adding at same frame replaces). Duration set by dragging out-point, not in dialog.
+
+**Ruler rendering**: Colored triangles (8-12px) pointing down + semi-transparent duration bands + title labels in 7px bold white on dark pill background. 9 AE-matching colors. Ruler height increased from 18px to 22px.
+
+**Marker Settings dialog**: Title (QLineEdit), Frame (QSpinBox, 1-based), Color Label (QComboBox, 9 colors), Detail (QPlainTextEdit, multi-line notes). Explicit dark theme stylesheet ensures all controls are readable.
+
+**Interactions**:
+| Action | Method |
+|--------|--------|
+| Add marker | `◆ Marker` button in timeline toolbar, or `*` (numpad) key |
+| Move marker | Drag triangle on ruler |
+| Set duration | Drag right edge of duration marker |
+| Edit properties | Double-click marker triangle |
+| Delete marker | Ctrl+click marker, or right-click → Delete Marker |
+| Navigate markers | Ctrl+Shift+← / Ctrl+Shift+→ |
+
+**Save/load** (`document_manager.cpp`): Markers serialized in `manifest.json` as JSON array per sequence. Fields: frame, duration, comment, detail, color. Backward compatible — old files load with empty detail.
+
+**Files**: `src/core/sequence.hpp`, `src/core/sequence.cpp`, `src/io/document_manager.cpp`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/canvas_widget_v2.cpp`
+
+### Marker dialog — dark theme stylesheet
+**Fix**: The marker dialog now has an explicit dark theme stylesheet applied to QDialog, ensuring QSpinBox (Frame field), QLineEdit, QComboBox, QPlainTextEdit, and QPushButton all render with proper contrast (#E8ECF0 text on #13161D background, #FF4800 focus border, visible up/down arrows on QSpinBox).
+
+**Files**: `src/ui_v2/timeline_panel_v2.cpp:574-600`
+
+### Marker title legibility
+**Fix**: Title text rendered as 7px bold white (#FFFFFF) on an opaque dark pill background (rgba 18,22,32,210) with 13px height, replacing the previous 6px colored-on-semi-transparent text that was nearly illegible.
+
+**Files**: `src/ui_v2/timeline_panel_v2.cpp:334-353`
+
+### updateMarker uniqueness constraint
+**Fix**: `Sequence::updateMarker()` now enforces the one-marker-per-frame constraint. If moving a marker to a frame already occupied by another marker, the existing one is replaced (same logic as `addMarker`). Also added `panel_->update()` for synchronous repaint after modal dialog closes.
+
+**Files**: `src/core/sequence.cpp:283-302`, `src/ui_v2/timeline_panel_v2.cpp`
+
+### Marker Frame spinbox — 1-based numbering
+**Fix**: The Frame field in Marker Settings now shows 1-based numbers (matching the timeline ruler). Range: 1-999999. Conversion: display = internal + 1, save = value - 1.
+
+**Files**: `src/ui_v2/timeline_panel_v2.cpp`
+
+**Tests**: 160/160 pass.
+
 ## Bug Fix Session (v2.6.2 — Jul 2026)
 
 ### H3 Regression — commitAtomic fails on Windows when target file exists
