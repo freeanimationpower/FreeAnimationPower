@@ -282,13 +282,23 @@ void Sequence::removeMarkerByUid(int64_t uid) {
 }
 
 void Sequence::updateMarker(int index, const Marker& marker) {
-    if (index >= 0 && index < static_cast<int>(markers_.size())) {
-        markers_[index] = marker;
-        if (markers_[index].comment.empty())
-            markers_[index].comment = std::to_string(index + 1);
-        std::sort(markers_.begin(), markers_.end(),
-                  [](const Marker& a, const Marker& b) { return a.frame < b.frame; });
+    if (index < 0 || index >= static_cast<int>(markers_.size())) return;
+
+    Marker m = marker;
+    if (m.comment.empty()) m.comment = std::to_string(index + 1);
+
+    for (size_t i = 0; i < markers_.size(); ++i) {
+        if (static_cast<int>(i) != index && markers_[i].frame == m.frame) {
+            markers_.erase(markers_.begin() + index);
+            std::sort(markers_.begin(), markers_.end(),
+                      [](const Marker& a, const Marker& b) { return a.frame < b.frame; });
+            return;
+        }
     }
+
+    markers_[index] = m;
+    std::sort(markers_.begin(), markers_.end(),
+              [](const Marker& a, const Marker& b) { return a.frame < b.frame; });
 }
 
 Marker* Sequence::markerAtFrame(int frame) {

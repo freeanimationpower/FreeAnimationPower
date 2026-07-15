@@ -632,6 +632,7 @@ private:
             m.detail     = detailEdit->toPlainText().toStdString();
             seq.updateMarker(index, m);
             update();
+            panel_->update();
         }
     }
 
