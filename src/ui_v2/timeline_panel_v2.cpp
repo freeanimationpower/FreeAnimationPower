@@ -605,8 +605,8 @@ private:
         form->addRow("Title:", titleEdit);
 
         auto* timeSpin = new QSpinBox(&dlg);
-        timeSpin->setRange(0, 999999);
-        timeSpin->setValue(m.frame);
+        timeSpin->setRange(1, 999999);
+        timeSpin->setValue(m.frame + 1);
         form->addRow("Frame:", timeSpin);
 
         auto* colorCombo = new QComboBox(&dlg);
@@ -627,7 +627,7 @@ private:
 
         if (dlg.exec() == QDialog::Accepted) {
             m.comment    = titleEdit->text().toStdString();
-            m.frame      = timeSpin->value();
+            m.frame      = std::max(0, timeSpin->value() - 1);
             m.colorLabel = colorCombo->currentIndex();
             m.detail     = detailEdit->toPlainText().toStdString();
             seq.updateMarker(index, m);
