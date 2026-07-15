@@ -1841,6 +1841,17 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
                 break;
             }
             handled = false; break;
+        case Qt::Key_Asterisk: {
+            auto& seq = appState_->activeSequence();
+            Marker m;
+            m.frame = currentFrame_;
+            m.uid = Marker::nextUid();
+            m.comment = std::to_string(seq.markerCount() + 1);
+            seq.addMarker(m);
+            emit statusMessage(QString("Marker added at frame %1").arg(currentFrame_ + 1));
+            emit canvasUpdated();
+            break;
+        }
         case Qt::Key_G: emit toolChangedByKey(3); break;
         case Qt::Key_T: emit toolChangedByKey(4); break;
         case Qt::Key_L: emit toolChangedByKey(5); break;

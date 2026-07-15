@@ -1254,14 +1254,14 @@ void TimelinePanelV2::setupUI()
 
     topBar->addStretch();
 
-    markerBtn_ = new QPushButton("\u2666", this);
-    markerBtn_->setFixedSize(32, 24);
-    markerBtn_->setToolTip("Add Marker at current frame");
+    markerBtn_ = new QPushButton("\u2666 Marker", this);
+    markerBtn_->setFixedSize(72, 24);
+    markerBtn_->setToolTip("Add Marker at current frame (*)");
     markerBtn_->setStyleSheet(QString(
         "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:3px; "
-        "font-size:11px; }"
-        "QPushButton:hover { background:%4; color:%5; }")
-        .arg(kBtnBg.name(), kBtnText.name(), kCellBorder.name(),
+        "font-size:10px; font-weight:bold; padding:2px 6px; }"
+        "QPushButton:hover { background:%4; color:%5; border-color:%5; }")
+        .arg(kBtnBg.name(), kAccentColor.name(), kCellBorder.name(),
              kBtnHover.name(), kAccentColor.name()));
     connect(markerBtn_, &QPushButton::clicked, this, &TimelinePanelV2::onAddMarker);
     topBar->addWidget(markerBtn_);
