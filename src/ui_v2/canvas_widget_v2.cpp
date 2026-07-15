@@ -390,6 +390,7 @@ void CanvasWidgetV2::undo()
         um.undo();
         invalidateBackgroundCache();  // pixelBuffer_ restored via PaintCommandV2
         update();
+        emit canvasUpdated();
     }
 }
 
@@ -400,6 +401,7 @@ void CanvasWidgetV2::redo()
         um.redo();
         invalidateBackgroundCache();  // pixelBuffer_ restored via PaintCommandV2
         update();
+        emit canvasUpdated();
     }
 }
 
