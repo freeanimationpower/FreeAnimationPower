@@ -15,6 +15,9 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QFormLayout>
+#include <QtWidgets/QDialogButtonBox>
 
 #ifdef Q_OS_WIN
 #define NOMINMAX
@@ -173,10 +176,36 @@ void MainWindowV2::setupTopBar()
             "GIF Animation (*.gif);;All Files (*)");
         if (path.isEmpty()) return;
 
+        auto& doc = appState_->document();
+        int cw = doc.width();
+        int ch = doc.height();
+
+        QDialog dlg(this);
+        dlg.setWindowTitle("GIF Resolution");
+        dlg.setMinimumWidth(280);
+        auto* form = new QFormLayout(&dlg);
+        auto* spinW = new QSpinBox(&dlg);
+        spinW->setRange(1, 8192);
+        spinW->setValue(cw);
+        auto* spinH = new QSpinBox(&dlg);
+        spinH->setRange(1, 8192);
+        spinH->setValue(ch);
+        form->addRow("Width:", spinW);
+        form->addRow("Height:", spinH);
+        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+        form->addRow(buttons);
+        QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+        QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+        if (dlg.exec() != QDialog::Accepted) return;
+
+        fap::ExportOptions opts;
+        opts.outputWidth = spinW->value();
+        opts.outputHeight = spinH->value();
+
         statusBar()->showMessage("Exporting GIF...");
         QApplication::processEvents();
 
-        if (fap::exportGIF(appState_->document(), path, appState_->document().fps())) {
+        if (fap::exportGIF(doc, path, doc.fps(), opts)) {
             statusBar()->showMessage("GIF exported: " + path, 5000);
         } else {
             QMessageBox::warning(this, "Error",
@@ -663,7 +692,8 @@ void MainWindowV2::saveProject()
         appState_->document().setModified(false);
         statusBar()->showMessage("Project saved", 3000);
     } else {
-        QMessageBox::warning(this, "Error", "Failed to save project.");
+        QMessageBox::warning(this, "Error",
+                             QString("Failed to save project.\n\n") + dm.lastError());
     }
 
     QApplication::restoreOverrideCursor();
@@ -744,7 +774,8 @@ void MainWindowV2::saveProjectAs()
         statusBar()->showMessage(
             folderMode ? "Project saved: " + QFileInfo(path).absolutePath() : "Project saved: " + path, 3000);
     } else {
-        QMessageBox::warning(this, "Error", "Failed to save project.");
+        QMessageBox::warning(this, "Error",
+                             QString("Failed to save project.\n\n") + dm.lastError());
     }
 
     QApplication::restoreOverrideCursor();
@@ -763,11 +794,35 @@ void MainWindowV2::exportVideo()
         return;
 
     auto& doc = appState_->document();
+    int cw = doc.width();
+    int ch = doc.height();
+
+    QDialog dlg(this);
+    dlg.setWindowTitle("Video Resolution");
+    dlg.setMinimumWidth(280);
+    auto* form = new QFormLayout(&dlg);
+    auto* spinW = new QSpinBox(&dlg);
+    spinW->setRange(1, 8192);
+    spinW->setValue(cw);
+    auto* spinH = new QSpinBox(&dlg);
+    spinH->setRange(1, 8192);
+    spinH->setValue(ch);
+    form->addRow("Width:", spinW);
+    form->addRow("Height:", spinH);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    form->addRow(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    fap::ExportOptions opts;
+    opts.outputWidth = spinW->value();
+    opts.outputHeight = spinH->value();
 
     statusBar()->showMessage("Rendering and encoding video...");
     QApplication::processEvents();
 
-    if (fap::exportVideo(doc, path, doc.fps())) {
+    if (fap::exportVideo(doc, path, doc.fps(), opts)) {
         statusBar()->showMessage("Video exported: " + path, 5000);
     } else {
         QMessageBox::warning(this, "Error",

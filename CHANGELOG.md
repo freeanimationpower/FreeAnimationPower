@@ -1,5 +1,26 @@
 # Changelog — Free Animation Power
 
+## [v2.6.2] — 2026-07-15
+
+### H3 Regression — Guardado falla tras exportar GIF en Windows
+- `commitAtomic()` reintroducido: H3 (v2.6.1) removio `QFile::remove()` creyendo que `QFile::rename()` sobreescribe en Windows, pero Qt 6.5 usa `MoveFileW` sin `MOVEFILE_REPLACE_EXISTING`. Si el archivo destino existe, el rename falla silenciosamente.
+- **Fix**: rename primero, si falla y destino existe → remove + retry. Minimiza ventana TOCTOU.
+- **Escenario**: exportar GIF → dialogo nativo cambia directorio de trabajo → guardar .fap en directorio con archivo existente → falla.
+- **Archivos**: `src/io/document_manager.cpp:214-237`
+
+### Dialogo de resolucion para exportacion (GIF + Video)
+- GIF y video muestran dialogo Width x Height antes de codificar
+- `ExportOptions` struct agregado a `video_export.hpp`
+- `renderExportFrame()` con scaling: renderiza a tamaño canvas, luego escala
+- **Archivos**: `src/io/video_export.hpp`, `src/io/video_export.cpp`, `src/ui_v2/main_window_v2.cpp`
+
+### Mensajes de error de guardado mejorados
+- Dialogos de error ahora incluyen `dm.lastError()` (motivo real del fallo)
+- **Archivos**: `src/ui_v2/main_window_v2.cpp:695,778`
+
+### Tests
+- 160/160 tests pasan
+
 ## [v2.6] — 2026-07-13
 
 ### Copy Layer to All Frames

@@ -640,3 +640,26 @@ struct AudioTrackData {
 - Removed commented-out SEQUENCE/DURATION member variables from property_editor_v2.hpp
 
 **Tests**: 160/160 pass.
+
+## Bug Fix Session (v2.6.2 — Jul 2026)
+
+### H3 Regression — commitAtomic fails on Windows when target file exists
+**Symptom**: After exporting a GIF (which changes the working directory via native Windows file dialog), saving the project for the first time showed "Failed to save project." The save appeared to silently fail.
+
+**Root cause**: The H3 fix (v2.6.1) removed `QFile::remove(finalPath)` from `commitAtomic()` to prevent TOCTOU data loss, but on Windows Qt 6.5, `QFile::rename()` does **NOT** overwrite existing targets. When the save dialog confirmed overwrite of an existing file, the native dialog didn't delete it — it just returned the path. `commitAtomic` then tried to rename the `.tmp` file over the still-existing target, which failed silently on Windows.
+
+**Fix**: `commitAtomic` now tries `QFile::rename()` first (works on Linux/macOS where it atomically replaces). If it fails and the target exists, it removes the target and retries. This is safer than the pre-H3 approach because the `remove` only happens after a failed rename, minimizing the TOCTOU window to a retry interval.
+
+**Files**: `src/io/document_manager.cpp:214-237`
+
+### Export resolution dialog (GIF + Video)
+**Feature**: Both GIF and video export now show a resolution dialog (width × height) before encoding. Users can resize output independently of canvas dimensions. Scaling is done via `renderExportFrame` with `ExportOptions` struct.
+
+**Files**: `src/io/video_export.hpp` (new `ExportOptions` struct), `src/io/video_export.cpp`, `src/ui_v2/main_window_v2.cpp:173-215`
+
+### Improved save error reporting
+**Fix**: Save failure error dialogs now include `dm.lastError()` text, showing the actual reason for failure (e.g., "Atomic rename failed: ...") instead of a generic "Failed to save project."
+
+**Files**: `src/ui_v2/main_window_v2.cpp:692-696,774-778`
+
+**Tests**: 160/160 pass.

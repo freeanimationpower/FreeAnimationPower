@@ -35,41 +35,52 @@ static QPainter::CompositionMode toQtCompositionMode(BlendMode mode) {
 
 } // anonymous namespace
 
-QImage renderExportFrame(const Document& doc, int frameIndex, bool transparentBg) {
+QImage renderExportFrame(const Document& doc, int frameIndex, const ExportOptions& opts) {
     int w = doc.width();
     int h = doc.height();
-    QImage image(w, h, QImage::Format_ARGB32_Premultiplied);
-    image.fill(transparentBg ? Qt::transparent : Qt::white);
+    int outW = (opts.outputWidth > 0) ? opts.outputWidth : w;
+    int outH = (opts.outputHeight > 0) ? opts.outputHeight : h;
 
-    QPainter painter(&image);
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+    if (outW == w && outH == h) {
+        QImage image(w, h, QImage::Format_ARGB32_Premultiplied);
+        image.fill(opts.transparentBg ? Qt::transparent : Qt::white);
 
-    for (size_t si = doc.sequenceCount(); si > 0; --si) {
-        size_t idx = si - 1;
-        if (!doc.sequenceAt(idx).visible()) continue;
-        float seqOpacity = doc.sequenceAt(idx).opacity();
-        const auto& root = doc.sequenceAt(idx).rootLayerForFrame(frameIndex);
-        for (size_t li = root.layerCount(); li > 0; --li) {
-            const Layer* layer = root.layerAt(li - 1);
-            if (!layer || !layer->visible()) continue;
-            if (layer->type() != LayerType::Raster) continue;
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::Antialiasing, false);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
 
-            const auto& rl = static_cast<const RasterLayer&>(*layer);
-            QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
-                       rl.width(), rl.height(),
-                       rl.width() * static_cast<int>(sizeof(uint32_t)),
-                       QImage::Format_ARGB32_Premultiplied);
-            QImage display = img.convertToFormat(QImage::Format_ARGB32);
+        for (size_t si = doc.sequenceCount(); si > 0; --si) {
+            size_t idx = si - 1;
+            if (!doc.sequenceAt(idx).visible()) continue;
+            float seqOpacity = doc.sequenceAt(idx).opacity();
+            const auto& root = doc.sequenceAt(idx).rootLayerForFrame(frameIndex);
+            for (size_t li = root.layerCount(); li > 0; --li) {
+                const Layer* layer = root.layerAt(li - 1);
+                if (!layer || !layer->visible()) continue;
+                if (layer->type() != LayerType::Raster) continue;
 
-            painter.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
-            painter.setCompositionMode(toQtCompositionMode(layer->blendMode()));
-            painter.drawImage(QPoint(rl.originX(), rl.originY()), display);
+                const auto& rl = static_cast<const RasterLayer&>(*layer);
+                QImage img(reinterpret_cast<const uchar*>(rl.pixelData()),
+                           rl.width(), rl.height(),
+                           rl.width() * static_cast<int>(sizeof(uint32_t)),
+                           QImage::Format_ARGB32_Premultiplied);
+                QImage display = img.convertToFormat(QImage::Format_ARGB32);
+
+                painter.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
+                painter.setCompositionMode(toQtCompositionMode(layer->blendMode()));
+                painter.drawImage(QPoint(rl.originX(), rl.originY()), display);
+            }
         }
+
+        painter.end();
+        return image;
     }
 
-    painter.end();
-    return image;
+    // Render at canvas size first, then scale
+    QImage fullRes = renderExportFrame(doc, frameIndex,
+                                       ExportOptions{0, 0, opts.transparentBg});
+    return fullRes.scaled(outW, outH, Qt::IgnoreAspectRatio,
+                          Qt::SmoothTransformation);
 }
 
 namespace {
@@ -131,7 +142,8 @@ static const char* audioCodecForContainer(const VideoFormat& vf) {
 
 bool exportVideo(const Document& doc,
                  const QString& outputPath,
-                 int fps) {
+                 int fps,
+                 const ExportOptions& opts) {
     if (!ffmpegAvailable()) {
         qWarning("exportVideo: ffmpeg not found in PATH");
         return false;
@@ -154,7 +166,8 @@ bool exportVideo(const Document& doc,
     QString pattern = tempDir.path() + "/frame_%04d.png";
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderExportFrame(doc, f, vf.transparentBg);
+        QImage img = renderExportFrame(doc, f,
+            ExportOptions{opts.outputWidth, opts.outputHeight, vf.transparentBg});
         QString framePath = tempDir.path() +
                             QString("/frame_%1.png")
                                 .arg(f + 1, 4, 10, QLatin1Char('0'));
@@ -240,7 +253,8 @@ bool exportVideo(const Document& doc,
 
 bool exportGIF(const Document& doc,
                const QString& outputPath,
-               int fps) {
+               int fps,
+               const ExportOptions& opts) {
     if (!ffmpegAvailable()) {
         qWarning("exportGIF: ffmpeg not found in PATH");
         return false;
@@ -261,7 +275,7 @@ bool exportGIF(const Document& doc,
     QString pattern = tempDir.path() + "/frame_%04d.png";
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderExportFrame(doc, f);
+        QImage img = renderExportFrame(doc, f, opts);
         QString framePath = tempDir.path() +
                             QString("/frame_%1.png")
                                 .arg(f + 1, 4, 10, QLatin1Char('0'));
@@ -305,7 +319,8 @@ bool exportGIF(const Document& doc,
     return executeFFmpeg(gifArgs);
 }
 
-bool exportPNGSequence(const Document& doc, const QString& outputDir) {
+bool exportPNGSequence(const Document& doc, const QString& outputDir,
+                       const ExportOptions& opts) {
     QDir dir(outputDir);
     if (!dir.exists()) {
         if (!dir.mkpath(".")) {
@@ -322,7 +337,7 @@ bool exportPNGSequence(const Document& doc, const QString& outputDir) {
     }
 
     for (int f = 0; f < totalFrames; ++f) {
-        QImage img = renderExportFrame(doc, f);
+        QImage img = renderExportFrame(doc, f, opts);
         QString framePath = dir.filePath(
             QString("frame_%1.png").arg(f, 4, 10, QLatin1Char('0')));
         if (!img.save(framePath, "PNG")) {

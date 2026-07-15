@@ -213,13 +213,27 @@ bool DocumentManager::prepareAtomicTarget(const QString& finalPath,
 
 bool DocumentManager::commitAtomic(const QString& tmpPath,
                                    const QString& finalPath) {
-    if (!QFile::rename(tmpPath, finalPath)) {
-        lastError_ = QStringLiteral("Atomic rename failed: ") + tmpPath
-                   + QStringLiteral(" -> ") + finalPath
-                   + QStringLiteral(". Temp file preserved at: ") + tmpPath;
-        return false;
+    if (QFile::rename(tmpPath, finalPath)) {
+        return true;
     }
-    return true;
+
+    // On Windows, QFile::rename does not overwrite existing targets.
+    // If the first rename failed and the target exists, remove and retry.
+    if (QFile::exists(finalPath)) {
+        if (!QFile::remove(finalPath)) {
+            lastError_ = QStringLiteral("Atomic rename failed: cannot remove existing target ")
+                       + finalPath;
+            return false;
+        }
+        if (QFile::rename(tmpPath, finalPath)) {
+            return true;
+        }
+    }
+
+    lastError_ = QStringLiteral("Atomic rename failed: ") + tmpPath
+               + QStringLiteral(" -> ") + finalPath
+               + QStringLiteral(". Temp file preserved at: ") + tmpPath;
+    return false;
 }
 
 bool DocumentManager::save(const Document& doc, const QString& path, const ViewState& vs) {
