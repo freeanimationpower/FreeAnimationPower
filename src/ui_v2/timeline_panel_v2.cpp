@@ -574,6 +574,31 @@ private:
         QDialog dlg(this->window());
         dlg.setWindowTitle("Marker Settings");
         dlg.setMinimumWidth(360);
+        dlg.setStyleSheet(QString(
+            "QDialog { background:#1E2130; }"
+            "QLabel { color:#C8CCD8; font-family:Avenir,sans-serif; }"
+            "QLineEdit { background:#13161D; color:#E8ECF0; border:1px solid #2D3139; "
+            "  border-radius:3px; padding:4px 6px; font-family:Avenir,sans-serif; }"
+            "QLineEdit:focus { border-color:#FF4800; }"
+            "QSpinBox { background:#13161D; color:#E8ECF0; border:1px solid #2D3139; "
+            "  border-radius:3px; padding:3px 5px; font-family:Avenir,sans-serif; }"
+            "QSpinBox::up-button, QSpinBox::down-button { "
+            "  background:#252838; border:1px solid #2D3139; width:16px; }"
+            "QSpinBox::up-button:hover, QSpinBox::down-button:hover { background:#FF4800; }"
+            "QSpinBox::up-arrow, QSpinBox::down-arrow { width:6px; height:4px; }"
+            "QSpinBox:focus { border-color:#FF4800; }"
+            "QComboBox { background:#13161D; color:#E8ECF0; border:1px solid #2D3139; "
+            "  border-radius:3px; padding:4px 6px; font-family:Avenir,sans-serif; }"
+            "QComboBox:hover { border-color:#FF4800; }"
+            "QComboBox QAbstractItemView { background:#1E2130; color:#C8CCD8; "
+            "  selection-background-color:#FF4800; border:1px solid #2D3139; }"
+            "QPlainTextEdit { background:#13161D; color:#E8ECF0; border:1px solid #2D3139; "
+            "  border-radius:3px; padding:4px; font-family:Avenir,sans-serif; }"
+            "QPlainTextEdit:focus { border-color:#FF4800; }"
+            "QPushButton { background:#252838; color:#C8CCD8; border:1px solid #2D3139; "
+            "  border-radius:3px; padding:6px 16px; font-family:Avenir,sans-serif; }"
+            "QPushButton:hover { background:#FF4800; color:#fff; }"
+        ));
         auto* form = new QFormLayout(&dlg);
 
         auto* titleEdit = new QLineEdit(QString::fromStdString(m.comment), &dlg);
