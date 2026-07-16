@@ -107,6 +107,7 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
+    void tabletEvent(QTabletEvent* event) override;
 
 private:
     std::shared_ptr<AppState> appState_;
@@ -137,6 +138,11 @@ private:
     QPointF lastMousePos_;
     QPointF virtualCursorPos_;
     QPointF prevVirtualCursorPos_;
+
+    // Tablet pressure tracking
+    bool tabletActive_ = false;
+    float tabletPressure_ = 1.0f;
+    bool tabletEraser_ = false;
 
     // Isolated stroke buffer: transparent ARGB32_Premultiplied.
     // Only contains dabs from the current stroke. Written during

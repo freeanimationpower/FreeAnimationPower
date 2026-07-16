@@ -9,6 +9,7 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QFocusEvent>
+#include <QtGui/QTabletEvent>
 #include <QtCore/QTimer>
 #include <QtGui/QPainterPath>
 #include <QtGui/QClipboard>
@@ -159,6 +160,7 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
     setMinimumSize(400, 300);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
+    setAttribute(Qt::WA_TabletTracking, true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     auto& doc = appState_->document();
@@ -1700,6 +1702,40 @@ void CanvasWidgetV2::wheelEvent(QWheelEvent* event)
     update();
 }
 
+void CanvasWidgetV2::tabletEvent(QTabletEvent* event)
+{
+    tabletPressure_ = static_cast<float>(event->pressure());
+    tabletEraser_ = (event->pointerType() == QPointingDevice::PointerType::Eraser);
+
+    switch (event->type()) {
+    case QEvent::TabletPress:
+        if (!tabletActive_) {
+            tabletActive_ = true;
+            tabletPressure_ = static_cast<float>(event->pressure());
+        }
+        break;
+    case QEvent::TabletRelease:
+        tabletPressure_ = 0.0f;
+        break;
+    case QEvent::TabletMove:
+        tabletPressure_ = static_cast<float>(event->pressure());
+        break;
+    case QEvent::TabletEnterProximity:
+        tabletActive_ = true;
+        tabletPressure_ = 1.0f;
+        break;
+    case QEvent::TabletLeaveProximity:
+        tabletActive_ = false;
+        tabletPressure_ = 1.0f;
+        tabletEraser_ = false;
+        break;
+    default:
+        break;
+    }
+
+    event->accept();
+}
+
 void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
 {
     if (!editingText_
@@ -2176,6 +2212,9 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
 
     int radius = brushSize_ / 2;
 
+    float pressure = tabletActive_ ? std::max(0.05f, tabletPressure_) : 1.0f;
+    radius = std::max(1, static_cast<int>(radius * (0.2f + 0.8f * pressure)));
+
     if (brushShape_ == "Calligraphy") {
         float maxDist = 200.0f;
         float t = std::min(strokeDistance_ / maxDist, 1.0f);
@@ -2184,8 +2223,9 @@ void CanvasWidgetV2::drawBrushStamp(int cx, int cy)
     }
 
     auto tool = appState_->toolState().activeTool();
-    bool erasing = (tool == ToolType::Eraser);
+    bool erasing = (tool == ToolType::Eraser) || (tabletActive_ && tabletEraser_);
     float opacity = appState_->toolState().brushOpacity() / 100.0f;
+    if (tabletActive_) opacity *= std::max(0.1f, tabletPressure_);
 
     int lcx = cx - ox;
     int lcy = cy - oy;
