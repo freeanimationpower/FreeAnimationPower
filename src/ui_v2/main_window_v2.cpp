@@ -456,6 +456,13 @@ void MainWindowV2::setupConnections()
         updateUIState();
     });
 
+    connect(timeline_panel_, &TimelinePanelV2::videoTrackChanged, [this]() {
+        if (canvas_) {
+            canvas_->invalidateBackgroundCache();
+            canvas_->update();
+        }
+    });
+
     connect(property_editor_, &PropertyEditorV2::durationFramesChanged,
             [this](int dur) {
         appState_->setDurationFrames(dur);

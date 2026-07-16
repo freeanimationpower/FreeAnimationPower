@@ -47,6 +47,7 @@ public:
 signals:
     void moveUpRequested();
     void moveDownRequested();
+    void opacityChanged();
 
 protected:
     void paintEvent(QPaintEvent* event) override;

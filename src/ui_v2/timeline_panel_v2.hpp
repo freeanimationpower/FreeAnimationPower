@@ -83,6 +83,7 @@ signals:
     void fpsChanged(int fps);
     void playbackToggled(bool playing);
     void sequenceChanged(int index);
+    void videoTrackChanged();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

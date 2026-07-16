@@ -2083,6 +2083,8 @@ void TimelinePanelV2::onImportVideo()
             onMoveVideoTrack(static_cast<int>(std::distance(videoTrackWidgets_.begin(), it)), 1);
     });
 
+    connect(track, &VideoTrackWidget::opacityChanged, this, &TimelinePanelV2::videoTrackChanged);
+
     int insertPos = std::max(0, tracksLayout_->count() - 1);
     tracksLayout_->insertWidget(insertPos, track);
     videoTrackWidgets_.push_back(track);
@@ -2127,6 +2129,8 @@ VideoTrackWidget* TimelinePanelV2::addVideoTrackFromData(const VideoTrackData& d
         if (it != videoTrackWidgets_.end())
             onMoveVideoTrack(static_cast<int>(std::distance(videoTrackWidgets_.begin(), it)), 1);
     });
+
+    connect(track, &VideoTrackWidget::opacityChanged, this, &TimelinePanelV2::videoTrackChanged);
 
     int insertPos = std::max(0, tracksLayout_->count() - 1);
     tracksLayout_->insertWidget(insertPos, track);

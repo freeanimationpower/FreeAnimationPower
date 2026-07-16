@@ -130,6 +130,7 @@ VideoTrackWidget::VideoTrackWidget(const QString& filepath, int trackIndex,
     connect(opacitySlider_, &QSlider::valueChanged, this, [this](int v) {
         opacity_ = v / 100.0f;
         opacityLabel_->setText(QString("Op:%1%").arg(v));
+        emit opacityChanged();
         update();
     });
 
