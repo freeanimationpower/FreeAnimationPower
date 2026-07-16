@@ -41,6 +41,7 @@
 #include "core/tool_state.hpp"
 #include "toolbox_panel_v2.hpp"
 #include "onion_skin_panel.hpp"
+#include "canvas_size_panel.hpp"
 #include "color_panel_v2.hpp"
 #include "layer_panel_v2.hpp"
 #include "canvas_widget_v2.hpp"
@@ -358,6 +359,15 @@ void MainWindowV2::setupDocks()
     onion_skin_panel_->setNextFrames(appState_->toolState().onionNextFrames());
     onion_skin_panel_->setOpacity(appState_->toolState().onionOpacity());
 
+    auto* sizeDock = new QDockWidget("CANVAS SIZE", this);
+    sizeDock->setObjectName("canvasSizeDockV2");
+    sizeDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    canvas_size_panel_ = new CanvasSizePanel(sizeDock);
+    sizeDock->setWidget(canvas_size_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, sizeDock);
+    canvas_size_panel_->setCanvasWidth(appState_->toolState().canvasWidth());
+    canvas_size_panel_->setCanvasHeight(appState_->toolState().canvasHeight());
+
     auto* canvasDock = new QDockWidget("CANVAS", this);
     canvasDock->setObjectName("canvasDockV2");
     canvasDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
@@ -380,7 +390,7 @@ void MainWindowV2::setupDocks()
     const char* kDockTitleStyle =
         "QLabel { color: #FF4800; font-size: 10px; font-weight: 600;"
         " padding: 4px 10px; }";
-    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, onionDock, canvasDock, timelineDock}) {
+    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, onionDock, sizeDock, canvasDock, timelineDock}) {
         auto* titleLabel = new QLabel(dock->windowTitle());
         titleLabel->setStyleSheet(kDockTitleStyle);
         dock->setTitleBarWidget(titleLabel);
@@ -444,7 +454,8 @@ void MainWindowV2::setupConnections()
         }
     });
 
-    connect(toolbox_panel_, &ToolboxPanelV2::canvasResized, [this](int w, int h) {
+    connect(canvas_size_panel_, &CanvasSizePanel::canvasResized, [this](int w, int h) {
+        appState_->toolState().setCanvasSize(w, h);
         if (canvas_) {
             canvas_->resizeCanvas(w, h);
             canvas_->fit();

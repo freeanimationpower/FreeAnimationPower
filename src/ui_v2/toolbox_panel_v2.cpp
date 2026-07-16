@@ -239,55 +239,6 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     });
     layout->addWidget(colorSwatch_, 0, Qt::AlignHCenter);
 
-    layout->addSpacing(10);
-
-    auto* canvasGroup = new QGroupBox("Canvas");
-    canvasGroup->setStyleSheet(kGroupBoxStyle);
-    auto* canvasLayout = new QVBoxLayout(canvasGroup);
-    canvasLayout->setContentsMargins(0, 0, 0, 0);
-    canvasLayout->setSpacing(4);
-
-    auto* sizeRow = new QHBoxLayout();
-    canvasWidthSpin_ = new QSpinBox();
-    canvasWidthSpin_->setRange(1, 8192);
-    canvasWidthSpin_->setValue(appState_->toolState().canvasWidth());
-    canvasWidthSpin_->setToolTip("Canvas Width (px)\nHorizontal size of the animation canvas. Range: 1-8192 pixels.");
-    canvasWidthSpin_->setStyleSheet(kSpinStyle);
-    sizeRow->addWidget(canvasWidthSpin_);
-
-    auto* xLabel = new QLabel("\xC3\x97");
-    xLabel->setStyleSheet("color:#6B7088;font-size:11px;");
-    xLabel->setFixedWidth(12);
-    xLabel->setAlignment(Qt::AlignCenter);
-    sizeRow->addWidget(xLabel);
-
-    canvasHeightSpin_ = new QSpinBox();
-    canvasHeightSpin_->setRange(1, 8192);
-    canvasHeightSpin_->setValue(appState_->toolState().canvasHeight());
-    canvasHeightSpin_->setToolTip("Canvas Height (px)\nVertical size of the animation canvas. Range: 1-8192 pixels.");
-    canvasHeightSpin_->setStyleSheet(kSpinStyle);
-    sizeRow->addWidget(canvasHeightSpin_);
-    canvasLayout->addLayout(sizeRow);
-
-    QObject::connect(canvasWidthSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
-        [this](int v) { appState_->toolState().setCanvasWidth(v); });
-    QObject::connect(canvasHeightSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
-        [this](int v) { appState_->toolState().setCanvasHeight(v); });
-
-    auto* applyBtn = new QPushButton("Apply Resize");
-    applyBtn->setToolTip("Apply Canvas Resize\nResize the canvas to the specified dimensions. This operation cannot be undone.");
-    applyBtn->setStyleSheet(
-        "QPushButton{background:#FF4800;color:#fff;border:none;border-radius:4px;padding:3px;font-size:10px;font-weight:bold;}"
-        "QPushButton:hover{background:#FF6A20;}");
-    QObject::connect(applyBtn, &QPushButton::clicked, [this]() {
-        int w = canvasWidthSpin_->value();
-        int h = canvasHeightSpin_->value();
-        appState_->toolState().setCanvasSize(w, h);
-        emit canvasResized(w, h);
-    });
-    canvasLayout->addWidget(applyBtn);
-
-    layout->addWidget(canvasGroup);
     layout->addStretch();
 
     scroll->setWidget(container);
@@ -305,14 +256,6 @@ void ToolboxPanelV2::syncFromState() {
     }
 
     colorSwatch_->setSwatchColor(ts.primaryColor());
-
-    canvasWidthSpin_->blockSignals(true);
-    canvasWidthSpin_->setValue(ts.canvasWidth());
-    canvasWidthSpin_->blockSignals(false);
-
-    canvasHeightSpin_->blockSignals(true);
-    canvasHeightSpin_->setValue(ts.canvasHeight());
-    canvasHeightSpin_->blockSignals(false);
 }
 
 void ToolboxPanelV2::setColor(const QColor& color) {
@@ -329,9 +272,6 @@ void ToolboxPanelV2::setActiveTool(int toolIndex) {
 }
 
 QColor ToolboxPanelV2::currentColor() const     { return colorSwatch_->swatchColor(); }
-
-int ToolboxPanelV2::canvasWidth() const         { return canvasWidthSpin_->value(); }
-int ToolboxPanelV2::canvasHeight() const        { return canvasHeightSpin_->value(); }
 
 } // namespace fap
 #include "toolbox_panel_v2.moc"

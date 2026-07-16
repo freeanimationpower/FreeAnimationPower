@@ -142,6 +142,7 @@ set(UI_HEADERS
     src/ui_v2/audio_track_widget.hpp
     src/ui_v2/video_track_widget.hpp
     src/ui_v2/onion_skin_panel.hpp
+    src/ui_v2/canvas_size_panel.hpp
 )
 
 set(UI_SOURCES
@@ -156,6 +157,7 @@ set(UI_SOURCES
     src/ui_v2/audio_track_widget.cpp
     src/ui_v2/video_track_widget.cpp
     src/ui_v2/onion_skin_panel.cpp
+    src/ui_v2/canvas_size_panel.cpp
 )
 
 set(IO_HEADERS

@@ -24,14 +24,10 @@ public:
 
     QColor currentColor() const;
 
-    int canvasWidth() const;
-    int canvasHeight() const;
-
 signals:
     void toolChanged(int toolIndex);
     void colorChanged(const QColor& color);
     void settingsChanged();
-    void canvasResized(int width, int height);
 
 private:
     QPushButton* createToolButton(const QString& icon, const QString& tooltip, int id);
@@ -40,9 +36,6 @@ private:
 
     QButtonGroup* toolGroup_ = nullptr;
     ColorSwatchButtonV2* colorSwatch_ = nullptr;
-
-    QSpinBox* canvasWidthSpin_ = nullptr;
-    QSpinBox* canvasHeightSpin_ = nullptr;
 };
 
 } // namespace fap

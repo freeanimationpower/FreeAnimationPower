@@ -14,6 +14,7 @@ class ColorPanelV2;
 class LayerPanelV2;
 class PropertyEditorV2;
 class OnionSkinPanel;
+class CanvasSizePanel;
 
 class MainWindowV2 : public QMainWindow {
     Q_OBJECT
@@ -51,6 +52,7 @@ private:
     LayerPanelV2* layer_panel_ = nullptr;
     PropertyEditorV2* property_editor_ = nullptr;
     OnionSkinPanel* onion_skin_panel_ = nullptr;
+    CanvasSizePanel* canvas_size_panel_ = nullptr;
 
     QAction* undoAct_ = nullptr;
     QAction* redoAct_ = nullptr;
