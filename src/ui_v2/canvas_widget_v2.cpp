@@ -765,6 +765,13 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
         p.end();
     } else {
         // PARTIAL rebuild (dirty rect)
+        // When video tracks are active, the partial rebuild loses video context
+        // because video frames need full canvas compositing. Escalate to full rebuild.
+        if (videoTracks_ && !videoTracks_->empty()) {
+            buildBackgroundCache();
+            return;
+        }
+
         QPainter p(&backgroundCache_);
         p.setRenderHint(QPainter::Antialiasing, false);
         p.setRenderHint(QPainter::SmoothPixmapTransform, false);
