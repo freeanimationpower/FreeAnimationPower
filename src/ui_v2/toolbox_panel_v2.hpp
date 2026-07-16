@@ -6,9 +6,7 @@
 #include <memory>
 
 class QButtonGroup;
-class QCheckBox;
 class QSpinBox;
-class QSlider;
 
 namespace fap {
 
@@ -26,11 +24,6 @@ public:
 
     QColor currentColor() const;
 
-    bool onionEnabled() const;
-    int onionPrevFrames() const;
-    int onionNextFrames() const;
-    int onionOpacity() const;
-
     int canvasWidth() const;
     int canvasHeight() const;
 
@@ -38,7 +31,6 @@ signals:
     void toolChanged(int toolIndex);
     void colorChanged(const QColor& color);
     void settingsChanged();
-    void onionSettingsChanged();
     void canvasResized(int width, int height);
 
 private:
@@ -48,11 +40,6 @@ private:
 
     QButtonGroup* toolGroup_ = nullptr;
     ColorSwatchButtonV2* colorSwatch_ = nullptr;
-
-    QCheckBox* onionEnabledCb_ = nullptr;
-    QSpinBox* onionPrevSpin_ = nullptr;
-    QSpinBox* onionNextSpin_ = nullptr;
-    QSlider* onionOpacitySlider_ = nullptr;
 
     QSpinBox* canvasWidthSpin_ = nullptr;
     QSpinBox* canvasHeightSpin_ = nullptr;

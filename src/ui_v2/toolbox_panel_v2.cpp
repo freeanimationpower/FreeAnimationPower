@@ -241,75 +241,6 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
 
     layout->addSpacing(10);
 
-    auto* onionGroup = new QGroupBox("Onion Skin");
-    onionGroup->setStyleSheet(kGroupBoxStyle);
-    auto* onionLayout = new QVBoxLayout(onionGroup);
-    onionLayout->setContentsMargins(0, 0, 0, 0);
-    onionLayout->setSpacing(4);
-
-    onionEnabledCb_ = new QCheckBox("Enabled");
-    onionEnabledCb_->setChecked(appState_->toolState().onionEnabled());
-    onionEnabledCb_->setToolTip("Onion Skin\nShow transparent overlays of previous and next frames for reference while animating.");
-    onionEnabledCb_->setStyleSheet(kCheckStyle);
-    QObject::connect(onionEnabledCb_, &QCheckBox::toggled, [this](bool checked) {
-        appState_->toolState().setOnionEnabled(checked);
-        emit onionSettingsChanged();
-    });
-    onionLayout->addWidget(onionEnabledCb_);
-
-    auto* onionPrevRow = new QHBoxLayout();
-    auto* prevLabel = new QLabel("Prev");
-    prevLabel->setStyleSheet("color:#C0C3CC;font-size:10px;");
-    onionPrevRow->addWidget(prevLabel);
-    onionPrevSpin_ = new QSpinBox();
-    onionPrevSpin_->setRange(0, 10);
-    onionPrevSpin_->setValue(appState_->toolState().onionPrevFrames());
-    onionPrevSpin_->setToolTip("Previous Frames\nNumber of previous frames shown as red-tinted onion skin overlays.");
-    onionPrevSpin_->setStyleSheet(kSpinStyle);
-    onionPrevSpin_->setFixedWidth(48);
-    QObject::connect(onionPrevSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
-        [this](int v) {
-            appState_->toolState().setOnionPrevFrames(v);
-            emit onionSettingsChanged();
-        });
-    onionPrevRow->addWidget(onionPrevSpin_);
-    onionPrevRow->addStretch();
-    onionLayout->addLayout(onionPrevRow);
-
-    auto* onionNextRow = new QHBoxLayout();
-    auto* nextLabel = new QLabel("Next");
-    nextLabel->setStyleSheet("color:#C0C3CC;font-size:10px;");
-    onionNextRow->addWidget(nextLabel);
-    onionNextSpin_ = new QSpinBox();
-    onionNextSpin_->setRange(0, 10);
-    onionNextSpin_->setValue(appState_->toolState().onionNextFrames());
-    onionNextSpin_->setToolTip("Next Frames\nNumber of future frames shown as green-tinted onion skin overlays.");
-    onionNextSpin_->setStyleSheet(kSpinStyle);
-    onionNextSpin_->setFixedWidth(48);
-    QObject::connect(onionNextSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
-        [this](int v) {
-            appState_->toolState().setOnionNextFrames(v);
-            emit onionSettingsChanged();
-        });
-    onionNextRow->addWidget(onionNextSpin_);
-    onionNextRow->addStretch();
-    onionLayout->addLayout(onionNextRow);
-
-    onionOpacitySlider_ = new QSlider(Qt::Horizontal);
-    onionOpacitySlider_->setRange(5, 100);
-    onionOpacitySlider_->setValue(appState_->toolState().onionOpacity());
-    onionOpacitySlider_->setToolTip("Onion Opacity (5-100%)\nTransparency of onion skin overlays. Lower = more faded ghost frames.");
-    onionOpacitySlider_->setStyleSheet(kSliderStyle);
-    onionOpacitySlider_->setFixedHeight(14);
-    QObject::connect(onionOpacitySlider_, &QSlider::valueChanged,
-        [this](int v) {
-            appState_->toolState().setOnionOpacity(v);
-            emit onionSettingsChanged();
-        });
-    onionLayout->addWidget(onionOpacitySlider_);
-
-    layout->addWidget(onionGroup);
-
     auto* canvasGroup = new QGroupBox("Canvas");
     canvasGroup->setStyleSheet(kGroupBoxStyle);
     auto* canvasLayout = new QVBoxLayout(canvasGroup);
@@ -375,22 +306,6 @@ void ToolboxPanelV2::syncFromState() {
 
     colorSwatch_->setSwatchColor(ts.primaryColor());
 
-    onionEnabledCb_->blockSignals(true);
-    onionEnabledCb_->setChecked(ts.onionEnabled());
-    onionEnabledCb_->blockSignals(false);
-
-    onionPrevSpin_->blockSignals(true);
-    onionPrevSpin_->setValue(ts.onionPrevFrames());
-    onionPrevSpin_->blockSignals(false);
-
-    onionNextSpin_->blockSignals(true);
-    onionNextSpin_->setValue(ts.onionNextFrames());
-    onionNextSpin_->blockSignals(false);
-
-    onionOpacitySlider_->blockSignals(true);
-    onionOpacitySlider_->setValue(ts.onionOpacity());
-    onionOpacitySlider_->blockSignals(false);
-
     canvasWidthSpin_->blockSignals(true);
     canvasWidthSpin_->setValue(ts.canvasWidth());
     canvasWidthSpin_->blockSignals(false);
@@ -414,11 +329,6 @@ void ToolboxPanelV2::setActiveTool(int toolIndex) {
 }
 
 QColor ToolboxPanelV2::currentColor() const     { return colorSwatch_->swatchColor(); }
-
-bool ToolboxPanelV2::onionEnabled() const       { return onionEnabledCb_->isChecked(); }
-int ToolboxPanelV2::onionPrevFrames() const     { return onionPrevSpin_->value(); }
-int ToolboxPanelV2::onionNextFrames() const     { return onionNextSpin_->value(); }
-int ToolboxPanelV2::onionOpacity() const        { return onionOpacitySlider_->value(); }
 
 int ToolboxPanelV2::canvasWidth() const         { return canvasWidthSpin_->value(); }
 int ToolboxPanelV2::canvasHeight() const        { return canvasHeightSpin_->value(); }

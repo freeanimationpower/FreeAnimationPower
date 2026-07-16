@@ -38,7 +38,9 @@
 
 #include "core/diagnostic/tracer_macros.hpp"
 #include "platform/file_association.hpp"
+#include "core/tool_state.hpp"
 #include "toolbox_panel_v2.hpp"
+#include "onion_skin_panel.hpp"
 #include "color_panel_v2.hpp"
 #include "layer_panel_v2.hpp"
 #include "canvas_widget_v2.hpp"
@@ -344,9 +346,25 @@ void MainWindowV2::setupDocks()
     propertyDock->setWidget(property_editor_);
     addDockWidget(Qt::RightDockWidgetArea, propertyDock);
 
-    canvas_ = new CanvasWidgetV2(appState_, this);
+    auto* onionDock = new QDockWidget("ONION SKIN", this);
+    onionDock->setObjectName("onionSkinDockV2");
+    onionDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    onion_skin_panel_ = new OnionSkinPanel(onionDock);
+    onionDock->setWidget(onion_skin_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, onionDock);
+    // Sync from ToolState defaults
+    onion_skin_panel_->setEnabled(appState_->toolState().onionEnabled());
+    onion_skin_panel_->setPrevFrames(appState_->toolState().onionPrevFrames());
+    onion_skin_panel_->setNextFrames(appState_->toolState().onionNextFrames());
+    onion_skin_panel_->setOpacity(appState_->toolState().onionOpacity());
+
+    auto* canvasDock = new QDockWidget("CANVAS", this);
+    canvasDock->setObjectName("canvasDockV2");
+    canvasDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    canvas_ = new CanvasWidgetV2(appState_, canvasDock);
     canvas_->setMinimumSize(400, 300);
-    setCentralWidget(canvas_);
+    canvasDock->setWidget(canvas_);
+    setCentralWidget(canvasDock);
 
     auto* timelineDock = new QDockWidget("TIMELINE", this);
     timelineDock->setObjectName("timelineDockV2");
@@ -362,7 +380,7 @@ void MainWindowV2::setupDocks()
     const char* kDockTitleStyle =
         "QLabel { color: #FF4800; font-size: 10px; font-weight: 600;"
         " padding: 4px 10px; }";
-    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, timelineDock}) {
+    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, onionDock, canvasDock, timelineDock}) {
         auto* titleLabel = new QLabel(dock->windowTitle());
         titleLabel->setStyleSheet(kDockTitleStyle);
         dock->setTitleBarWidget(titleLabel);
@@ -411,13 +429,17 @@ void MainWindowV2::setupConnections()
         appState_->document().setModified(true);
     });
 
-    connect(toolbox_panel_, &ToolboxPanelV2::onionSettingsChanged, [this]() {
+    connect(onion_skin_panel_, &OnionSkinPanel::settingsChanged, [this]() {
+        appState_->toolState().setOnionEnabled(onion_skin_panel_->enabled());
+        appState_->toolState().setOnionPrevFrames(onion_skin_panel_->prevFrames());
+        appState_->toolState().setOnionNextFrames(onion_skin_panel_->nextFrames());
+        appState_->toolState().setOnionOpacity(onion_skin_panel_->opacity());
         if (canvas_) {
-            canvas_->setOnionEnabled(toolbox_panel_->onionEnabled());
+            canvas_->setOnionEnabled(onion_skin_panel_->enabled());
             canvas_->setOnionSettings(
-                toolbox_panel_->onionPrevFrames(),
-                toolbox_panel_->onionNextFrames(),
-                toolbox_panel_->onionOpacity());
+                onion_skin_panel_->prevFrames(),
+                onion_skin_panel_->nextFrames(),
+                onion_skin_panel_->opacity());
             canvas_->update();
         }
     });
