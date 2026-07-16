@@ -52,15 +52,16 @@ OnionSkinPanel::OnionSkinPanel(QWidget* parent)
     onionLayout->addWidget(enableCb_);
 
     auto* prevRow = new QHBoxLayout();
-    auto* prevLabel = new QLabel("Prev:");
+    auto* prevLabel = new QLabel("Previous frames:");
     prevLabel->setStyleSheet(kLabelStyle);
     prevRow->addWidget(prevLabel);
     prevSpin_ = new QSpinBox();
     prevSpin_->setRange(0, 10);
     prevSpin_->setValue(3);
-    prevSpin_->setToolTip("Previous Frames\nNumber of previous frames shown as red-tinted onion skin overlays.");
+    prevSpin_->setToolTip("Number of previous frames shown as red-tinted onion skin overlays.");
     prevSpin_->setStyleSheet(kSpinStyle);
-    prevSpin_->setFixedWidth(48);
+    prevSpin_->setFixedWidth(42);
+    prevSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     QObject::connect(prevSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
                      this, &OnionSkinPanel::settingsChanged);
     prevRow->addWidget(prevSpin_);
@@ -68,15 +69,16 @@ OnionSkinPanel::OnionSkinPanel(QWidget* parent)
     onionLayout->addLayout(prevRow);
 
     auto* nextRow = new QHBoxLayout();
-    auto* nextLabel = new QLabel("Next:");
+    auto* nextLabel = new QLabel("Next frames:");
     nextLabel->setStyleSheet(kLabelStyle);
     nextRow->addWidget(nextLabel);
     nextSpin_ = new QSpinBox();
     nextSpin_->setRange(0, 10);
     nextSpin_->setValue(1);
-    nextSpin_->setToolTip("Next Frames\nNumber of future frames shown as green-tinted onion skin overlays.");
+    nextSpin_->setToolTip("Number of future frames shown as green-tinted onion skin overlays.");
     nextSpin_->setStyleSheet(kSpinStyle);
-    nextSpin_->setFixedWidth(48);
+    nextSpin_->setFixedWidth(42);
+    nextSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     QObject::connect(nextSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
                      this, &OnionSkinPanel::settingsChanged);
     nextRow->addWidget(nextSpin_);
