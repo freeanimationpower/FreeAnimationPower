@@ -351,7 +351,7 @@ void MainWindowV2::setupDocks()
     onionDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
     onion_skin_panel_ = new OnionSkinPanel(onionDock);
     onionDock->setWidget(onion_skin_panel_);
-    addDockWidget(Qt::RightDockWidgetArea, onionDock);
+    addDockWidget(Qt::LeftDockWidgetArea, onionDock);
     // Sync from ToolState defaults
     onion_skin_panel_->setEnabled(appState_->toolState().onionEnabled());
     onion_skin_panel_->setPrevFrames(appState_->toolState().onionPrevFrames());
