@@ -864,6 +864,24 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
             }
         }
 
+        // Video frames on top of drawing layers
+        if (videoTracks_) {
+            for (auto* vt : *videoTracks_) {
+                if (!vt || !vt->isVisible()) continue;
+                QImage frame = vt->currentFrame(currentFrame_);
+                if (frame.isNull()) continue;
+
+                QRect target = frame.scaled(docW, docH, Qt::KeepAspectRatio,
+                                            Qt::SmoothTransformation).rect();
+                target.moveCenter(QPoint(docW/2, docH/2));
+
+                p.setOpacity(static_cast<qreal>(vt->opacity()));
+                p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+                p.drawImage(target, frame.scaled(target.width(), target.height(),
+                              Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+            }
+        }
+
         p.end();
     }
 
