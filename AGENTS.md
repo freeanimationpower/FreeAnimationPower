@@ -836,11 +836,17 @@ struct VideoTrackData {
 | Right | LAYERS | LayerPanelV2 |
 | Right | COLOR | ColorPanelV2 |
 | Right | PROPERTIES | PropertyEditorV2 |
+| Right | CANVAS SIZE | CanvasSizePanel |
 | Center | CANVAS | CanvasWidgetV2 (detachable) |
 | Bottom | TIMELINE | TimelinePanelV2 |
 
-All 7 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in dock via `setCentralWidget(canvasDock)`.
+All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in dock via `setCentralWidget(canvasDock)`.
 
-**Files**: `src/ui_v2/onion_skin_panel.{hpp,cpp}` (new), `src/ui_v2/toolbox_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.{hpp,cpp}`, `CMakeLists.txt`
+**CanvasSizePanel** (`ui_v2/canvas_size_panel.{hpp,cpp}`):
+- New independent widget with Width QSpinBox, × label, Height QSpinBox (1-8192), Apply Resize button
+- Extracted from ToolboxPanelV2 into own QDockWidget ('CANVAS SIZE')
+- Emits `canvasResized(int w, int h)` → toolState.setCanvasSize + canvas.resizeCanvas
+
+**Files**: `src/ui_v2/onion_skin_panel.{hpp,cpp}` (new), `src/ui_v2/canvas_size_panel.{hpp,cpp}` (new), `src/ui_v2/toolbox_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.{hpp,cpp}`, `CMakeLists.txt`
 
 **Tests**: 160/160 pass.

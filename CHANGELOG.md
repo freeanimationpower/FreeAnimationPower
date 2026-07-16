@@ -22,7 +22,8 @@
 - QFormLayout para alinear los spinboxes, sin botones (NoButtons), 0-10
 - Labels completos: "Previous frames:", "Next frames:"
 - Canvas movido a QDockWidget desprendible (antes centralWidget fijo)
-- 7 docks: TOOLS (left), ONION SKIN (left), LAYERS (right), COLOR (right), PROPERTIES (right), CANVAS (center), TIMELINE (bottom)
+- CanvasSizePanel extraido de ToolboxPanelV2 en su propio dock ('CANVAS SIZE')
+- 8 docks: TOOLS (left), ONION SKIN (left), LAYERS (right), COLOR (right), PROPERTIES (right), CANVAS SIZE (right), CANVAS (center), TIMELINE (bottom)
 - Todos los docks: Movable | Floatable con barra de titulo naranja
 - **Archivos**: `onion_skin_panel.{hpp,cpp}` (nuevo), `toolbox_panel_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`
 
