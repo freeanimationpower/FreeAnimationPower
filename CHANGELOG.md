@@ -25,7 +25,8 @@
 - CanvasSizePanel extraido de ToolboxPanelV2 en su propio dock ('CANVAS SIZE')
 - 8 docks: TOOLS (left), ONION SKIN (left), LAYERS (right), COLOR (right), PROPERTIES (right), CANVAS SIZE (right), CANVAS (center), TIMELINE (bottom)
 - Todos los docks: Movable | Floatable con barra de titulo naranja
-- **Archivos**: `onion_skin_panel.{hpp,cpp}` (nuevo), `toolbox_panel_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`
+- ToolboxPanelV2: ajustado al contenido (52px ancho, sin stretch, sin QScrollArea)
+- **Archivos**: `onion_skin_panel.{hpp,cpp}` (nuevo), `canvas_size_panel.{hpp,cpp}` (nuevo), `toolbox_panel_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`
 
 ### Tests
 - 160/160 tests pasan

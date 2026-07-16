@@ -849,4 +849,9 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 
 **Files**: `src/ui_v2/onion_skin_panel.{hpp,cpp}` (new), `src/ui_v2/canvas_size_panel.{hpp,cpp}` (new), `src/ui_v2/toolbox_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.{hpp,cpp}`, `CMakeLists.txt`
 
+### Toolbox panel — tight fit to content
+**Fix**: Reduced `setMinimumWidth` from 200px to 52px (36px icon + margins). Removed `addStretch()` so the widget uses only its natural content height. Removed QScrollArea wrapper (11 tools never overflow). Direct QVBoxLayout on the widget with no nested containers.
+
+**Files**: `src/ui_v2/toolbox_panel_v2.cpp`
+
 **Tests**: 160/160 pass.
