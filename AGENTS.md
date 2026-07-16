@@ -746,3 +746,78 @@ struct Marker {
 **Files**: `src/ui_v2/main_window_v2.cpp:692-696,774-778`
 
 **Tests**: 160/160 pass.
+
+## Bug Fix Session (v2.8 — Jul 2026)
+
+### Video Clip Import
+
+**Feature**: Import video clips into the timeline as tracks, similar to audio tracks. Video frames are decoded on demand via FFmpeg and composited on top of drawing layers in the canvas.
+
+**Data model** (`document.hpp`):
+```cpp
+struct VideoTrackData {
+    std::string filepath;      // original or temp path
+    std::string displayName;   // e.g., "clip.mp4"
+    std::string zipEntry;      // "video/track_0.mp4"
+    int width = 0, height = 0;
+    int fps = 24, totalFrames = 0;
+    bool muted = false;
+    int volume = 80;
+    float opacity = 1.0f;
+};
+```
+
+**Import limits**: Max 60 seconds, max 1920x1080. Warning dialog if exceeded (offers to trim/scale), user can cancel.
+
+**Video decoder** (`engine/animation/video_decoder.cpp`):
+- `probeVideoMetadata()`: uses `ffprobe -print_format json` to extract width, height, fps, totalFrames, duration
+- `decodeVideoFrame()`: uses `ffmpeg -ss <time> -vframes 1 -f image2pipe -vcodec png -` with scale filter
+- `VideoFrameCache`: LRU cache of 50 decoded full-res frames (thread-safe)
+
+**VideoTrackWidget** (`ui_v2/video_track_widget.cpp`):
+- Same button layout as AudioTrackWidget: 28x28 buttons with SVG icons (▲▼ for move, 🔊 for mute, ✕ for delete)
+- Opacity slider (0-100%) + volume slider (0-100%) with matching QSlider style
+- Thumbnail strip: 1 thumbnail every 30 frames (pre-decoded at 320x180 on import via FFmpeg)
+- `currentFrame()`: returns decoded frame from cache or decodes on demand
+- `opacityChanged()` signal → triggers canvas cache invalidation for real-time opacity preview
+
+**Timeline integration** (`timeline_panel_v2.cpp`):
+- "Add Video Track" in `+ Track ▾` menu
+- `onImportVideo()`: file dialog → probe metadata → limit warnings → create widget → register with Document
+- `addVideoTrackFromData()`: restores widget from loaded Document data
+- `clearVideoTracks()`, `removeVideoTrack()`, `onMoveVideoTrack()`: same pattern as audio
+- Non-destructive `rebuildTracks()` preserves video widgets (removeWidget/addWidget, never delete)
+- `videoTrackChanged()` signal: propagated from widget opacity changes
+
+**Canvas compositing** (`canvas_widget_v2.cpp`):
+- Video frames rendered **on top** of drawing layers in `buildBackgroundCache()`
+- Scaled to fit canvas, centered, maintaining aspect ratio
+- Opacity from video track widget applied via `QPainter::setOpacity()`
+- `setVideoTrackWidgets()`: links canvas to timeline's video widget vector
+- `opacityChanged()` → `videoTrackChanged()` → invalidateBackgroundCache + repaint
+
+**Save/Load** (`document_manager.cpp`):
+- `"video"` JSON array in `timeline.json` with all metadata fields (filepath, display_name, zip_entry, width, height, fps, total_frames, muted, volume, opacity)
+- Video files embedded in .fap ZIP as `video/track_N.ext` (raw bytes)
+- `extractAudio()` also extracts video files to `%TEMP%/fap_video_<PID>/`
+- Path sanitization: `QFileInfo().fileName()` strips directory components
+
+**MainWindow** (`main_window_v2.cpp`):
+- `syncVideoToDocument()`: captures live widget state into Document before save
+- `openProject()`: restores video tracks from loaded Document
+- `newProject()`: calls `clearVideoTracks()`
+- Canvas wired to timeline's `videoTrackWidgets_` pointer
+
+**Files**: `src/core/document.hpp`, `src/engine/animation/video_decoder.{hpp,cpp}`, `src/ui_v2/video_track_widget.{hpp,cpp}`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/canvas_widget_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.{hpp,cpp}`, `src/io/document_manager.cpp`, `CMakeLists.txt`
+
+### Video Track Widget — button layout matching audio tracks
+**Fix**: VideoTrackWidget rewritten to use `positionHeader()` with absolute positioning (matching AudioTrackWidget). Same 28x28 buttons, SVG icons, QSlider styles, and orange accent bar.
+
+**Files**: `src/ui_v2/video_track_widget.cpp`
+
+### Opacity slider — real-time canvas invalidation
+**Fix**: Moving the opacity slider now triggers canvas background cache invalidation immediately. Signal chain: `opacityChanged()` → `videoTrackChanged()` → `canvas_->invalidateBackgroundCache()`.
+
+**Files**: `src/ui_v2/video_track_widget.{hpp,cpp}`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.cpp`
+
+**Tests**: 160/160 pass.

@@ -1,5 +1,25 @@
 # Changelog — Free Animation Power
 
+## [v2.8] — 2026-07-16
+
+### Video Clip Import
+- Importar clips de video al timeline como tracks (similar a audio)
+- Limites: max 60 segundos, max 1920x1080 (dialogo de advertencia con opcion de truncar/escalar)
+- Botones identicos a AudioTrackWidget: ▲▼ mover, 🔊 mute, ✕ delete
+- Slider de opacidad (0-100%) + slider de volumen (0-100%)
+- Tira de thumbnails: 1 thumbnail cada 30 frames (320x180)
+- Frames decodificados on-demand via FFmpeg (PNG pipe, ~50ms/frame)
+- LRU cache de 50 frames full-res (thread-safe)
+- Video renderizado encima de las capas de dibujo en el canvas
+- Opacidad en tiempo real: slider invalida cache del canvas inmediatamente
+- Guardado en .fap: video/track_N.ext embebido en ZIP
+- Extraccion a %TEMP%/fap_video_<PID>/ al cargar
+- Retrocompatible: archivos sin array "video" cargan sin error
+- **Archivos**: `document.hpp`, `video_decoder.{hpp,cpp}`, `video_track_widget.{hpp,cpp}`, `timeline_panel_v2.{hpp,cpp}`, `canvas_widget_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`, `document_manager.cpp`, `CMakeLists.txt`
+
+### Tests
+- 160/160 tests pasan
+
 ## [v2.7] — 2026-07-15
 
 ### Non-destructive Frame Hiding — +/- controlan visibilidad, no borran
