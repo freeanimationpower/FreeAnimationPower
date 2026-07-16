@@ -10,11 +10,12 @@
 namespace fap {
 
 struct AudioTrackData {
-    std::string filepath;      // original path or extracted temp path
-    std::string displayName;   // e.g., "song.mp3"
-    std::string zipEntry;      // "audio/track_0.mp3" inside the ZIP
+    std::string filepath;
+    std::string displayName;
+    std::string zipEntry;
     bool muted = false;
-    int volume = 80;           // 0-100
+    int volume = 80;
+    int layoutPosition = 9999;
 };
 
 struct VideoTrackData {
@@ -28,6 +29,7 @@ struct VideoTrackData {
     bool muted = false;
     int volume = 80;
     float opacity = 1.0f;
+    int layoutPosition = 9999;
 };
 
 class Document : public NonCopyable {

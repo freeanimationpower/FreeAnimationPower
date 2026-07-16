@@ -396,6 +396,7 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
         ao[QStringLiteral("zip_entry")]    = QString::fromStdString(at.zipEntry);
         ao[QStringLiteral("muted")]        = at.muted;
         ao[QStringLiteral("volume")]       = at.volume;
+        ao[QStringLiteral("layout_pos")]    = at.layoutPosition;
         audioArr.append(ao);
         ++ai;
     }
@@ -415,6 +416,7 @@ bool DocumentManager::writeTimeline(mz_zip_archive* zip, const Document& doc) {
         vo[QStringLiteral("muted")]        = vt.muted;
         vo[QStringLiteral("volume")]       = vt.volume;
         vo[QStringLiteral("opacity")]      = static_cast<double>(vt.opacity);
+        vo[QStringLiteral("layout_pos")]    = vt.layoutPosition;
         videoArr.append(vo);
         ++vi;
     }
@@ -760,6 +762,7 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         at.zipEntry    = ao[QStringLiteral("zip_entry")].toString().toStdString();
         at.muted       = ao[QStringLiteral("muted")].toBool(false);
         at.volume      = ao[QStringLiteral("volume")].toInt(80);
+        at.layoutPosition = ao[QStringLiteral("layout_pos")].toInt(9999);
         doc.addAudioTrack(at);
     }
 
@@ -779,6 +782,7 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
         vt.muted       = vo[QStringLiteral("muted")].toBool(false);
         vt.volume      = vo[QStringLiteral("volume")].toInt(80);
         vt.opacity     = static_cast<float>(vo[QStringLiteral("opacity")].toDouble(1.0));
+        vt.layoutPosition = vo[QStringLiteral("layout_pos")].toInt(9999);
         doc.addVideoTrack(vt);
     }
 

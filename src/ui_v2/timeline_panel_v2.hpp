@@ -63,6 +63,7 @@ public:
     VideoTrackWidget* addVideoTrackFromData(const VideoTrackData& data);
     const std::vector<AudioTrackWidget*>& audioTrackWidgets() const { return audioTrackWidgets_; }
     const std::vector<VideoTrackWidget*>& videoTrackWidgets() const { return videoTrackWidgets_; }
+    int widgetLayoutPosition(QWidget* widget) const;
 
     // Frame clipboard (right-click copy/cut/paste between frames)
     void copyFrameToClipboard(int seqIndex, int frame);

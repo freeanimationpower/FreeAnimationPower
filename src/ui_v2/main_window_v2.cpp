@@ -934,6 +934,7 @@ void MainWindowV2::syncAudioToDocument()
         at.displayName = w->displayName().toStdString();
         at.muted       = w->isMuted();
         at.volume      = w->volume();
+        at.layoutPosition = timeline_panel_->widgetLayoutPosition(w);
         QFileInfo fi(w->filepath());
         at.zipEntry = QString("audio/track_%1.%2")
             .arg(doc.audioTracks().size())
@@ -958,6 +959,7 @@ void MainWindowV2::syncVideoToDocument()
         vt.height      = w->videoHeight();
         vt.fps         = static_cast<int>(w->videoFps());
         vt.totalFrames = w->totalFrames();
+        vt.layoutPosition = timeline_panel_->widgetLayoutPosition(w);
         QFileInfo fi(w->filepath());
         vt.zipEntry = QString("video/track_%1.%2")
             .arg(doc.videoTracks().size())

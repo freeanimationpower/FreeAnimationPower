@@ -2001,7 +2001,9 @@ AudioTrackWidget* TimelinePanelV2::addAudioTrackFromData(const AudioTrackData& d
         }
     });
 
-    int insertPos = std::max(0, tracksLayout_->count() - 1);
+    int insertPos = (data.layoutPosition >= 0 && data.layoutPosition < tracksLayout_->count())
+        ? data.layoutPosition
+        : std::max(0, tracksLayout_->count() - 1);
     tracksLayout_->insertWidget(insertPos, track);
     audioTrackWidgets_.push_back(track);
     track->positionHeader();
@@ -2132,7 +2134,9 @@ VideoTrackWidget* TimelinePanelV2::addVideoTrackFromData(const VideoTrackData& d
 
     connect(track, &VideoTrackWidget::opacityChanged, this, &TimelinePanelV2::videoTrackChanged);
 
-    int insertPos = std::max(0, tracksLayout_->count() - 1);
+    int insertPos = (data.layoutPosition >= 0 && data.layoutPosition < tracksLayout_->count())
+        ? data.layoutPosition
+        : std::max(0, tracksLayout_->count() - 1);
     tracksLayout_->insertWidget(insertPos, track);
     videoTrackWidgets_.push_back(track);
     track->positionHeader();
@@ -2180,6 +2184,10 @@ void TimelinePanelV2::onMoveVideoTrack(int index, int delta)
         widget->positionHeader();
         widget->update();
     }
+}
+
+int TimelinePanelV2::widgetLayoutPosition(QWidget* widget) const {
+    return tracksLayout_->indexOf(widget);
 }
 
 void TimelinePanelV2::onActivateTrack(int seqIndex)
