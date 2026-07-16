@@ -9,7 +9,6 @@
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGroupBox>
-#include <QtWidgets/QScrollArea>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QFrame>
 #include <QtGui/QPainter>
@@ -186,21 +185,10 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
     : QWidget(parent)
     , appState_(std::move(state))
 {
-    setMinimumWidth(200);
+    setMinimumWidth(52);
     setStyleSheet("background: #252830;");
 
-    auto* outer = new QVBoxLayout(this);
-    outer->setContentsMargins(0, 0, 0, 0);
-    outer->setSpacing(0);
-
-    auto* scroll = new QScrollArea();
-    scroll->setWidgetResizable(true);
-    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setStyleSheet("QScrollArea { border: none; background: #252830; }");
-
-    auto* container = new QWidget();
-    container->setStyleSheet("background: #252830;");
-    auto* layout = new QVBoxLayout(container);
+    auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(4, 6, 4, 6);
     layout->setSpacing(2);
 
@@ -238,11 +226,6 @@ ToolboxPanelV2::ToolboxPanelV2(std::shared_ptr<AppState> state, QWidget* parent)
         }
     });
     layout->addWidget(colorSwatch_, 0, Qt::AlignHCenter);
-
-    layout->addStretch();
-
-    scroll->setWidget(container);
-    outer->addWidget(scroll);
 
     syncFromState();
 }
