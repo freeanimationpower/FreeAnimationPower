@@ -820,4 +820,27 @@ struct VideoTrackData {
 
 **Files**: `src/ui_v2/video_track_widget.{hpp,cpp}`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.cpp`
 
+### Detachable Onion Skin and Canvas docks
+**Feature**: Onion Skin extracted from ToolboxPanelV2 into its own `OnionSkinPanel` widget in a separate `QDockWidget`. Canvas moved from fixed `setCentralWidget()` to a detachable `QDockWidget`.
+
+**OnionSkinPanel** (`ui_v2/onion_skin_panel.{hpp,cpp}`):
+- New independent widget with QCheckBox (Enabled), two QSpinBox (Previous/Next frames, range 0-10, NoButtons), QSlider (Opacity)
+- QFormLayout for aligned spinbox columns
+- Emits `settingsChanged()` — writes to `ToolState` + updates canvas
+
+**Dock layout**:
+| Position | Dock | Content |
+|----------|------|---------|
+| Left | TOOLS | ToolboxPanelV2 (tools, canvas size) |
+| Left | ONION SKIN | OnionSkinPanel |
+| Right | LAYERS | LayerPanelV2 |
+| Right | COLOR | ColorPanelV2 |
+| Right | PROPERTIES | PropertyEditorV2 |
+| Center | CANVAS | CanvasWidgetV2 (detachable) |
+| Bottom | TIMELINE | TimelinePanelV2 |
+
+All 7 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in dock via `setCentralWidget(canvasDock)`.
+
+**Files**: `src/ui_v2/onion_skin_panel.{hpp,cpp}` (new), `src/ui_v2/toolbox_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.{hpp,cpp}`, `CMakeLists.txt`
+
 **Tests**: 160/160 pass.

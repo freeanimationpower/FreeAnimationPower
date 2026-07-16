@@ -17,6 +17,15 @@
 - Retrocompatible: archivos sin array "video" cargan sin error
 - **Archivos**: `document.hpp`, `video_decoder.{hpp,cpp}`, `video_track_widget.{hpp,cpp}`, `timeline_panel_v2.{hpp,cpp}`, `canvas_widget_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`, `document_manager.cpp`, `CMakeLists.txt`
 
+### Detachable Onion Skin y Canvas
+- OnionSkinPanel extraido de ToolboxPanelV2 en su propio widget + QDockWidget
+- QFormLayout para alinear los spinboxes, sin botones (NoButtons), 0-10
+- Labels completos: "Previous frames:", "Next frames:"
+- Canvas movido a QDockWidget desprendible (antes centralWidget fijo)
+- 7 docks: TOOLS (left), ONION SKIN (left), LAYERS (right), COLOR (right), PROPERTIES (right), CANVAS (center), TIMELINE (bottom)
+- Todos los docks: Movable | Floatable con barra de titulo naranja
+- **Archivos**: `onion_skin_panel.{hpp,cpp}` (nuevo), `toolbox_panel_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`
+
 ### Tests
 - 160/160 tests pasan
 
