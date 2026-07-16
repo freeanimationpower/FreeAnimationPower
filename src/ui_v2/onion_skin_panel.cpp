@@ -6,6 +6,8 @@
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QFormLayout>
+#include <QAbstractSpinBox>
 #include <QLabel>
 
 namespace fap {
@@ -42,7 +44,7 @@ OnionSkinPanel::OnionSkinPanel(QWidget* parent)
     auto* group = new QGroupBox("Onion Skin");
     group->setStyleSheet(kGroupBoxStyle);
     auto* onionLayout = new QVBoxLayout(group);
-    onionLayout->setContentsMargins(0, 0, 0, 0);
+    onionLayout->setContentsMargins(4, 4, 4, 4);
     onionLayout->setSpacing(4);
 
     enableCb_ = new QCheckBox("Enabled");
@@ -51,10 +53,12 @@ OnionSkinPanel::OnionSkinPanel(QWidget* parent)
     QObject::connect(enableCb_, &QCheckBox::toggled, this, &OnionSkinPanel::settingsChanged);
     onionLayout->addWidget(enableCb_);
 
-    auto* prevRow = new QHBoxLayout();
+    auto* form = new QFormLayout();
+    form->setContentsMargins(0, 0, 0, 0);
+    form->setSpacing(3);
+
     auto* prevLabel = new QLabel("Previous frames:");
     prevLabel->setStyleSheet(kLabelStyle);
-    prevRow->addWidget(prevLabel);
     prevSpin_ = new QSpinBox();
     prevSpin_->setRange(0, 10);
     prevSpin_->setValue(3);
@@ -64,14 +68,10 @@ OnionSkinPanel::OnionSkinPanel(QWidget* parent)
     prevSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     QObject::connect(prevSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
                      this, &OnionSkinPanel::settingsChanged);
-    prevRow->addWidget(prevSpin_);
-    prevRow->addStretch();
-    onionLayout->addLayout(prevRow);
+    form->addRow(prevLabel, prevSpin_);
 
-    auto* nextRow = new QHBoxLayout();
     auto* nextLabel = new QLabel("Next frames:");
     nextLabel->setStyleSheet(kLabelStyle);
-    nextRow->addWidget(nextLabel);
     nextSpin_ = new QSpinBox();
     nextSpin_->setRange(0, 10);
     nextSpin_->setValue(1);
@@ -81,9 +81,9 @@ OnionSkinPanel::OnionSkinPanel(QWidget* parent)
     nextSpin_->setButtonSymbols(QAbstractSpinBox::NoButtons);
     QObject::connect(nextSpin_, QOverload<int>::of(&QSpinBox::valueChanged),
                      this, &OnionSkinPanel::settingsChanged);
-    nextRow->addWidget(nextSpin_);
-    nextRow->addStretch();
-    onionLayout->addLayout(nextRow);
+    form->addRow(nextLabel, nextSpin_);
+
+    onionLayout->addLayout(form);
 
     opacitySlider_ = new QSlider(Qt::Horizontal);
     opacitySlider_->setRange(5, 100);
