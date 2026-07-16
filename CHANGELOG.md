@@ -28,6 +28,15 @@
 - ToolboxPanelV2: ajustado al contenido (52px ancho, sin stretch, sin QScrollArea)
 - **Archivos**: `onion_skin_panel.{hpp,cpp}` (nuevo), `canvas_size_panel.{hpp,cpp}` (nuevo), `toolbox_panel_v2.{hpp,cpp}`, `main_window_v2.{hpp,cpp}`
 
+### Soporte de tabletas (Wacom, Huion, Xencelabs, XP-Pen)
+- Canvas responde a presion del lapiz via QTabletEvent nativo de Qt 6
+- Tamaño del pincel: radio * (0.2 + 0.8 * presion) — 20% min, 100% max
+- Opacidad: multiplicada por presion (trazos mas suaves con menos presion)
+- Borrador de tablet: detecta y cambia automaticamente a modo eraser
+- Sin tablet: comportamiento identico al mouse (presion=1.0)
+- Sin SDKs externos — usa API nativa de Qt 6
+- **Archivos**: `canvas_widget_v2.{hpp,cpp}`
+
 ### Tests
 - 160/160 tests pasan
 

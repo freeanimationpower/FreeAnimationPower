@@ -854,4 +854,18 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 
 **Files**: `src/ui_v2/toolbox_panel_v2.cpp`
 
+### Tablet pen pressure support (Wacom, Huion, Xencelabs, XP-Pen)
+**Feature**: Canvas now responds to tablet pen pressure via Qt 6 native `QTabletEvent`. Size and opacity of brush strokes modulate in real-time based on pen pressure. Tablet eraser detection auto-switches to eraser mode.
+
+**Implementation** (`canvas_widget_v2.cpp`):
+- `WA_TabletTracking` enabled in constructor
+- `tabletEvent()` override handles TabletPress/Move/Release + proximity events
+- `tabletPressure_` (0.0–1.0) extracted from `QTabletEvent::pressure()`
+- `tabletEraser_` detected via `QPointingDevice::PointerType::Eraser`
+- `drawBrushStamp()`: radius modulated by pressure (20% min, 100% max), opacity multiplied by pressure
+- Falls back to mouse behavior (pressure=1.0) when no tablet in proximity
+- No external SDKs required — uses Qt 6 native tablet API
+
+**Files**: `src/ui_v2/canvas_widget_v2.{hpp,cpp}`
+
 **Tests**: 160/160 pass.
