@@ -37,6 +37,18 @@
 - Sin SDKs externos — usa API nativa de Qt 6
 - **Archivos**: `canvas_widget_v2.{hpp,cpp}`
 
+### Video + dibujo — rectangulo blanco sobre video al calcar
+- Al dibujar sobre una capa raster con video activo, la reconstruccion parcial del cache llenaba el area con blanco pero no recomponia los frames de video
+- Fix: con video tracks activos, la reconstruccion parcial se escala a completa (solo en commitStroke, no en cada dab)
+- **Archivos**: `canvas_widget_v2.cpp`
+
+### Posicion de tracks de audio/video preservada al guardar/cargar
+- Nuevo campo `layoutPosition` en `AudioTrackData` y `VideoTrackData`
+- Al guardar: captura `tracksLayout_->indexOf(widget)` para cada track
+- Al cargar: `insertWidget` en la posicion guardada (default 9999 = final)
+- Retrocompatible con archivos viejos
+- **Archivos**: `document.hpp`, `document_manager.cpp`, `timeline_panel_v2.{hpp,cpp}`, `main_window_v2.cpp`
+
 ### Tests
 - 160/160 tests pasan
 

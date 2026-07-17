@@ -869,3 +869,23 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 **Files**: `src/ui_v2/canvas_widget_v2.{hpp,cpp}`
 
 **Tests**: 160/160 pass.
+
+### Video + drawing — partial rebuild escalation
+**Symptom**: When drawing on a raster layer with a video track active, white rectangles appeared over the video area. Switching frames made them disappear and the drawing was preserved.
+
+**Root cause**: `commitStroke()` called `buildBackgroundCache(commitR)` (partial rebuild). The partial path filled the dirty rect with white and composited drawing layers, but video frames were only in the FULL rebuild path. The white fill was visible through the stroke overlay.
+
+**Fix**: When video tracks are active, partial rebuilds are escalated to full rebuilds. The partial path cannot correctly composite video frames (they need full canvas context). Only affects stroke commits (once per stroke), not per-dab rendering.
+
+**Files**: `src/ui_v2/canvas_widget_v2.cpp:767-772`
+
+### Audio/Video track layout position preserved on save/load
+**Symptom**: Moving a video track above drawing sequences in the timeline, then saving and reopening, placed the video track back at the bottom (below sequences and audio).
+
+**Root cause**: `rebuildTracks()` and `addAudioTrackFromData`/`addVideoTrackFromData` always inserted tracks at the end of the layout. The track's layout position was not saved in the Document.
+
+**Fix**: Added `layoutPosition` field to `AudioTrackData` and `VideoTrackData`. `syncAudioToDocument`/`syncVideoToDocument` capture `tracksLayout_->indexOf(widget)`. On load, `insertWidget` at saved position. Backward compatible (default 9999 = append at end).
+
+**Files**: `src/core/document.hpp`, `src/io/document_manager.cpp`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.cpp`
+
+**Tests**: 160/160 pass.
