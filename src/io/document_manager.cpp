@@ -140,6 +140,8 @@ QJsonObject DocumentManager::documentToJson(const Document& doc) {
         so[QStringLiteral("work_area_end")]   = seq.workAreaEnd();
         so[QStringLiteral("duration_frames")] = seq.durationFrames();
         so[QStringLiteral("looping")]         = seq.looping();
+        so[QStringLiteral("line_boil_enabled")]  = seq.lineBoilEnabled();
+        so[QStringLiteral("line_boil_strength")] = static_cast<double>(seq.lineBoilStrength());
 
         QJsonArray markerArr;
         for (auto& m : seq.markers()) {
@@ -189,6 +191,8 @@ bool DocumentManager::documentFromJson(const QJsonObject& root, Document& doc) {
         seq.setWorkAreaEnd(so[QStringLiteral("work_area_end")].toInt(0));
         seq.setDurationFrames(so[QStringLiteral("duration_frames")].toInt(seq.totalFrames()));
         seq.setLooping(so[QStringLiteral("looping")].toBool(false));
+        seq.setLineBoilEnabled(so[QStringLiteral("line_boil_enabled")].toBool(false));
+        seq.setLineBoilStrength(static_cast<float>(so[QStringLiteral("line_boil_strength")].toDouble(2.0)));
 
         QJsonArray markerArr = so[QStringLiteral("markers")].toArray();
         for (int mi = 0; mi < markerArr.size(); ++mi) {

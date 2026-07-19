@@ -22,6 +22,7 @@
 #include <limits>
 
 #include "engine/animation/frame_thumbnail.hpp"
+#include "engine/raster/raster_effect.hpp"
 
 #include "core/document.hpp"
 #include "core/layer.hpp"
@@ -736,6 +737,12 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
                            QImage::Format_ARGB32_Premultiplied);
                 QImage display = img.convertToFormat(QImage::Format_ARGB32);
 
+                if (doc.sequenceAt(idx).lineBoilEnabled()) {
+                    applyLineBoil(display, static_cast<int>(currentFrame_),
+                                  doc.sequenceAt(idx).lineBoilStrength(),
+                                  doc.sequenceAt(idx).lineBoilSeed());
+                }
+
                 p.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
                 p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
                 p.setRenderHint(QPainter::Antialiasing, false);
@@ -862,6 +869,12 @@ void CanvasWidgetV2::buildBackgroundCache(const QRect& rect)
                            rl.width() * static_cast<int>(sizeof(uint32_t)),
                            QImage::Format_ARGB32_Premultiplied);
                 QImage display = img.convertToFormat(QImage::Format_ARGB32);
+
+                if (doc.sequenceAt(idx).lineBoilEnabled()) {
+                    applyLineBoil(display, static_cast<int>(currentFrame_),
+                                  doc.sequenceAt(idx).lineBoilStrength(),
+                                  doc.sequenceAt(idx).lineBoilSeed());
+                }
 
                 p.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
                 p.setCompositionMode(toQtCompositionMode(layer->blendMode()));
@@ -1947,6 +1960,9 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
         case Qt::Key_Space: emit togglePlayPause(); break;
         case Qt::Key_Delete:
         case Qt::Key_Backspace: deleteSelection(); break;
+        case Qt::Key_Plus:
+        case Qt::Key_Equal: emit addFrameRequested(); break;
+        case Qt::Key_Minus: emit hideFrameRequested(); break;
         case Qt::Key_Return:
         case Qt::Key_Enter:
             if (floatingActive_) { commitFloatingSelection(); }

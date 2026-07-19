@@ -79,6 +79,8 @@ public:
     void renameSequence(int index, const std::string& name);
     void setSequenceOpacity(int index, float opacity);
     void setSequenceLocked(int index, bool locked);
+    void setLineBoilEnabled(int index, bool enabled);
+    void setLineBoilStrength(int index, float strength);
     void setWorkAreaStart(int frame);
     void setWorkAreaEnd(int frame);
     void setDurationFrames(int count);

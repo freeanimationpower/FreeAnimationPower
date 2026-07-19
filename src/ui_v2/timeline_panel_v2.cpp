@@ -13,6 +13,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QSlider>
+#include <QtWidgets/QCheckBox>
 #include <QtCore/QFileInfo>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QDialog>
@@ -721,6 +722,7 @@ public:
         lockBtn_->setStyleSheet(QString(
             "QPushButton { background:%1; border:1px solid transparent; "
             "border-radius:3px; }"
+            "QPushButton:checked { background:#FF4A4A; }"
             "QPushButton:hover { background:%2; border-color:%3; }")
             .arg(kBtnPressed.name(), kBtnHover.name(), kPlayheadColor.name()));
         connect(lockBtn_, &QPushButton::clicked, this, [this](bool checked) {
@@ -789,6 +791,51 @@ public:
             if (appState_) appState_->setSequenceOpacity(seqIndex_, val / 100.0f);
         });
 
+        bool initBoil = false;
+        float initBoilStr = 2.0f;
+        if (appState_) {
+            const auto& seq = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_));
+            initBoil = seq.lineBoilEnabled();
+            initBoilStr = seq.lineBoilStrength();
+        }
+
+        boilLabel_ = new QLabel("Boil:", this);
+        boilLabel_->setStyleSheet(QString(
+            "color:%1; font-size:9px; background:transparent;").arg(kTrackNameText.name()));
+
+        boilCheck_ = new QCheckBox(this);
+        boilCheck_->setToolTip("Enable Line Boil");
+        boilCheck_->setChecked(initBoil);
+        boilCheck_->setStyleSheet(QString(
+            "QCheckBox { spacing:0px; }"
+            "QCheckBox::indicator { width:14px; height:14px; background:%1; "
+            "border:1px solid #333; border-radius:2px; }"
+            "QCheckBox::indicator:checked { background:%2; border-color:%2; }"
+            "QCheckBox::indicator:hover { border-color:%2; }")
+            .arg(kTrackBg.name(), kAccentColor.name()));
+        connect(boilCheck_, &QCheckBox::toggled, this, [this](bool checked) {
+            boilSlider_->setEnabled(checked);
+            if (appState_) appState_->setLineBoilEnabled(seqIndex_, checked);
+        });
+
+        boilSlider_ = new QSlider(Qt::Horizontal, this);
+        boilSlider_->setRange(0, 100);
+        boilSlider_->setEnabled(initBoil);
+        boilSlider_->setStyleSheet(QString(
+            "QSlider::groove:horizontal { background:#1E2128; height:2px; border-radius:1px; }"
+            "QSlider::handle:horizontal { background:%1; width:8px; height:8px; "
+            "margin:-3px 0; border-radius:4px; }"
+            "QSlider::sub-page:horizontal { background:%1; border-radius:1px; }")
+            .arg(kAccentColor.name()));
+        boilSlider_->blockSignals(true);
+        boilSlider_->setValue(static_cast<int>(initBoilStr * 10.0f));
+        boilSlider_->blockSignals(false);
+        connect(boilSlider_, &QSlider::valueChanged, this, [this](int val) {
+            if (appState_) {
+                appState_->setLineBoilStrength(seqIndex_, static_cast<float>(val) / 10.0f);
+            }
+        });
+
         if (appState_) {
             bool initLocked = appState_->document().sequenceAt(static_cast<size_t>(seqIndex_)).locked();
             lockBtn_->setChecked(initLocked);
@@ -827,8 +874,11 @@ public:
         downBtn_->move(hdrW - 96, 3);
         dupBtn_->move(hdrW - 66, 3);
         delBtn_->move(hdrW - 36, 3);
-        opacityLabel_->setGeometry(8, 38, 42, 16);
-        opacitySlider_->setGeometry(50, 38, hdrW - 58, 16);
+        opacityLabel_->setGeometry(8, 38, 38, 16);
+        opacitySlider_->setGeometry(48, 38, 42, 16);
+        boilLabel_->setGeometry(94, 38, 24, 16);
+        boilCheck_->move(120, 36);
+        boilSlider_->setGeometry(138, 38, 48, 16);
     }
 
 protected:
@@ -886,6 +936,7 @@ protected:
         const auto& seq = *targetSeqPtr;
         int durFrames = seq.durationFrames();
         int seqTotal = seq.totalFrames();
+        bool locked = seq.locked();
         int firstVisible = std::max(0, offset / cellTotal);
         int lastVisible = std::min(durFrames - 1, (offset + w - hdrW) / cellTotal + 1);
 
@@ -982,6 +1033,10 @@ protected:
                 p.setPen(QPen(kPlayheadColor, 1));
                 p.drawLine(px, 0, px, h);
             }
+        }
+
+        if (locked) {
+            p.fillRect(hdrW, cellY, w - hdrW, cellH, QColor(255, 74, 74, 50));
         }
     }
 
@@ -1145,6 +1200,9 @@ private:
     TimelinePanelV2* panel_;
     QLineEdit* nameEdit_ = nullptr;
     QSlider* opacitySlider_ = nullptr;
+    QLabel* boilLabel_ = nullptr;
+    QCheckBox* boilCheck_ = nullptr;
+    QSlider* boilSlider_ = nullptr;
     QLabel* opacityLabel_ = nullptr;
     QPushButton* dupBtn_ = nullptr;
     QPushButton* delBtn_ = nullptr;

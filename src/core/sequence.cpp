@@ -173,6 +173,7 @@ std::unique_ptr<Sequence> Sequence::clone(const std::string& newName) const {
     seq->workAreaEnd_ = workAreaEnd_;
     seq->durationFrames_ = durationFrames_;
     seq->markers_ = markers_;
+    seq->lineBoil_ = lineBoil_;
 
     for (const auto& [frameIdx, rootLayer] : frames_) {
         auto newRoot = std::make_unique<GroupLayer>(rootLayer->name());

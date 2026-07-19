@@ -534,6 +534,14 @@ void MainWindowV2::setupConnections()
         if (timeline_panel_) timeline_panel_->togglePlayback();
     });
 
+    connect(canvas_, &CanvasWidgetV2::addFrameRequested, [this]() {
+        if (timeline_panel_) timeline_panel_->addFrame();
+    });
+
+    connect(canvas_, &CanvasWidgetV2::hideFrameRequested, [this]() {
+        if (timeline_panel_) timeline_panel_->hideFrame();
+    });
+
     connect(property_editor_, &PropertyEditorV2::brushSizeChanged, [this](int size) {
         if (canvas_) { canvas_->setBrushSize(size); }
     });

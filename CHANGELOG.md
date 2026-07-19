@@ -1,5 +1,32 @@
 # Changelog — Free Animation Power
 
+## [v2.9] — 2026-07-19
+
+### Line Boil — Efecto de linea vibrante por secuencia
+- Efecto no destructivo: ruido posicional bilineal por celdas 8x8 px
+- Desplazamiento maximo configurable: 0-10px por slider
+- Aplicado en dominio DISPLAY (buildBackgroundCache + renderExportFrame)
+- Nunca modifica pixelBuffer_ — backward compatible con archivos existentes
+- UI: checkbox "Boil" + slider 0-100 en header de SequenceTrackWidget
+- Persistente: `line_boil_enabled` + `line_boil_strength` en timeline.json
+- **Archivos**: `sequence.{hpp,cpp}`, `raster_effect.{hpp,cpp}` (nuevo), `canvas_widget_v2.cpp`, `video_export.cpp`, `timeline_panel_v2.cpp`, `document_manager.cpp`, `app_state.{hpp,cpp}`, `CMakeLists.txt`
+
+### Sequence Lock — Candado visual + feedback
+- Boton lock: `:checked` → fondo rojo `#FF4A4A`, `:!checked` → fondo gris oscuro
+- Celdas bloqueadas: overlay rojo semi-transparente sobre el area de celdas
+- isSequenceLocked() verifica activeSequence().locked() — candado por secuencia individual
+- Nueva secuencia: desbloqueada por defecto (locked_ = false)
+- Desbloquear no borra pixel data — el estado `locked` ya persiste en timeline.json
+- **Archivos**: `timeline_panel_v2.cpp`, `canvas_widget_v2.cpp`
+
+### Frame Keyboard Shortcuts — `+` y `-`
+- `+` o `=` → duplicar frame (revela oculto primero, crea nuevo si todos visibles)
+- `-` → ocultar frame (reduce durationFrames_, preserva datos)
+- Qt auto-repeat: mantener presionada la tecla ejecuta la accion secuencialmente
+- Canvas emite addFrameRequested() / hideFrameRequested() → MainWindow enruta a Timeline
+- addFrame() y hideFrame() movidos a public en TimelinePanelV2
+- **Archivos**: `canvas_widget_v2.{hpp,cpp}`, `main_window_v2.cpp`, `timeline_panel_v2.{hpp,cpp}`
+
 ## [v2.8] — 2026-07-16
 
 ### Video Clip Import

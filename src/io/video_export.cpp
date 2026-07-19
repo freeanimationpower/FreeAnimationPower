@@ -1,6 +1,8 @@
 #include "core/document.hpp"
 #include "core/layer.hpp"
 #include "core/types.hpp"
+#include "core/sequence.hpp"
+#include "engine/raster/raster_effect.hpp"
 #include "video_export.hpp"
 
 #include <QDir>
@@ -65,6 +67,12 @@ QImage renderExportFrame(const Document& doc, int frameIndex, const ExportOption
                            rl.width() * static_cast<int>(sizeof(uint32_t)),
                            QImage::Format_ARGB32_Premultiplied);
                 QImage display = img.convertToFormat(QImage::Format_ARGB32);
+
+                if (doc.sequenceAt(idx).lineBoilEnabled()) {
+                    applyLineBoil(display, frameIndex,
+                                  doc.sequenceAt(idx).lineBoilStrength(),
+                                  doc.sequenceAt(idx).lineBoilSeed());
+                }
 
                 painter.setOpacity(static_cast<qreal>(layer->opacity() * seqOpacity));
                 painter.setCompositionMode(toQtCompositionMode(layer->blendMode()));

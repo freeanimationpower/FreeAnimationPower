@@ -158,6 +158,16 @@ void AppState::setSequenceLocked(int index, bool locked) {
     emit documentChanged();
 }
 
+void AppState::setLineBoilEnabled(int index, bool enabled) {
+    document_->sequenceAt(static_cast<size_t>(index)).setLineBoilEnabled(enabled);
+    emit documentChanged();
+}
+
+void AppState::setLineBoilStrength(int index, float strength) {
+    document_->sequenceAt(static_cast<size_t>(index)).setLineBoilStrength(strength);
+    emit documentChanged();
+}
+
 void AppState::setWorkAreaStart(int frame) {
     activeSequence().setWorkAreaStart(frame);
     emit documentChanged();

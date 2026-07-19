@@ -97,6 +97,8 @@ signals:
     void statusMessage(const QString& msg);
     void toolChangedByKey(int tool);
     void togglePlayPause();
+    void addFrameRequested();
+    void hideFrameRequested();
 
 protected:
     void paintEvent(QPaintEvent* event) override;

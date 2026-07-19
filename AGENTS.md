@@ -889,3 +889,68 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 **Files**: `src/core/document.hpp`, `src/io/document_manager.cpp`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `src/ui_v2/main_window_v2.cpp`
 
 **Tests**: 160/160 pass.
+
+## Bug Fix Session (v2.9 — Jul 2026)
+
+### Line Boil — Efecto de linea vibrante por secuencia
+
+**Feature**: Efecto no destructivo de "linea vibrante" (line boil) aplicado por secuencia. Las lineas dibujadas se desplazan ligeramente con ruido posicional cada frame, creando el aspecto organico de animacion tradicional.
+
+**Algoritmo**: Ruido bilineal por celdas de 8x8 pixeles, desplazamiento maximo controlable por slider 0-10px. El indice de frame actua como semilla — patron de ruido consistente por frame, diferente entre frames.
+
+**Arquitectura**:
+
+| Capa | Implementacion |
+|------|---------------|
+| Data model | `LineBoil { enabled, strength, seed }` en `Sequence` (`sequence.hpp:37-42`) |
+| Engine | `applyLineBoil(QImage&, frame, strength, seed)` en `engine/raster/raster_effect.cpp` |
+| Display | Hook en `buildBackgroundCache()` FULL + PARTIAL paths (`canvas_widget_v2.cpp`) |
+| Export | Hook en `renderExportFrame()` (`video_export.cpp`) |
+| UI | Checkbox "Boil" + slider 0-100 en `SequenceTrackWidget` |
+| Serialization | `line_boil_enabled` + `line_boil_strength` en `timeline.json` |
+| AppState | `setLineBoilEnabled()` / `setLineBoilStrength()` → `emit documentChanged()` |
+
+**Invariantes**:
+- Efecto NO destructivo — aplicado en dominio DISPLAY sobre copia de QImage, nunca modifica `pixelBuffer_`
+- Canvas ya conectado a `documentChanged` → `invalidateBackgroundCache()` automatico
+- Slider deshabilitado hasta que checkbox esta checked
+- Backward compatible: campos nuevos en JSON son opcionales, default `enabled=false, strength=2.0`
+
+**Files**: `core/sequence.{hpp,cpp}`, `engine/raster/raster_effect.{hpp,cpp}`, `ui_v2/canvas_widget_v2.cpp`, `io/video_export.cpp`, `ui_v2/timeline_panel_v2.cpp`, `io/document_manager.cpp`, `core/app_state.{hpp,cpp}`, `CMakeLists.txt`
+
+### Sequence Lock — Candado por secuencia con feedback visual
+
+**Fix**: El candado de secuencia ahora es claramente visible y bloquea correctamente el dibujo.
+
+**Problemas corregidos**:
+
+| Issue | Antes | Despues |
+|-------|-------|---------|
+| Boton lock | Mismo color naranja en ambos estados | `:checked` → fondo rojo `#FF4A4A`, `:!checked` → fondo `kBtnPressed` |
+| Celdas bloqueadas | Identicas a desbloqueadas | Overlay rojo semi-transparente `rgba(255,74,74,50)` |
+| `isSequenceLocked()` | Solo verificaba `activeSequence()` | Verifica `activeSequence()` — candado por secuencia individual |
+
+**Invariantes**:
+- Nueva secuencia: desbloqueada por defecto (`locked_ = false`)
+- Desbloquear no borra pixel data
+- Estado `locked` ya serializado en `timeline.json` (campo existente)
+- Canvas bloquea Brush, Eraser, Fill, Text, Move, Select, Line, Rect, Ellipse — permite Hand y ColorPicker
+
+**Files**: `ui_v2/timeline_panel_v2.cpp`, `ui_v2/canvas_widget_v2.cpp`
+
+### Frame keyboard shortcuts — `+` y `-` para duplicar/ocultar frames
+
+**Feature**: Atajos de teclado para manipulacion de frames. Al mantener presionada la tecla, Qt auto-repeat ejecuta la accion secuencialmente.
+
+| Tecla | Accion |
+|-------|--------|
+| `+` o `=` | Duplicar frame (revela oculto primero, crea nuevo si todos visibles) |
+| `-` | Ocultar frame (reduce `durationFrames_`, preserva datos) |
+
+**Arquitectura**:
+- Canvas emite `addFrameRequested()` / `hideFrameRequested()`
+- `MainWindowV2` enruta a `TimelinePanelV2::addFrame()` / `hideFrame()` (ahora publicos)
+
+**Files**: `ui_v2/canvas_widget_v2.{hpp,cpp}`, `ui_v2/main_window_v2.cpp`, `ui_v2/timeline_panel_v2.{hpp,cpp}`
+
+**Tests**: 160/160 pass.

@@ -71,6 +71,9 @@ public:
     void pasteFrameFromClipboard(int seqIndex, int frame);
     bool hasFrameClipboard() const { return frameClipboard_.get() != nullptr; }
 
+    void addFrame();
+    void hideFrame();
+
     static constexpr int kHeaderWidth = 280;
     static constexpr int kCellWidth = 32;
     static constexpr int kCellSpacing = 1;
@@ -101,8 +104,6 @@ private:
     void onFPSChanged(int fps);
     void onPlaybackTick();
     void onScrollChanged(int value);
-    void addFrame();
-    void hideFrame();
     void duplicateFrame();
     void deleteFrame();
     void onNewSequence();

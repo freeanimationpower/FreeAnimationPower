@@ -33,6 +33,12 @@ struct Marker {
     }
 };
 
+struct LineBoil {
+    bool enabled = false;
+    float strength = 2.0f;
+    int seed = 42;
+};
+
 class Sequence : public NonCopyable {
 public:
     using FrameCallback = std::function<void(int frame)>;
@@ -73,6 +79,13 @@ public:
     void play()  { playing_ = true; }
     void pause() { playing_ = false; }
     void stop();
+
+    bool lineBoilEnabled() const { return lineBoil_.enabled; }
+    void setLineBoilEnabled(bool e) { lineBoil_.enabled = e; }
+    float lineBoilStrength() const { return lineBoil_.strength; }
+    void setLineBoilStrength(float s) { lineBoil_.strength = std::clamp(s, 0.0f, 10.0f); }
+    int lineBoilSeed() const { return lineBoil_.seed; }
+    const LineBoil& lineBoil() const { return lineBoil_; }
 
     void nextFrame();
     void prevFrame();
@@ -126,6 +139,8 @@ private:
     int workAreaStart_ = 0;
     int workAreaEnd_ = 0;
     int durationFrames_ = 1;
+
+    LineBoil lineBoil_;
 
     std::vector<std::vector<bool>> keyframes_;
     std::map<int, std::unique_ptr<GroupLayer>> frames_;

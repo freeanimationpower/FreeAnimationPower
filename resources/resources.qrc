@@ -62,6 +62,7 @@
         <file alias="move_up.svg">icons/move_up.svg</file>
         <file alias="move_down.svg">icons/move_down.svg</file>
         <file alias="new_layer.svg">icons/new_layer.svg</file>
+        <file alias="line_boil.png">icons/line_boil.png</file>
     </qresource>
     <qresource prefix="/fonts">
         <file alias="AvenirLTStd-Heavy.otf">fonts/AvenirLTStd-Heavy.otf</file>

@@ -87,6 +87,7 @@ set(CORE_SOURCES
 
 set(ENGINE_HEADERS
     src/engine/raster/raster_engine.hpp
+    src/engine/raster/raster_effect.hpp
     src/engine/vector/vector_engine.hpp
     src/engine/vector/bezier_path.hpp
     src/engine/brush/brush_engine.hpp
@@ -108,6 +109,7 @@ set(ENGINE_HEADERS
 set(ENGINE_SOURCES
     src/engine/raster/raster_engine.cpp
     src/engine/raster/raster_stroke.cpp
+    src/engine/raster/raster_effect.cpp
     src/engine/vector/vector_engine.cpp
     src/engine/vector/vector_stroke.cpp
     src/engine/vector/bezier_path.cpp
