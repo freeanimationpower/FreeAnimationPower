@@ -1754,7 +1754,7 @@ void CanvasWidgetV2::tabletEvent(QTabletEvent* event)
                           event->position(), event->globalPosition(),
                           Qt::LeftButton, Qt::LeftButton,
                           event->modifiers());
-            mousePressEvent(&me);
+            QApplication::sendEvent(this, &me);
         }
         break;
     case QEvent::TabletRelease:
@@ -1765,7 +1765,7 @@ void CanvasWidgetV2::tabletEvent(QTabletEvent* event)
                           event->position(), event->globalPosition(),
                           Qt::LeftButton, Qt::NoButton,
                           event->modifiers());
-            mouseReleaseEvent(&me);
+            QApplication::sendEvent(this, &me);
         }
         break;
     case QEvent::TabletMove:
@@ -1774,7 +1774,7 @@ void CanvasWidgetV2::tabletEvent(QTabletEvent* event)
                           event->position(), event->globalPosition(),
                           Qt::NoButton, Qt::LeftButton,
                           event->modifiers());
-            mouseMoveEvent(&me);
+            QApplication::sendEvent(this, &me);
         }
         break;
     case QEvent::TabletEnterProximity:

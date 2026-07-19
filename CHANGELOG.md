@@ -5,9 +5,10 @@
 ### Tablet event dispatching fix
 - Al conectar Wacom, el canvas dejaba de responder (no dibujaba, no paneaba)
 - Causa: `tabletEvent()` aceptaba eventos sin despachar a handlers de mouse
-- Fix: `tabletEvent()` genera `QMouseEvent` sinteticos y los despacha directamente
+- Fix: `tabletEvent()` genera `QMouseEvent` sinteticos y los despacha via `QApplication::sendEvent()`
 - `TabletPress → MouseButtonPress`, `TabletMove → MouseMove` (pen down), `TabletRelease → MouseButtonRelease`
 - Presion (`tabletPressure_`) y eraser (`tabletEraser_`) se actualizan antes del despacho
+- `sendEvent()` en lugar de llamar directa para que undo funcione correctamente
 - **Archivos**: `canvas_widget_v2.cpp:1743-1796`, `canvas_widget_v2.hpp`
 
 ### Line Boil — Efecto de linea vibrante por secuencia

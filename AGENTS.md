@@ -959,7 +959,7 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 
 **Root cause**: `tabletEvent()` aceptaba los eventos de tableta sin despachar acciones de dibujo. El programa depende de `mousePressEvent`/`mouseMoveEvent`/`mouseReleaseEvent` para todas las herramientas, pero Qt no siempre sintetiza `QMouseEvent` desde `QTabletEvent` (depende del driver y plataforma).
 
-**Fix**: `tabletEvent()` ahora genera `QMouseEvent` sinteticos y los despacha directamente a los handlers de mouse. `TabletPress` → `MouseButtonPress`, `TabletMove` → `MouseMove` (solo si el pen esta presionado), `TabletRelease` → `MouseButtonRelease`. La presion (`tabletPressure_`) y tipo de puntero (`tabletEraser_`) se actualizan antes del despacho.
+**Fix**: `tabletEvent()` ahora genera `QMouseEvent` sinteticos y los despacha via `QApplication::sendEvent()` a los handlers de mouse. `TabletPress` → `MouseButtonPress`, `TabletMove` → `MouseMove` (solo si el pen esta presionado), `TabletRelease` → `MouseButtonRelease`. La presion (`tabletPressure_`) y tipo de puntero (`tabletEraser_`) se actualizan antes del despacho. Se usa `sendEvent()` en lugar de llamar directamente a `mousePressEvent()` para garantizar que el sistema de eventos de Qt procese correctamente los comandos de undo.
 
 **Files**: `src/ui_v2/canvas_widget_v2.cpp:1743-1796`, `src/ui_v2/canvas_widget_v2.hpp`
 
