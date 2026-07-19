@@ -30,3 +30,6 @@ vcpkg_installed/
 
 # Logs
 *.log
+
+# Diagnostic traces
+fap_traces/
