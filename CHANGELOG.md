@@ -2,6 +2,14 @@
 
 ## [v2.9] — 2026-07-19
 
+### Tablet event dispatching fix
+- Al conectar Wacom, el canvas dejaba de responder (no dibujaba, no paneaba)
+- Causa: `tabletEvent()` aceptaba eventos sin despachar a handlers de mouse
+- Fix: `tabletEvent()` genera `QMouseEvent` sinteticos y los despacha directamente
+- `TabletPress → MouseButtonPress`, `TabletMove → MouseMove` (pen down), `TabletRelease → MouseButtonRelease`
+- Presion (`tabletPressure_`) y eraser (`tabletEraser_`) se actualizan antes del despacho
+- **Archivos**: `canvas_widget_v2.cpp:1743-1796`, `canvas_widget_v2.hpp`
+
 ### Line Boil — Efecto de linea vibrante por secuencia
 - Efecto no destructivo: ruido posicional bilineal por celdas 8x8 px
 - Desplazamiento maximo configurable: 0-10px por slider

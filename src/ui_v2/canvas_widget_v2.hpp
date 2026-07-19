@@ -145,6 +145,7 @@ private:
     bool tabletActive_ = false;
     float tabletPressure_ = 1.0f;
     bool tabletEraser_ = false;
+    bool tabletPenDown_ = false;
 
     // Isolated stroke buffer: transparent ARGB32_Premultiplied.
     // Only contains dabs from the current stroke. Written during

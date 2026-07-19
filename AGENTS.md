@@ -953,4 +953,14 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 
 **Files**: `ui_v2/canvas_widget_v2.{hpp,cpp}`, `ui_v2/main_window_v2.cpp`, `ui_v2/timeline_panel_v2.{hpp,cpp}`
 
+### Tablet event dispatching fix
+
+**Symptom**: Al conectar una Wacom, el canvas dejaba de responder. El hand tool no paneaba y no se podia dibujar. Photoshop funcionaba correctamente con la misma tableta.
+
+**Root cause**: `tabletEvent()` aceptaba los eventos de tableta sin despachar acciones de dibujo. El programa depende de `mousePressEvent`/`mouseMoveEvent`/`mouseReleaseEvent` para todas las herramientas, pero Qt no siempre sintetiza `QMouseEvent` desde `QTabletEvent` (depende del driver y plataforma).
+
+**Fix**: `tabletEvent()` ahora genera `QMouseEvent` sinteticos y los despacha directamente a los handlers de mouse. `TabletPress` → `MouseButtonPress`, `TabletMove` → `MouseMove` (solo si el pen esta presionado), `TabletRelease` → `MouseButtonRelease`. La presion (`tabletPressure_`) y tipo de puntero (`tabletEraser_`) se actualizan antes del despacho.
+
+**Files**: `src/ui_v2/canvas_widget_v2.cpp:1743-1796`, `src/ui_v2/canvas_widget_v2.hpp`
+
 **Tests**: 160/160 pass.

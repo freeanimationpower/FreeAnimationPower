@@ -1747,16 +1747,35 @@ void CanvasWidgetV2::tabletEvent(QTabletEvent* event)
 
     switch (event->type()) {
     case QEvent::TabletPress:
-        if (!tabletActive_) {
-            tabletActive_ = true;
-            tabletPressure_ = static_cast<float>(event->pressure());
+        tabletActive_ = true;
+        tabletPenDown_ = true;
+        {
+            QMouseEvent me(QEvent::MouseButtonPress,
+                          event->position(), event->globalPosition(),
+                          Qt::LeftButton, Qt::LeftButton,
+                          event->modifiers());
+            mousePressEvent(&me);
         }
         break;
     case QEvent::TabletRelease:
         tabletPressure_ = 0.0f;
+        tabletPenDown_ = false;
+        {
+            QMouseEvent me(QEvent::MouseButtonRelease,
+                          event->position(), event->globalPosition(),
+                          Qt::LeftButton, Qt::NoButton,
+                          event->modifiers());
+            mouseReleaseEvent(&me);
+        }
         break;
     case QEvent::TabletMove:
-        tabletPressure_ = static_cast<float>(event->pressure());
+        if (tabletPenDown_) {
+            QMouseEvent me(QEvent::MouseMove,
+                          event->position(), event->globalPosition(),
+                          Qt::NoButton, Qt::LeftButton,
+                          event->modifiers());
+            mouseMoveEvent(&me);
+        }
         break;
     case QEvent::TabletEnterProximity:
         tabletActive_ = true;
@@ -1912,7 +1931,7 @@ void CanvasWidgetV2::keyPressEvent(QKeyEvent* event)
             default: handled = false; break;
         }
         if (handled) {
-            event->accept();
+    event->ignore();
             emit canvasUpdated();
             return;
         }
