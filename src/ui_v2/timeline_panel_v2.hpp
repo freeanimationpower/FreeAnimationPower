@@ -88,6 +88,8 @@ signals:
     void playbackToggled(bool playing);
     void sequenceChanged(int index);
     void videoTrackChanged();
+    void busyStarted(const QString& message);
+    void busyFinished();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

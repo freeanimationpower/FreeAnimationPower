@@ -48,6 +48,7 @@
 #include "timeline_panel_v2.hpp"
 #include "audio_track_widget.hpp"
 #include "video_track_widget.hpp"
+#include "busy_overlay.hpp"
 #include "property_editor_v2.hpp"
 #include "core/document.hpp"
 #include "core/undo_manager.hpp"
@@ -208,10 +209,13 @@ void MainWindowV2::setupTopBar()
 
         statusBar()->showMessage("Exporting GIF...");
         QApplication::processEvents();
+        showBusy("Exportando GIF...");
 
         if (fap::exportGIF(doc, path, doc.fps(), opts)) {
+            hideBusy();
             statusBar()->showMessage("GIF exported: " + path, 5000);
         } else {
+            hideBusy();
             QMessageBox::warning(this, "Error",
                 "FFmpeg failed. Is FFmpeg installed and in PATH?");
             statusBar()->showMessage("GIF export failed", 5000);
@@ -496,6 +500,9 @@ void MainWindowV2::setupConnections()
         }
     });
 
+    connect(timeline_panel_, &TimelinePanelV2::busyStarted, this, &MainWindowV2::showBusy);
+    connect(timeline_panel_, &TimelinePanelV2::busyFinished, this, &MainWindowV2::hideBusy);
+
     connect(property_editor_, &PropertyEditorV2::durationFramesChanged,
             [this](int dur) {
         appState_->setDurationFrames(dur);
@@ -675,8 +682,11 @@ void MainWindowV2::openProject(const QString& path)
     QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QCoreApplication::processEvents();
 
+    showBusy("Abriendo proyecto...");
+
     DocumentManager dm;
     if (dm.load(appState_->document(), path)) {
+        hideBusy();
         appState_->document().setFilepath(path.toStdString());
         appState_->document().setModified(false);
 
@@ -727,6 +737,7 @@ void MainWindowV2::openProject(const QString& path)
             }
         }
     } else {
+        hideBusy();
         QMessageBox::warning(this, "Error", "Failed to open project:\n" + path);
     }
 }
@@ -744,6 +755,7 @@ void MainWindowV2::saveProject()
     saving_ = true;
     QApplication::setOverrideCursor(Qt::WaitCursor);
     statusBar()->showMessage("Saving...");
+    showBusy("Guardando proyecto...");
 
     DocumentManager dm;
     ViewState vs;
@@ -755,8 +767,10 @@ void MainWindowV2::saveProject()
     if (dm.save(appState_->document(),
                 QString::fromStdString(appState_->document().filepath()), vs)) {
         appState_->document().setModified(false);
+        hideBusy();
         statusBar()->showMessage("Project saved", 3000);
     } else {
+        hideBusy();
         QMessageBox::warning(this, "Error",
                              QString("Failed to save project.\n\n") + dm.lastError());
     }
@@ -810,6 +824,7 @@ void MainWindowV2::saveProjectAs()
     saving_ = true;
     QApplication::setOverrideCursor(Qt::WaitCursor);
     statusBar()->showMessage("Saving...");
+    showBusy("Guardando proyecto...");
 
     DocumentManager dm;
     ViewState vs;
@@ -844,8 +859,37 @@ void MainWindowV2::saveProjectAs()
                              QString("Failed to save project.\n\n") + dm.lastError());
     }
 
+    hideBusy();
     QApplication::restoreOverrideCursor();
     saving_ = false;
+}
+
+void MainWindowV2::showBusy(const QString& message)
+{
+    if (!busyOverlay_)
+        busyOverlay_ = new BusyOverlay(this);
+    if (!busyKeepAliveTimer_) {
+        busyKeepAliveTimer_ = new QTimer(this);
+        connect(busyKeepAliveTimer_, &QTimer::timeout, this, [this]() {
+            if (busyOverlay_ && busyOverlay_->isVisible()) {
+                busyOverlay_->raise();
+                busyOverlay_->update();
+            }
+        });
+    }
+    busyOverlay_->setMessage(message);
+    busyOverlay_->showOverlay();
+    busyKeepAliveTimer_->start(150);
+    for (int i = 0; i < 5; ++i)
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+}
+
+void MainWindowV2::hideBusy()
+{
+    if (busyKeepAliveTimer_)
+        busyKeepAliveTimer_->stop();
+    if (busyOverlay_)
+        busyOverlay_->hideOverlay();
 }
 
 void MainWindowV2::exportVideo()
@@ -887,10 +931,13 @@ void MainWindowV2::exportVideo()
 
     statusBar()->showMessage("Rendering and encoding video...");
     QApplication::processEvents();
+    showBusy("Exportando video...");
 
     if (fap::exportVideo(doc, path, doc.fps(), opts)) {
+        hideBusy();
         statusBar()->showMessage("Video exported: " + path, 5000);
     } else {
+        hideBusy();
         QMessageBox::warning(this, "Error",
             "FFmpeg failed. Is FFmpeg installed and in PATH?");
         statusBar()->showMessage("Video export failed", 5000);
@@ -923,10 +970,13 @@ void MainWindowV2::exportSVGAllFrames()
     auto& doc = appState_->document();
     int total = doc.totalFrames();
     statusBar()->showMessage("Exporting SVG frames...");
+    showBusy("Exportando SVG...");
 
     if (exportSVGFrames(doc, dir)) {
+        hideBusy();
         statusBar()->showMessage(QString("SVG exported: %1 frames → %2").arg(total).arg(dir), 5000);
     } else {
+        hideBusy();
         QMessageBox::warning(this, "Error", "Failed to export some SVG frames.");
     }
 }

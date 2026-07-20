@@ -964,3 +964,59 @@ All 8 docks: `Movable | Floatable`. Orange title bar styling. Canvas wrapped in 
 **Files**: `src/ui_v2/canvas_widget_v2.cpp:1743-1796`, `src/ui_v2/canvas_widget_v2.hpp`
 
 **Tests**: 160/160 pass.
+
+## Bug Fix Session (v2.9.1 — Jul 2026)
+
+### BusyOverlay — Indicador de espera para operaciones largas
+
+**Feature**: Widget overlay semi-transparente que cubre todo el MainWindow durante operaciones bloqueantes (save, load, import, export). Muestra un spinner animado de 12 lineas naranja (#FF4800) con mensaje de texto.
+
+**Arquitectura**:
+
+| Componente | Rol |
+|-----------|-----|
+| `BusyOverlay` (child de MainWindow) | `eventFilter` bloquea mouse/keyboard, `filterInstalled_` flag previene instalacion duplicada |
+| `MainWindowV2::showBusy(msg)` / `hideBusy()` | Lazy-crea el overlay, maneja ciclo de vida |
+| `busyKeepAliveTimer_` (150ms) | `raise()` + `update()` re-eleva el overlay durante `processEvents` chunks |
+| `TimelinePanelV2::busyStarted(QString)` / `busyFinished()` | Senales emitidas al inicio/fin de import video/audio |
+
+**Operaciones envueltas**: saveProject, saveProjectAs, openProject, exportVideo, exportGIF, exportSVGAllFrames, onImportVideo, onImportAudio.
+
+**Invariantes**:
+- `showOverlay()` instala eventFilter solo una vez (`filterInstalled_` guard)
+- `hideOverlay()` remueve eventFilter solo si fue instalado
+- `timer_->isActive()` check previene multiple starts del spinner timer
+- `QWidget::show()` se llama **antes** de `raise()` (raise en widget oculto es no-op)
+- `WA_ShowWithoutActivating` evita robo de foco en Windows
+
+**Files**: `src/ui_v2/busy_overlay.{hpp,cpp}`, `src/ui_v2/main_window_v2.{hpp,cpp}`, `src/ui_v2/timeline_panel_v2.{hpp,cpp}`, `CMakeLists.txt`
+
+### Video decoder — Recursion guard contra repaints recursivos
+
+**Symptom**: Al importar video, el programa crasheaba con:
+```
+QWidget::repaint: Recursive repaint detected
+QPainter::begin: A paint device can only be painted by one painter at a time.
+```
+
+**Root cause**: `decodeVideoFrame()` tenia `processEvents()` en su loop de espera ffmpeg. Esto procesaba eventos de layout pendientes que disparaban un nuevo `paintEvent` → `buildBackgroundCache` → `VideoTrackWidget::currentFrame()` → `decodeVideoFrame()` recursivamente durante un QPainter activo.
+
+**Fix**: `thread_local bool s_inDecoder` — se pone `true` antes del `processEvents`, `false` despues. Si `decodeVideoFrame` se llama recursivamente (`s_inDecoder == true`), retorna `{}` inmediato. Mismo guard aplicado en `probeVideoMetadata` por defensa.
+
+**Files**: `src/engine/animation/video_decoder.cpp:13-15,23-27,78-80,96-100`
+
+### VideoTrackWidget — Eliminado probe redundante
+
+**Fix**: Constructor acepta `const VideoMetadata& meta` como parametro en lugar de llamar `probeVideoMetadata` internamente. `onImportVideo` ya probo el archivo antes — se elimina la segunda llamada ffprobe duplicada (~5s ahorrados en import).
+
+**addVideoTrackFromData**: Usa metadata almacenada del Document (width, height, fps, totalFrames) sin volver a probar el archivo durante load.
+
+**Files**: `src/ui_v2/video_track_widget.{hpp,cpp}`, `src/ui_v2/timeline_panel_v2.cpp`
+
+### Document manager — processEvents durante load
+
+**Fix**: `readLayerData()` ahora llama `processEvents()` cada 20 capas, igual que `writeLayerData()`, para mantener el UI responsivo durante la carga de proyectos grandes.
+
+**Files**: `src/io/document_manager.cpp`
+
+**Tests**: 160/160 pass.

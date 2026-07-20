@@ -3,6 +3,8 @@
 #include <memory>
 #include "core/app_state.hpp"
 
+class QTimer;
+
 class QAction;
 
 namespace fap {
@@ -15,6 +17,7 @@ class LayerPanelV2;
 class PropertyEditorV2;
 class OnionSkinPanel;
 class CanvasSizePanel;
+class BusyOverlay;
 
 class MainWindowV2 : public QMainWindow {
     Q_OBJECT
@@ -23,6 +26,9 @@ public:
     ~MainWindowV2() override;
 
     void openProject(const QString& path);
+
+    void showBusy(const QString& message);
+    void hideBusy();
 
 private:
     void setupUI();
@@ -58,6 +64,8 @@ private:
     QAction* redoAct_ = nullptr;
 
     bool saving_ = false;
+    BusyOverlay* busyOverlay_ = nullptr;
+    QTimer* busyKeepAliveTimer_ = nullptr;
 };
 
 } // namespace fap

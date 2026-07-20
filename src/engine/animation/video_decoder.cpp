@@ -4,9 +4,13 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QCoreApplication>
 #include <QDebug>
 
 namespace fap {
+namespace {
+    thread_local bool s_inDecoder = false;
+}
 
 VideoMetadata probeVideoMetadata(const QString& filepath) {
     VideoMetadata meta;
@@ -19,8 +23,17 @@ VideoMetadata probeVideoMetadata(const QString& filepath) {
          << filepath;
 
     ffprobe.start("ffprobe", args);
-    if (!ffprobe.waitForFinished(15000)) {
+    s_inDecoder = true;
+    for (int waited = 0; waited < 15000; waited += 100) {
+        if (ffprobe.waitForFinished(100))
+            break;
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    }
+    s_inDecoder = false;
+    if (ffprobe.state() != QProcess::NotRunning) {
         qWarning() << "probeVideoMetadata: ffprobe timeout for" << filepath;
+        ffprobe.kill();
+        ffprobe.waitForFinished(3000);
         return meta;
     }
 
@@ -67,6 +80,7 @@ VideoMetadata probeVideoMetadata(const QString& filepath) {
 
 QImage decodeVideoFrame(const QString& filepath, int frameIndex,
                         double fps, int maxW, int maxH) {
+    if (s_inDecoder) return {};
     double timeSecs = static_cast<double>(frameIndex) / fps;
 
     QProcess ffmpeg;
@@ -85,9 +99,17 @@ QImage decodeVideoFrame(const QString& filepath, int frameIndex,
     args << "-";
 
     ffmpeg.start("ffmpeg", args);
-    if (!ffmpeg.waitForFinished(10000)) {
+    s_inDecoder = true;
+    for (int waited = 0; waited < 10000; waited += 100) {
+        if (ffmpeg.waitForFinished(100))
+            break;
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    }
+    s_inDecoder = false;
+    if (ffmpeg.state() != QProcess::NotRunning) {
         qWarning() << "decodeVideoFrame: ffmpeg timeout at frame" << frameIndex;
         ffmpeg.kill();
+        ffmpeg.waitForFinished(3000);
         return {};
     }
 

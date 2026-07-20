@@ -794,8 +794,8 @@ bool DocumentManager::readTimeline(mz_zip_archive* zip, Document& doc) {
 }
 
 bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
-    // Track successfully loaded pixel buffers by layerUid for sharing
     std::unordered_map<uint64_t, std::shared_ptr<PixelBuffer>> loadedPixelBuffers;
+    int layerCount = 0;
 
     for (size_t si = 0; si < doc.sequenceCount(); ++si) {
         auto& seq = doc.sequenceAt(si);
@@ -803,6 +803,8 @@ bool DocumentManager::readLayerData(mz_zip_archive* zip, Document& doc) {
             auto* rootLayer = seq.peekRootLayerForFrame(f);
             if (!rootLayer) continue;
             for (size_t li = 0; li < rootLayer->layerCount(); ++li) {
+                if (++layerCount % 20 == 0)
+                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
                 Layer* layer = rootLayer->layers()[li].get();
                 if (!layer || layer->type() != LayerType::Raster) continue;
 

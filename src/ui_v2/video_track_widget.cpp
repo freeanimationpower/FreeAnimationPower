@@ -29,7 +29,8 @@ static const QColor kMutedColor("#4A4E60");
 
 VideoTrackWidget::VideoTrackWidget(const QString& filepath, int trackIndex,
                                      std::shared_ptr<AppState> state,
-                                     TimelinePanelV2* panel, QWidget* parent)
+                                     TimelinePanelV2* panel, QWidget* parent,
+                                     const VideoMetadata& meta)
     : QWidget(parent)
     , filepath_(filepath)
     , trackIndex_(trackIndex)
@@ -136,7 +137,6 @@ VideoTrackWidget::VideoTrackWidget(const QString& filepath, int trackIndex,
 
     positionHeader();
 
-    auto meta = probeVideoMetadata(filepath);
     if (meta.valid) {
         videoWidth_  = meta.width;
         videoHeight_ = meta.height;

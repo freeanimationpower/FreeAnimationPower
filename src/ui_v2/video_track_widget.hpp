@@ -20,7 +20,8 @@ class VideoTrackWidget : public QWidget {
 public:
     VideoTrackWidget(const QString& filepath, int trackIndex,
                      std::shared_ptr<AppState> state,
-                     TimelinePanelV2* panel, QWidget* parent = nullptr);
+                     TimelinePanelV2* panel, QWidget* parent,
+                     const VideoMetadata& meta);
     ~VideoTrackWidget() override;
 
     const QString& filepath() const { return filepath_; }

@@ -42,6 +42,7 @@
 #include "audio_track_widget.hpp"
 #include "video_track_widget.hpp"
 #include "engine/animation/frame_thumbnail.hpp"
+#include "engine/animation/video_decoder.hpp"
 
 namespace fap {
 
@@ -1975,6 +1976,8 @@ void TimelinePanelV2::onImportAudio()
         "Audio Files (*.mp3 *.wav *.ogg *.flac);;All Files (*)");
     if (path.isEmpty()) return;
 
+    emit busyStarted("Importando audio...");
+
     auto* track = new AudioTrackWidget(path,
         static_cast<int>(audioTrackWidgets_.size()),
         appState_, this, tracksContainer_);
@@ -2007,6 +2010,8 @@ void TimelinePanelV2::onImportAudio()
     at.muted  = track->isMuted();
     at.volume = track->volume();
     appState_->document().addAudioTrack(at);
+
+    emit busyFinished();
 
     QTimer::singleShot(0, track, [track]() {
         track->update();
@@ -2100,8 +2105,11 @@ void TimelinePanelV2::onImportVideo()
         "Video Files (*.mp4 *.mov *.webm *.avi);;All Files (*)");
     if (path.isEmpty()) return;
 
+    emit busyStarted("Importando video...");
+
     auto meta = fap::probeVideoMetadata(path);
     if (!meta.valid) {
+        emit busyFinished();
         QMessageBox::warning(this, "Import Error",
             "Could not read video metadata. Make sure FFmpeg is installed.");
         return;
@@ -2125,12 +2133,15 @@ void TimelinePanelV2::onImportVideo()
         auto btn = QMessageBox::question(this, "Video Import Limits",
             warnMsg + "\nContinue with import?",
             QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Yes);
-        if (btn != QMessageBox::Yes) return;
+        if (btn != QMessageBox::Yes) {
+            emit busyFinished();
+            return;
+        }
     }
 
     auto* track = new VideoTrackWidget(path,
         static_cast<int>(videoTrackWidgets_.size()),
-        appState_, this, tracksContainer_);
+        appState_, this, tracksContainer_, meta);
 
     connect(track, &VideoTrackWidget::moveUpRequested, this, [this, track]() {
         auto it = std::find(videoTrackWidgets_.begin(), videoTrackWidgets_.end(), track);
@@ -2165,15 +2176,24 @@ void TimelinePanelV2::onImportVideo()
     vt.opacity     = track->opacity();
     appState_->document().addVideoTrack(vt);
 
+    emit busyFinished();
+
     QTimer::singleShot(0, track, [track]() { track->update(); });
 }
 
 VideoTrackWidget* TimelinePanelV2::addVideoTrackFromData(const VideoTrackData& data)
 {
+    VideoMetadata meta;
+    meta.valid       = true;
+    meta.width       = data.width;
+    meta.height      = data.height;
+    meta.fps         = static_cast<double>(data.fps);
+    meta.totalFrames = data.totalFrames;
+
     auto* track = new VideoTrackWidget(
         QString::fromStdString(data.filepath),
         static_cast<int>(videoTrackWidgets_.size()),
-        appState_, this, tracksContainer_);
+        appState_, this, tracksContainer_, meta);
 
     track->setMuted(data.muted);
     track->setVolume(data.volume);
