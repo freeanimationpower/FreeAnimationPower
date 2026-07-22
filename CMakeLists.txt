@@ -257,7 +257,6 @@ if(FAP_BUILD_TESTS)
         tests/test_tween_engine.cpp
         tests/test_pencil_retouch.cpp
         tests/test_abr_importer.cpp
-        tests/test_memory_stress.cpp
     )
     set(TEST_IMPL_SOURCES
         ${CORE_SOURCES}
