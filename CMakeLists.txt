@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(FreeAnimationPower VERSION 2.0.0 LANGUAGES CXX)
+project(FreeAnimationPower VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -62,8 +62,7 @@ set(CORE_HEADERS
     src/core/types.hpp
     src/core/layer.hpp
     src/core/sequence.hpp
-    src/core/document.hpp    src/core/stroke.hpp
-    src/core/canvas.hpp
+    src/core/document.hpp
     src/core/undo_manager.hpp
     src/core/tool_state.hpp
     src/core/app_state.hpp
@@ -77,8 +76,6 @@ set(CORE_SOURCES
     src/core/layer.cpp
     src/core/sequence.cpp
     src/core/document.cpp
-    src/core/stroke.cpp
-    src/core/canvas.cpp
     src/core/undo_manager.cpp
     src/core/tool_state.cpp
     src/core/app_state.cpp
@@ -113,9 +110,6 @@ set(ENGINE_SOURCES
     src/engine/vector/vector_engine.cpp
     src/engine/vector/vector_stroke.cpp
     src/engine/vector/bezier_path.cpp
-    src/engine/animation/timeline_engine.cpp
-    src/engine/animation/onion_skin.cpp
-    src/engine/animation/playback.cpp
     src/engine/animation/audio_engine.cpp
     src/engine/animation/tween_engine.cpp
     src/engine/animation/frame_thumbnail.cpp
@@ -141,6 +135,7 @@ set(UI_HEADERS
     src/ui_v2/color_panel_v2.hpp
     src/ui_v2/layer_panel_v2.hpp
     src/ui_v2/property_editor_v2.hpp
+    src/ui_v2/layer_lock_button.hpp
     src/ui_v2/audio_track_widget.hpp
     src/ui_v2/video_track_widget.hpp
     src/ui_v2/onion_skin_panel.hpp
@@ -168,10 +163,10 @@ set(IO_HEADERS
     src/io/document_manager.hpp
     src/io/serialization_common.hpp
     src/io/svg_export.hpp
+    src/io/video_export.hpp
 )
 
 set(IO_SOURCES
-    src/io/document_io.cpp
     src/io/video_export.cpp
     src/io/file_format.cpp
     src/io/document_manager.cpp
@@ -181,14 +176,10 @@ set(IO_SOURCES
 
 set(PLATFORM_HEADERS
     src/platform/file_association.hpp
-    src/platform/input_manager.hpp
-    src/platform/tablet_handler.hpp
 )
 
 set(PLATFORM_SOURCES
     src/platform/file_association.cpp
-    src/platform/input_manager.cpp
-    src/platform/tablet_handler.cpp
 )
 
 set(ALL_SOURCES
@@ -242,7 +233,7 @@ target_link_libraries(free-animation-power PRIVATE
 )
 
 target_compile_definitions(free-animation-power PRIVATE
-    FAP_VERSION="2.0.0"
+    FAP_VERSION="1.0.0"
     FAP_APP_NAME="Free Animation Power"
 )
 if(FAP_DIAGNOSTIC_TRACER)
@@ -266,6 +257,7 @@ if(FAP_BUILD_TESTS)
         tests/test_tween_engine.cpp
         tests/test_pencil_retouch.cpp
         tests/test_abr_importer.cpp
+        tests/test_memory_stress.cpp
     )
     set(TEST_IMPL_SOURCES
         ${CORE_SOURCES}

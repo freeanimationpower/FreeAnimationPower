@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
     }
 
     app.setApplicationName("Free Animation Power");
-    app.setApplicationVersion("2.0.0");
+    app.setApplicationVersion("1.0.0");
     app.setOrganizationName("FAP");
 
 #ifdef _WIN32
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     g_logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
 
     qInfo() << "==============================";
-    qInfo() << "Free Animation Power v2.0.0 started";
+    qInfo() << "Free Animation Power v1.0.0 started";
     qInfo() << "Log:" << logPath;
 
 #ifdef FAP_DIAGNOSTIC_TRACER
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
     QSplashScreen splash(splashPixmap);
     QFont splashFont("Avenir LT Std", 12);
     splash.setFont(splashFont);
-    splash.showMessage("v.1", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
+    splash.showMessage("v1.0", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
     splash.show();
     app.processEvents();
 
