@@ -195,23 +195,10 @@ set(ALL_SOURCES
     ${PLATFORM_HEADERS}
     ${PLATFORM_SOURCES}
     resources/resources.qrc
+    resources/version.rc
 )
 
 add_executable(free-animation-power ${ALL_SOURCES})
-
-if(WIN32)
-    find_package(Python3 COMPONENTS Interpreter QUIET)
-    if(Python3_EXECUTABLE)
-        add_custom_command(TARGET free-animation-power POST_BUILD
-            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/embed_icon.py"
-                "$<TARGET_FILE:free-animation-power>"
-                "${CMAKE_SOURCE_DIR}/resources/icons/fap.ico"
-            COMMENT "Embedding app icon into EXE"
-        )
-    else()
-        message(WARNING "Python3 not found - icon will not be embedded")
-    endif()
-endif()
 
 target_include_directories(free-animation-power PRIVATE
     ${CMAKE_SOURCE_DIR}/src
