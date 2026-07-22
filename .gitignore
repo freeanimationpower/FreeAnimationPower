@@ -33,3 +33,4 @@ vcpkg_installed/
 
 # Diagnostic traces
 fap_traces/
+release/*.zip
