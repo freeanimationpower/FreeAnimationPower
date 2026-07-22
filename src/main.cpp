@@ -1,4 +1,5 @@
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QSplashScreen>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
@@ -139,11 +140,21 @@ int main(int argc, char* argv[]) {
     parser.addOption({"project", "Open project file", "file.fap"});
     parser.process(app);
 
+    QPixmap splashPixmap(":/icons/splash.png");
+    QSplashScreen splash(splashPixmap);
+    QFont splashFont("Avenir LT Std", 12);
+    splash.setFont(splashFont);
+    splash.showMessage("v.1", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
+    splash.show();
+    app.processEvents();
+
     auto appState = std::make_shared<fap::AppState>();
     fap::MainWindowV2 window(appState);
     window.resize(1600, 900);
     window.show();
     qInfo() << "MainWindow shown";
+
+    splash.finish(&window);
 
     if (parser.isSet("project")) {
         window.openProject(parser.value("project"));

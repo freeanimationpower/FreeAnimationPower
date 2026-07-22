@@ -394,11 +394,12 @@ void MainWindowV2::setupDocks()
     const char* kDockTitleStyle =
         "QLabel { color: #FF4800; font-size: 10px; font-weight: 600;"
         " padding: 4px 10px; }";
-    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, onionDock, sizeDock, canvasDock, timelineDock}) {
+    for (auto* dock : {toolboxDock, layerDock, colorDock, propertyDock, onionDock, sizeDock, timelineDock}) {
         auto* titleLabel = new QLabel(dock->windowTitle());
         titleLabel->setStyleSheet(kDockTitleStyle);
         dock->setTitleBarWidget(titleLabel);
     }
+    canvasDock->setTitleBarWidget(new QWidget());
 }
 
 void MainWindowV2::setupStatusBar()
