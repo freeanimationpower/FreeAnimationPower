@@ -219,6 +219,10 @@ target_link_libraries(free-animation-power PRIVATE
     dwmapi
 )
 
+if(WIN32)
+    target_link_options(free-animation-power PRIVATE "/MANIFEST:EMBED" "/MANIFESTINPUT:${CMAKE_SOURCE_DIR}/resources/app.manifest")
+endif()
+
 target_compile_definitions(free-animation-power PRIVATE
     FAP_VERSION="1.0.0"
     FAP_APP_NAME="Free Animation Power"
