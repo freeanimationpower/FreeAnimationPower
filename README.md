@@ -1,5 +1,8 @@
 # Free Animation Power
 
+<img width="1368" height="1202" alt="LOGO FREE ANIMATION POWER low" src="https://github.com/user-attachments/assets/ec47ed7d-26cf-48a3-bf3c-96ab864a2b37" />
+
+
 Software de animacion 2D profesional — Motor hibrido vector + raster. Construido con C++20 y Qt 6.
 
 ## Descripcion
