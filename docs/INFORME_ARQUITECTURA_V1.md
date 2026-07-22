@@ -78,91 +78,24 @@ Free Animation Power es una aplicacion de animacion 2D profesional con motor hib
 
 ### Diagrama de Capas
 
-```
-+------------------------------------------------------------------+
-|                      UI Layer (Qt 6 Widgets)                      |
-|  MainWindowV2 | CanvasWidgetV2 | TimelinePanelV2 | ToolboxPanelV2 |
-|  ColorPanelV2 | LayerPanelV2   | PropertyEditorV2 | OnionSkinPanel|
-|  CanvasSizePanel | AudioTrackWidget | VideoTrackWidget           |
-|  BusyOverlay   | LayerLockButton                                  |
-+------------------------------------------------------------------+
-                              |
-                              v
-+------------------------------------------------------------------+
-|                        AppState (Central Hub)                     |
-|  Document | ToolState | AudioEngine | RulerTool | TweenEngine    |
-|  DeformationEngine | FrameThumbnailCache | PencilRetouchEngine   |
-+------------------------------------------------------------------+
-                              |
-                              v
-+------------------------------------------------------------------+
-|                       Engine Layer                                |
-|  +------------------+  +------------------+  +----------------+  |
-|  | brush/            |  | raster/           |  | vector/        |  |
-|  | BrushEngine       |  | RasterEngine     |  | VectorEngine   |  |
-|  | BrushPreset       |  | RasterStroke     |  | VectorStroke   |  |
-|  | ABRImporter       |  | RasterEffect     |  | BezierPath     |  |
-|  | PaperTexture      |  |                  |  |                |  |
-|  | PencilRetouch     |  |                  |  |                |  |
-|  | RulerTool         |  |                  |  |                |  |
-|  +------------------+  +------------------+  +----------------+  |
-|  +-------------------------------------------------------------+ |
-|  | compositor/        | deformation/    | common/              | |
-|  | Compositor         | DeformMesh      | BlendUtils           | |
-|  | NodeGraph          | DeformEngine    |                      | |
-|  +-------------------------------------------------------------+ |
-|  +-------------------------------------------------------------+ |
-|  | animation/                                                   | |
-|  | AudioEngine | AudioFileDecoder | VideoDecoder | TweenEngine  | |
-|  | FrameThumbnailCache | dr_wav | dr_mp3 | dr_flac              | |
-|  +-------------------------------------------------------------+ |
-+------------------------------------------------------------------+
-                              |
-                              v
-+------------------------------------------------------------------+
-|                      Core Data Model                             |
-|  Document | Sequence (Marker, LineBoil) | Layer (Raster/Vector/  |
-|  Group) | UndoManager | Stroke | types (Vec2, Color, enums)     |
-+------------------------------------------------------------------+
-                              |
-                              v
-+------------------------------------------------------------------+
-|                     Platform Layer                                |
-|  IO: DocumentManager | FileFormat (legacy) | VideoExport | SVG   |
-|  Platform: FileAssociation (Windows registry)                    |
-+------------------------------------------------------------------+
-```
+| Capa | Componentes |
+|------|-------------|
+| **UI (Qt 6 Widgets)** | MainWindowV2, CanvasWidgetV2, TimelinePanelV2, ToolboxPanelV2, ColorPanelV2, LayerPanelV2, PropertyEditorV2, OnionSkinPanel, CanvasSizePanel, AudioTrackWidget, VideoTrackWidget, BusyOverlay, LayerLockButton |
+| **AppState (Central Hub)** | Document, ToolState, AudioEngine, RulerTool, TweenEngine, DeformationEngine, FrameThumbnailCache, PencilRetouchEngine |
+| **Engine Layer** | **brush/**: BrushEngine, BrushPreset, ABRImporter, PaperTexture, PencilRetouch, RulerTool **raster/**: RasterEngine, RasterStroke, RasterEffect **vector/**: VectorEngine, VectorStroke, BezierPath **compositor/**: Compositor, NodeGraph **deformation/**: DeformationMesh, DeformationEngine **animation/**: AudioEngine, AudioFileDecoder, VideoDecoder, TweenEngine, FrameThumbnailCache |
+| **Core Data Model** | Document, Sequence (Marker, LineBoil), Layer (Raster/Vector/Group), UndoManager, ToolState, Types (Color, Vec2, enums) |
+| **Platform Layer** | IO: DocumentManager, FileFormat, VideoExport, SVGExport / Win32: FileAssociation |
 
 ### Flujo de Datos Principal
 
-```
-Input (Mouse/Tablet/QTabletEvent)
-    |
-    v
-CanvasWidgetV2::tabletEvent/mousePressEvent
-    |
-    v
-ToolState::activeTool() → dispatch a herramienta activa
-    |
-    v
-BrushEngine::beginStroke → addPoint × N → endStroke
-    |                     |
-    |               currentStroke()
-    v                     v
-RasterEngine          VectorEngine
-    |                     |
-    v                     v
-strokeBuffer_ (aislado)  BezierPath → VectorStroke
-    |
-    v
-commitStroke() → pixelBuffer_ (SourceOver/DestinationOut)
-    |
-    v
-buildBackgroundCache() → backgroundCache_ (composicion final)
-    |
-    v
-paintEvent() → QPainter sobre QWidget
-```
+1. **Input**: QTabletEvent / QMouseEvent → CanvasWidgetV2
+2. **Tool Dispatch**: ToolState::activeTool() → dispatch a herramienta activa
+3. **Brush Engine**: BrushEngine::beginStroke → addPoint x N → endStroke
+4. **Stroke Render**:
+   - Raster: dab stamps → strokeBuffer_ (aislado) → commitStroke() → pixelBuffer_ (SourceOver/DestinationOut)
+   - Vector: createPathFromPoints() → BezierPath → VectorStroke
+5. **Compositing**: buildBackgroundCache() → backgroundCache_ (fondo blanco + onion skin + capas + video)
+6. **Display**: paintEvent() → QPainter sobre QWidget
 
 ### AppState — Central State Hub
 
