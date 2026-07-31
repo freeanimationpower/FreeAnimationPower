@@ -2,7 +2,7 @@
 
 <img width="1024" height="1024" alt="logo free animation power" src="https://github.com/user-attachments/assets/ced0f4cd-7a20-4071-92a4-f5cd3f2e0930" />
 
-> **Accede desde la web**: [freeanimationpower.org](https://freeanimationpower.org) — Hub central con todas las herramientas FAP. Sin instalacion.
+> **Accede desde la web**: [freeanimationpower.org/tools/desktop/](https://freeanimationpower.org/tools/desktop/) — Pagina de descarga de FAP Desktop App.
 
 
 Software de animacion 2D profesional — Motor hibrido vector + raster. Construido con C++20 y Qt 6.
