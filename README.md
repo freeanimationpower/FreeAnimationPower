@@ -309,6 +309,7 @@ ctest --test-dir build
 
 ## Documentacion
 
+- **Informe Tecnico Completo**: [INFORME_TECNICO_FREE ANIMATION POWER EXE.pdf](informes_pdf/INFORME_TECNICO_FREE%20ANIMATION%20POWER%20EXE.pdf) — Documento completo de arquitectura C++20/Qt 6, pipeline de renderizado, sistema de herramientas y especificaciones tecnicas.
 - `docs/INFORME_ARQUITECTURA_V1.md` — Informe completo de arquitectura (espanol)
 - `docs/architecture.md` — Documento formal de arquitectura (ingles)
 - `docs/build-instructions.md` — Instrucciones de compilacion
