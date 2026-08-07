@@ -161,6 +161,7 @@ CanvasWidgetV2::CanvasWidgetV2(std::shared_ptr<AppState> state, QWidget* parent)
     setMinimumSize(400, 300);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
+    setAttribute(Qt::WA_NativeWindow, true);
     setAttribute(Qt::WA_TabletTracking, true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -1742,6 +1743,11 @@ void CanvasWidgetV2::wheelEvent(QWheelEvent* event)
 
 void CanvasWidgetV2::tabletEvent(QTabletEvent* event)
 {
+    if (!isVisible() || !window() || !window()->windowHandle()) {
+        event->accept();
+        return;
+    }
+
     tabletPressure_ = static_cast<float>(event->pressure());
     tabletEraser_ = (event->pointerType() == QPointingDevice::PointerType::Eraser);
 
