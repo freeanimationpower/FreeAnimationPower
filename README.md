@@ -1,9 +1,11 @@
 # Free Animation Power
-<iframe width="560" height="315" src="https://www.youtube.com/embed/_s8zxOe5YUk?si=v6uBNs7cjtNoBoxQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 <img width="1024" height="1024" alt="logo free animation power" src="https://github.com/user-attachments/assets/ced0f4cd-7a20-4071-92a4-f5cd3f2e0930" />
 
 > **Accede desde la web**: [freeanimationpower.org/tools/desktop/](https://freeanimationpower.org/tools/desktop/) — Pagina de descarga de FAP Desktop App.
+>
+> https://youtu.be/_s8zxOe5YUk?si=NCxp1K3UFqJGM_ZY
+> https://youtu.be/GbQypO28FkA?si=Y6gR7qx-lfghDtrN
 
 
 Software de animacion 2D profesional — Motor hibrido vector + raster. Construido con C++20 y Qt 6.
@@ -317,6 +319,11 @@ ctest --test-dir build
 - `AGENTS.md` — Referencia tecnica para agentes AI
 - `CHANGELOG.md` — Historial de versiones
 - `CONTEXT.md` — Glosario de dominio
+
+  https://youtu.be/FoRy9u4NZ0A?si=sCCUlMUCn-oHfqwT
+  https://youtu.be/Xe-5OqXhCVU?si=ctjyuEl5iTDWuYDj
+  https://youtu.be/mkac7WQXX7U?si=ZQMydQTFvAdiN1YY
+  https://youtu.be/4-MJtsg9hvg?si=Iml6FL4e8angHKTM
 
 ---
 
