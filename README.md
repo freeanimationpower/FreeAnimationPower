@@ -20,7 +20,7 @@ Todo el ecosistema en vivo: **[freeanimationpower.org](https://freeanimationpowe
 
 <p align="center"><a href="https://github.com/freeanimationpower/FreeAnimationPower"><img src="docs/apps/desktop.png" alt="Desktop App (Windows)" width="720"></a></p>
 
-Estudio de animación 2D profesional nativo para Windows. Motor híbrido vector + raster, C++20 y Qt 6. 17 herramientas, multi-secuencia, audio/video, 12 modos de fusión, exportación MP4/WebM/GIF/SVG.
+Estudio de animación 2D profesional nativo para Windows. Motor híbrido vector + raster, C++20 y Qt 6. 17 herramientas, multi-secuencia, audio/vídeo, 12 modos de fusión, exportación MP4/WebM/GIF/SVG.
 
 - 🔗 Repo: [freeanimationpower/FreeAnimationPower](https://github.com/freeanimationpower/FreeAnimationPower)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/desktop/)
@@ -29,18 +29,18 @@ Estudio de animación 2D profesional nativo para Windows. Motor híbrido vector 
 
 <p align="center"><a href="https://github.com/freeanimationpower/FAP_PC_WEB_VERSION"><img src="docs/apps/pc-web.png" alt="Desktop Web" width="720"></a></p>
 
-Estudio de animación 2D para PC en el navegador. Lienzo 1920×1080, soporte de tableta gráfica, 60 pinceles, onion skin, exporta GIF y video. Cero dependencias.
+Estudio de animación 2D para PC en el navegador. Lienzo 1920×1080, soporte de tableta gráfica, 60 pinceles, onion skin, exporta GIF y vídeo. Cero dependencias.
 
-- 🔗 Repo: [freeanimationpower/FAP_PC_WEB_VERSION](https://github.com/freeanimationpower/FAP_PC_WEB_VERSION)
+- 🔗 Repo: [freeanimationpower/FAP_PC_WEB_VERSIÓN](https://github.com/freeanimationpower/FAP_PC_WEB_VERSION)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/pc-web/)
 
 ### Mobile Web / PWA
 
 <p align="center"><a href="https://github.com/freeanimationpower/FAP_MOBILE_WEB_VERSION"><img src="docs/apps/mobile.png" alt="Mobile Web / PWA" width="720"></a></p>
 
-Estudio de animación 2D para móviles. 60 pinceles, onion skin, 66 colores, exportación GIF/video, archivos .fap. 100% cliente.
+Estudio de animación 2D para móviles. 60 pinceles, onion skin, 66 colores, exportación GIF/vídeo, archivos .fap. 100% cliente.
 
-- 🔗 Repo: [freeanimationpower/FAP_MOBILE_WEB_VERSION](https://github.com/freeanimationpower/FAP_MOBILE_WEB_VERSION)
+- 🔗 Repo: [freeanimationpower/FAP_MOBILE_WEB_VERSIÓN](https://github.com/freeanimationpower/FAP_MOBILE_WEB_VERSION)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/mobile/)
 
 ### Free Text Motion
@@ -56,7 +56,7 @@ Estudio de texto animado con 205 presets de motion graphics. Exporta WebM/MP4/GI
 
 <p align="center"><a href="https://github.com/freeanimationpower/FREE-PARTICLE-FX"><img src="docs/apps/particle-fx.png" alt="Free Particle FX" width="720"></a></p>
 
-Sistema de partículas con 54 presets en 7 familias: humo, fuego, nieve, confeti, galaxias y pixel FX estilo DOOM. Exporta con transparencia.
+Sistema de partículas con 54 presets en 7 familias: humo, fuego, nieve, confeti, galaxias y píxel FX estilo DOOM. Exporta con transparencia.
 
 - 🔗 Repo: [freeanimationpower/FREE-PARTICLE-FX](https://github.com/freeanimationpower/FREE-PARTICLE-FX)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/particle-fx/)
@@ -83,7 +83,7 @@ Convierte bocetos, logos e ilustraciones en vectores escalables al infinito. Sin
 
 <p align="center"><a href="https://github.com/freeanimationpower/FAP_GIF_SVG_TRANSFORM"><img src="docs/apps/gif-svg.png" alt="Transformador GIF / SVG Online" width="720"></a></p>
 
-Convierte videos cortos a GIF animado o SVG animado. React 19 + TypeScript + Vite, 100% cliente.
+Convierte vídeos cortos a GIF animado o SVG animado. React 19 + TypeScript + Vite, 100% cliente.
 
 - 🔗 Repo: [freeanimationpower/FAP_GIF_SVG_TRANSFORM](https://github.com/freeanimationpower/FAP_GIF_SVG_TRANSFORM)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/gif-maker/)
@@ -92,7 +92,7 @@ Convierte videos cortos a GIF animado o SVG animado. React 19 + TypeScript + Vit
 
 <p align="center"><a href="https://github.com/freeanimationpower/FREE-ANIMATION-GLITCH"><img src="docs/apps/glitch.png" alt="Free Animation Glitch" width="720"></a></p>
 
-37 modos de distorsión visual en tiempo real. Arrastra un video o usa tu cámara.
+37 modos de distorsión visual en tiempo real. Arrastra un vídeo o usa tu cámara.
 
 - 🔗 Repo: [freeanimationpower/FREE-ANIMATION-GLITCH](https://github.com/freeanimationpower/FREE-ANIMATION-GLITCH)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/glitch/)
@@ -130,7 +130,7 @@ Generador de guiones con IA: 12 formatos profesionales (cine, YouTube, podcast, 
   <a href="https://youtu.be/_s8zxOe5YUk"><img src="docs/screenshot.jpg" alt="Free Animation Power Desktop App — animación 2D profesional" width="860"></a>
 </p>
 
-## 🎬 Videos
+## 🎬 Vídeos
 
 📺 Canal oficial: [@freeanimationpower](https://www.youtube.com/@freeanimationpower)
 
@@ -149,9 +149,9 @@ Generador de guiones con IA: 12 formatos profesionales (cine, YouTube, podcast, 
 
 ## 🖥️ Documentación técnica — Free Animation Power Desktop App
 
-## Descripcion
+## Descripción
 
-Free Animation Power combina animacion cuadro-por-cuadro tradicional (estilo TVPaint) con capacidades vectoriales modernas en una sola aplicacion. Cada trazo puede renderizarse como pixeles (raster), como path vectorial, o como ambos simultaneamente.
+Free Animation Power combina animación cuadro-por-cuadro tradicional (estilo TVPaint) con capacidades vectoriales modernas en una sola aplicación. Cada trazo puede renderizarse como píxeles (raster), como path vectorial, o como ambos simultaneamente.
 
 ---
 
@@ -189,7 +189,7 @@ flowchart TB
             UND["UndoManager"] --> TYP["Types"]
         end
         subgraph PLT["Platform"]
-            IO["IO · FileFormat<br/>Video/SVG Export"]
+            IO["IO · FileFormat<br/>Vídeo/SVG Export"]
             WIN["Win32 · .fap<br/>FileAssociation"]
         end
         UI --> APP
@@ -205,11 +205,11 @@ flowchart TB
 
 ### Jerarquia de Capas
 
-- **RasterLayer** — Buffer de pixeles ARGB32 con COW, origen variable, flag `hasContent_`
+- **RasterLayer** — Buffer de píxeles ARGB32 con COW, origen variable, flag `hasContent_`
 - **VectorLayer** — Coleccion de `VectorStroke` con `BezierPath`
 - **GroupLayer** — Compuesto recursivo con blend modes y opacidad
 - **AudioLayer** — Datos de audio (modelo, no subclase de Layer)
-- **CameraLayer** — Transformaciones de camara
+- **CameraLayer** — Transformaciones de cámara
 
 ### Pipeline de Renderizado (4-Buffer CPU)
 
@@ -226,7 +226,7 @@ flowchart LR
         end
         subgraph DISP["DISPLAY DOMAIN — lo que ve el usuario"]
             direction TB
-            BG["backgroundCache_<br/>blanco + onion + capas + video"]
+            BG["backgroundCache_<br/>blanco + onion + capas + vídeo"]
             PA["paintEvent QPainter<br/>caché + trazo + grid + UI"]
         end
         ST -- "composite" --> PX
@@ -239,13 +239,13 @@ flowchart LR
 
 ### Formato de Archivo (.fap v2)
 
-- `manifest.json` — version, canvas, secuencias activas, viewport, markers
-- `timeline.json` — frames, capas, audio, video por secuencia
+- `manifest.json` — versión, canvas, secuencias activas, viewport, markers
+- `timeline.json` — frames, capas, audio, vídeo por secuencia
 - `audio/track_N.ext` — archivos de audio incrustados
-- `video/track_N.ext` — archivos de video incrustados
-- `layers/S{seq}/frame_{f}/layer_{ll}.png` + `.json` — pixeles + metadata
+- `video/track_N.ext` — archivos de vídeo incrustados
+- `layers/S{seq}/frame_{f}/layer_{ll}.png` + `.json` — píxeles + metadata
 
-**Caracteristicas**: save atomico (.tmp → rename), deduplicacion de pixeles, audio/video embedding, backward compatible con v1/v2/v3 legacy.
+**Características**: save atomico (.tmp → rename), deduplicacion de píxeles, audio/vídeo embedding, backward compatible con v1/v2/v3 legacy.
 
 ---
 
@@ -291,7 +291,7 @@ flowchart TB
             CS["CanvasSizePanel"]
         end
         subgraph BOTTOM["INFERIOR"]
-            TM["TimelinePanel<br/>multi-secuencia · audio · video · markers"]
+            TM["TimelinePanel<br/>multi-secuencia · audio · vídeo · markers"]
         end
         LEFT --> CENTER
         RIGHT --> CENTER
@@ -301,7 +301,7 @@ flowchart TB
         class TM data
 ```
 
-| Dock | Posicion | Contenido |
+| Dock | Posición | Contenido |
 |------|----------|-----------|
 | **TOOLS** | Left | 17 botones de herramienta (36px icons) |
 | **ONION SKIN** | Left | Checkbox enabled, spinners prev/next, slider opacidad |
@@ -310,7 +310,7 @@ flowchart TB
 | **COLOR** | Right | QColorDialog + 9 circulos MRU |
 | **PROPERTIES** | Right | Editor contextual: brush, texto, color, fill, line |
 | **CANVAS SIZE** | Right | Width x Height + Apply |
-| **TIMELINE** | Bottom | Multi-secuencia, frames, audio, video, markers, WA, FPS |
+| **TIMELINE** | Bottom | Multi-secuencia, frames, audio, vídeo, markers, WA, FPS |
 
 ### Timeline Layout
 
@@ -329,9 +329,9 @@ Horizontal ScrollBar:  scroll sincronizado entre tracks y ruler
 
 ## Herramientas
 
-| ToolType | Descripcion |
+| ToolType | Descripción |
 |----------|-------------|
-| **Brush** | Dibujo con presion, estabilizador, punta configurable |
+| **Brush** | Dibujo con presión, estabilizador, punta configurable |
 | **Eraser** | Borrado con modo DestinationOut |
 | **ColorPicker** | Cuentagotas con lupa de preview |
 | **Fill** | Relleno con tolerancia (Solid, Fabric, Ramp) |
@@ -340,15 +340,15 @@ Horizontal ScrollBar:  scroll sincronizado entre tracks y ruler
 | **Rectangle** | Rectangulo relleno/borde |
 | **Ellipse** | Elipse relleno/borde |
 | **Move** | Desplazamiento de capa con buffer expansion |
-| **Select** | Seleccion rectangular con copy/cut/paste/delete |
+| **Select** | Selección rectangular con copy/cut/paste/delete |
 | **Hand** | Pan de canvas (middle-click + drag) |
 | **PencilRetouch** | Retoque de grosor de trazos |
 | **RulerLine** | Regla lineal con snapping |
 | **RulerEllipse** | Regla eliptica con snapping |
 | **DeformMesh** | Malla de deformacion bilineal |
-| **TweenEdit** | Edicion de interpolacion de keyframes |
+| **TweenEdit** | Edición de interpolación de keyframes |
 
-**Tableta grafica**: Wacom, Huion, Xencelabs, XP-Pen. Presion modula tamano y opacidad. Deteccion automatica de borrador.
+**Tableta gráfica**: Wacom, Huion, Xencelabs, XP-Pen. Presión modula tamano y opacidad. Deteccion automática de borrador.
 
 ---
 
@@ -357,22 +357,22 @@ Horizontal ScrollBar:  scroll sincronizado entre tracks y ruler
 ### Lo que funciona
 
 - 17 herramientas de dibujo con pipeline 4-buffer CPU
-- Pinceles con presion, estabilizador, textura de papel, import ABR
+- Pinceles con presión, estabilizador, textura de papel, import ABR
 - Timeline multi-secuencia con Work Area, marcadores, Line Boil, ocultacion no destructiva (+/-)
 - Capas raster + vectoriales + grupo con 12 blend modes
 - Audio tracks: import WAV/MP3/FLAC, waveform visual, playback sincronizado
-- Video tracks: import MP4/MOV/WebM, thumbnails, cache LRU 50 frames, composicion sobre dibujo
+- Vídeo tracks: import MP4/MOV/WebM, thumbnails, cache LRU 50 frames, composición sobre dibujo
 - Onion skinning con frames previos/siguientes y opacidad configurable
 - Undo/Redo por secuencia (profundidad 100, comandos compuestos)
 - 8 docks desacoplables con tema oscuro (#252830 / #FF4800)
-- Formato .fap v2 (ZIP binario, save atomico, audio/video embedding)
+- Formato .fap v2 (ZIP binario, save atomico, audio/vídeo embedding)
 - Export: MP4 H.264, MOV QuickTime Alpha, WebM VP9 Alpha, GIF, SVG, PNG sequence
 - File association en Windows (.fap registry + icono en EXE)
 - 160 tests unitarios, todos pasando
 
-### Numeros
+### Números
 
-| Metrica | Valor |
+| Métrica | Valor |
 |---------|-------|
 | Archivos fuente | 98 .hpp/.cpp/.h |
 | Tests | 160 |
@@ -402,9 +402,9 @@ ctest --test-dir build
 
 - CMake 3.20+
 - Qt 6.5+ (Core, Gui, Widgets, Multimedia, Svg)
-- FFmpeg (externo, para video/audio decode y export)
+- FFmpeg (externo, para vídeo/audio decode y export)
 - C++20 compiler (MSVC 2022+, GCC 11+, Clang 14+)
-- GoogleTest 1.14.0 (FetchContent automatico)
+- GoogleTest 1.14.0 (FetchContent automático)
 
 ### Stack
 
@@ -416,17 +416,17 @@ ctest --test-dir build
 | Tests | GoogleTest |
 | Compresion | miniz 3.0.2 (zlib) |
 | Audio decode | dr_wav, dr_mp3, dr_flac |
-| Video export | FFmpeg (subprocess) |
+| Vídeo export | FFmpeg (subprocess) |
 
 ---
 
 ## Documentacion
 
-- **Informe Tecnico Completo**: [INFORME_TECNICO_FREE ANIMATION POWER EXE.pdf](informes_pdf/INFORME_TECNICO_FREE%20ANIMATION%20POWER%20EXE.pdf) — Documento completo de arquitectura C++20/Qt 6, pipeline de renderizado, sistema de herramientas y especificaciones tecnicas.
+- **Informe Técnico Completo**: [INFORME_TÉCNICO_FREE ANIMATION POWER EXE.pdf](informes_pdf/INFORME_TÉCNICO_FREE%20ANIMATION%20POWER%20EXE.pdf) — Documento completo de arquitectura C++20/Qt 6, pipeline de renderizado, sistema de herramientas y especificaciones técnicas.
 - `docs/INFORME_ARQUITECTURA_V1.md` — Informe completo de arquitectura (espanol)
 - `docs/architecture.md` — Documento formal de arquitectura (ingles)
-- `docs/build-instructions.md` — Instrucciones de compilacion
-- `AGENTS.md` — Referencia tecnica para agentes AI
+- `docs/build-instructions.md` — Instrucciones de compilación
+- `AGENTS.md` — Referencia técnica para agentes AI
 - `CHANGELOG.md` — Historial de versiones
 - `CONTEXT.md` — Glosario de dominio
 
