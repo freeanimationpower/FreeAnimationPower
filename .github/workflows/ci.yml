@@ -21,6 +21,22 @@ jobs:
           version: '6.5.3'
           modules: 'qtmultimedia'
 
+      - name: Patch Qt 6.5.3 headers for MSVC 14.51+
+        # stdext::checked_array_iterator / unchecked_array_iterator were removed
+        # in MSVC 14.51 (VS 2026). Qt 6.5.3 still maps QT_MAKE_(UN)CHECKED_ARRAY_
+        # ITERATOR to them unconditionally for MSVC (upstream added a
+        # _MSC_VER < 1938 gate only in later Qt releases, and 6.5.x is frozen at
+        # 6.5.3 for open source). Neutralize the two macros to the identity form
+        # (x) that Qt itself uses on every non-MSVC platform.
+        run: |
+          $hdr = Join-Path $env:QT_ROOT_DIR 'include\QtCore\qcompilerdetection.h'
+          $text = Get-Content $hdr -Raw
+          $text = $text -replace 'stdext::make_unchecked_array_iterator\(x\)', '(x)'
+          $text = $text -replace 'stdext::make_checked_array_iterator\(x, size_t\(N\)\)', '(x)'
+          Set-Content $hdr $text -NoNewline
+          Select-String -Path $hdr -Pattern 'CHECKED_ARRAY_ITERATOR' |
+            ForEach-Object { $_.Line.Trim() }
+
       - name: Configure CMake
         run: cmake -B build
 
