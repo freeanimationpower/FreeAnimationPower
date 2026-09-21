@@ -14,7 +14,8 @@ if(MSVC)
     # on windows-latest) no longer pull <iterator> in transitively, breaking the
     # build with 'stdext: identifier not found'. Force-include a guarded shim
     # (safe for C sources like miniz thanks to the __cplusplus guard).
-    add_compile_options("/FI${CMAKE_CURRENT_SOURCE_DIR}/ci/msvc_qt65_compat.h")
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ci)
+    add_compile_options(/FImsvc_qt65_compat.h)
 endif()
 
 option(FAP_BUILD_TESTS "Build tests" ON)
