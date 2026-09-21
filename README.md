@@ -36,7 +36,7 @@ Estudio de animación 2D para PC en el navegador. Lienzo 1920×1080, soporte de 
 
 ### Mobile Web / PWA
 
-<p align="center"><a href="https://github.com/freeanimationpower/FAP_MOBILE_WEB_VERSION"><img src="docs/apps/mobile.png" alt="Mobile Web / PWA" width="720"></a></p>
+<p align="center"><a href="https://github.com/freeanimationpower/FAP_MOBILE_WEB_VERSION"><img src="docs/apps/mobile.png" alt="Mobile Web / PWA" width="450"></a></p>
 
 Estudio de animación 2D para móviles. 60 pinceles, onion skin, 66 colores, exportación GIF/vídeo, archivos .fap. 100% cliente.
 
