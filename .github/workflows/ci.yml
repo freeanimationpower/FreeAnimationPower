@@ -22,7 +22,10 @@ jobs:
           modules: 'qtmultimedia'
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        # Qt 6.5.3 headers call stdext::make_*_array_iterator (qcompilerdetection.h)
+        # without including <iterator>. Newer MSVC (VS2022 17.13+/VS2026) no longer
+        # pulls <iterator> in transitively, breaking compilation. Force-include it.
+        run: cmake -B build -DCMAKE_CXX_FLAGS="/FIiterator"
 
       - name: Build
         run: cmake --build build --config Release --parallel
