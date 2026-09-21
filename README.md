@@ -1,3 +1,5 @@
+<img width="1905" height="720" alt="free animation power" src="https://github.com/user-attachments/assets/5d0c0e56-0c25-4395-bd8d-e19c70436273" />
+
 # Free Animation Power
 
 <p align="center">
