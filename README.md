@@ -1,8 +1,32 @@
 # Free Animation Power
+<p align="center">
+  <a href="https://freeanimationpower.org"><img src="https://img.shields.io/badge/Web_Hub-freeanimationpower.org-ffdc00?style=for-the-badge" alt="Web Hub"></a>
+  <a href="https://www.youtube.com/@freeanimationpower"><img src="https://img.shields.io/badge/YouTube-@freeanimationpower-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"></a>
+  <a href="https://github.com/freeanimationpower"><img src="https://img.shields.io/badge/GitHub-freeanimationpower-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshot.jpg" alt="Free Animation Power Desktop App — animación 2D profesional" width="860">
+</p>
+
+## 🎬 Videos
+
+📺 Canal oficial: [@freeanimationpower](https://www.youtube.com/@freeanimationpower)
+
+| Vídeo | Título |
+|---|---|
+| <a href="https://youtu.be/_s8zxOe5YUk"><img src="https://i.ytimg.com/vi/_s8zxOe5YUk/hqdefault.jpg" width="240"></a> | [Prueba de estrés N5 — 7 meses de desarrollo, 1 mes sin bugs](https://youtu.be/_s8zxOe5YUk) |
+| <a href="https://youtu.be/Xe-5OqXhCVU"><img src="https://i.ytimg.com/vi/Xe-5OqXhCVU/hqdefault.jpg" width="240"></a> | [El motor C++20, la cadena de 4 buffers y la exportación profesional](https://youtu.be/Xe-5OqXhCVU) |
+| <a href="https://youtu.be/X4bPLlr07nQ"><img src="https://i.ytimg.com/vi/X4bPLlr07nQ/hqdefault.jpg" width="240"></a> | [Así funciona el sistema de capas, secuencias y onion skin](https://youtu.be/X4bPLlr07nQ) |
+| <a href="https://youtu.be/RUCeO4JHHtk"><img src="https://i.ytimg.com/vi/RUCeO4JHHtk/hqdefault.jpg" width="240"></a> | [Onion Skin y tiempos distintos dentro del mismo segundaje](https://youtu.be/RUCeO4JHHtk) |
+| <a href="https://youtu.be/FoRy9u4NZ0A"><img src="https://i.ytimg.com/vi/FoRy9u4NZ0A/hqdefault.jpg" width="240"></a> | [Los 12 modos de fusión explicados con linternas](https://youtu.be/FoRy9u4NZ0A) |
+| <a href="https://youtu.be/GbQypO28FkA"><img src="https://i.ytimg.com/vi/GbQypO28FkA/hqdefault.jpg" width="240"></a> | [Separa tus secuencias, renombra todo y haz vibrar tus dibujos (Line Boil)](https://youtu.be/GbQypO28FkA) |
+| <a href="https://youtu.be/mkac7WQXX7U"><img src="https://i.ytimg.com/vi/mkac7WQXX7U/hqdefault.jpg" width="240"></a> | [Cómo funcionan las secuencias, layers, colores y la exportación](https://youtu.be/mkac7WQXX7U) |
+| <a href="https://youtu.be/4-MJtsg9hvg"><img src="https://i.ytimg.com/vi/4-MJtsg9hvg/hqdefault.jpg" width="240"></a> | [Cómo instalar en Windows: el mensaje de SmartScreen y por qué viene limpio](https://youtu.be/4-MJtsg9hvg) |
 
 <img width="1024" height="1024" alt="logo free animation power" src="https://github.com/user-attachments/assets/ced0f4cd-7a20-4071-92a4-f5cd3f2e0930" />
 
-> **Accede desde la web**: [freeanimationpower.org/tools/desktop/](https://freeanimationpower.org/tools/desktop/) — Pagina de descarga de FAP Desktop App.
+> **Accede desde la web**: [freeanimationpower.org/tools/desktop/](https://freeanimationpower.org/tools/desktop/) — Pagina de descarga de Free Animation Power Desktop App.
 >
 > https://youtu.be/_s8zxOe5YUk?si=NCxp1K3UFqJGM_ZY
 > https://youtu.be/GbQypO28FkA?si=Y6gR7qx-lfghDtrN
