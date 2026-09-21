@@ -22,10 +22,10 @@ jobs:
           modules: 'qtmultimedia'
 
       - name: Configure CMake
-        # Qt 6.5.3 headers call stdext::make_*_array_iterator (qcompilerdetection.h)
-        # without including <iterator>. Newer MSVC (VS2022 17.13+/VS2026) no longer
-        # pulls <iterator> in transitively, breaking compilation. Force-include it.
-        run: cmake -B build -DCMAKE_CXX_FLAGS="/FIiterator"
+        # Qt 6.5.3 headers use stdext::make_*_array_iterator without including
+        # <iterator>; newer MSVC toolchains no longer pull it in transitively.
+        # Force-include the guarded shim (safe for C sources like miniz).
+        run: cmake -B build "-DCMAKE_CXX_FLAGS=/FI${{ github.workspace }}/ci/msvc_qt65_compat.h"
 
       - name: Build
         run: cmake --build build --config Release --parallel
