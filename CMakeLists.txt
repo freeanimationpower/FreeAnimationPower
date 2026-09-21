@@ -9,13 +9,6 @@ set(CMAKE_AUTORCC ON)
 
 if(MSVC)
     add_compile_options(/utf-8)
-    # Qt 6.5.3 headers call stdext::make_*_array_iterator (qcompilerdetection.h)
-    # without including <iterator>; newer MSVC toolchains (VS2022 17.13+, VS2026
-    # on windows-latest) no longer pull <iterator> in transitively, breaking the
-    # build with 'stdext: identifier not found'. Force-include a guarded shim
-    # (safe for C sources like miniz thanks to the __cplusplus guard).
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ci)
-    add_compile_options(/FImsvc_qt65_compat.h)
 endif()
 
 option(FAP_BUILD_TESTS "Build tests" ON)
