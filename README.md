@@ -159,37 +159,36 @@ Free Animation Power combina animacion cuadro-por-cuadro tradicional (estilo TVP
 
 ```mermaid
 flowchart TB
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffdc00', 'primaryBorderColor': '#1a1a1a', 'primaryTextColor': '#1a1a1a', 'lineColor': '#ff4200', 'fontFamily': 'Segoe UI'}}}%%
     classDef ui fill:#ffdc00,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px;
     classDef engine fill:#ff4200,stroke:#1a1a1a,color:#ffffff,stroke-width:2px;
     classDef data fill:#1a1a1a,stroke:#ff4200,color:#ffffff,stroke-width:2px;
-    classDef ext fill:#ffffff,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px,stroke-dasharray:6 3;
-        subgraph UI["🖥️ UI Layer — Qt 6 Widgets"]
+    classDef ext fill:#ffffff,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px;
+        subgraph UI["UI Layer — Qt 6 Widgets"]
             direction LR
             MW["MainWindow"] --> CW["CanvasWidget"]
             TP["TimelinePanel"] --> LP["LayerPanel"]
             TB["ToolboxPanel"] --> CP["ColorPanel"]
         end
-        subgraph APP["⚙️ AppState — Hub Central"]
+        subgraph APP["AppState — Hub Central"]
             DOC["Document"]
             TST["ToolState"]
             AUD["AudioEngine"]
             TWN["TweenEngine"]
             DEF["DeformationEngine"]
         end
-        subgraph ENG["🔧 Engine Layer"]
+        subgraph ENG["Engine Layer"]
             direction LR
             BRS["brush/<br/>BrushEngine · ABR"]
             RST["raster/<br/>RasterEngine"]
             VCT["vector/<br/>VectorEngine"]
             CMP["compositor<br/>NodeGraph"]
         end
-        subgraph CORE["🗄️ Core Data Model"]
+        subgraph CORE["Core Data Model"]
             direction LR
             SEQ["Sequence"] --> LYR["Layer"]
             UND["UndoManager"] --> TYP["Types"]
         end
-        subgraph PLT["💾 Platform"]
+        subgraph PLT["Platform"]
             IO["IO · FileFormat<br/>Video/SVG Export"]
             WIN["Win32 · .fap<br/>FileAssociation"]
         end
@@ -216,17 +215,16 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffdc00', 'primaryBorderColor': '#1a1a1a', 'primaryTextColor': '#1a1a1a', 'lineColor': '#ff4200', 'fontFamily': 'Segoe UI'}}}%%
     classDef ui fill:#ffdc00,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px;
     classDef engine fill:#ff4200,stroke:#1a1a1a,color:#ffffff,stroke-width:2px;
     classDef data fill:#1a1a1a,stroke:#ff4200,color:#ffffff,stroke-width:2px;
-    classDef ext fill:#ffffff,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px,stroke-dasharray:6 3;
-        subgraph DATA["📦 DATA DOMAIN — fuente de verdad"]
+    classDef ext fill:#ffffff,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px;
+        subgraph DATA["DATA DOMAIN — fuente de verdad"]
             direction TB
             PX["pixelBuffer_<br/>por capa"]
             ST["strokeBuffer_<br/>trazo actual"]
         end
-        subgraph DISP["🖼️ DISPLAY DOMAIN — lo que ve el usuario"]
+        subgraph DISP["DISPLAY DOMAIN — lo que ve el usuario"]
             direction TB
             BG["backgroundCache_<br/>blanco + onion + capas + video"]
             PA["paintEvent QPainter<br/>caché + trazo + grid + UI"]
@@ -274,26 +272,25 @@ Cada secuencia tiene su propia pila undo, FPS, opacidad y bloqueo. Las secuencia
 
 ```mermaid
 flowchart TB
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffdc00', 'primaryBorderColor': '#1a1a1a', 'primaryTextColor': '#1a1a1a', 'lineColor': '#ff4200', 'fontFamily': 'Segoe UI'}}}%%
     classDef ui fill:#ffdc00,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px;
     classDef engine fill:#ff4200,stroke:#1a1a1a,color:#ffffff,stroke-width:2px;
     classDef data fill:#1a1a1a,stroke:#ff4200,color:#ffffff,stroke-width:2px;
-    classDef ext fill:#ffffff,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px,stroke-dasharray:6 3;
-        subgraph LEFT["⬅️ IZQUIERDA"]
+    classDef ext fill:#ffffff,stroke:#1a1a1a,color:#1a1a1a,stroke-width:2px;
+        subgraph LEFT["IZQUIERDA"]
             direction TB
             TL["ToolboxPanel<br/>17 herramientas"]
             OS["OnionSkinPanel"]
         end
-        subgraph CENTER["⬆️ CENTRO"]
+        subgraph CENTER["CENTRO"]
             CV["CanvasWidget<br/>pipeline 4-buffer · tableta"]
         end
-        subgraph RIGHT["➡️ DERECHA"]
+        subgraph RIGHT["DERECHA"]
             direction TB
             LY["LayerPanel<br/>blend · opacidad · lock"]
             CL["ColorPanel + Properties"]
             CS["CanvasSizePanel"]
         end
-        subgraph BOTTOM["⬇️ INFERIOR"]
+        subgraph BOTTOM["INFERIOR"]
             TM["TimelinePanel<br/>multi-secuencia · audio · video · markers"]
         end
         LEFT --> CENTER
