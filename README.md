@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://freeanimationpower.org"><img src="https://img.shields.io/badge/Web_Hub-freeanimationpower.org-ffdc00?style=for-the-badge" alt="Web Hub"></a>
   <a href="https://www.youtube.com/@freeanimationpower"><img src="https://img.shields.io/badge/YouTube-@freeanimationpower-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"></a>
-  <a href="https://github.com/freeanimationpower"><img src="https://img.shields.io/badge/Herramientas-11-orange?style=for-the-badge" alt="11 herramientas"></a>
+  <a href="https://github.com/freeanimationpower"><img src="https://img.shields.io/badge/Herramientas-12-orange?style=for-the-badge" alt="12 herramientas"></a>
 </p>
 
 <p align="center"><img src="docs/apps/desktop.png" alt="Free Animation Power Desktop App" width="860"></p>
@@ -16,7 +16,7 @@ Todo el ecosistema en vivo: **[freeanimationpower.org](https://freeanimationpowe
 
 ---
 
-## 🧰 Las 11 herramientas del ecosistema
+## 🧰 Las 12 herramientas del ecosistema
 
 ### Desktop App (Windows)
 
@@ -116,6 +116,15 @@ Generador de guiones con IA: 12 formatos profesionales (cine, YouTube, podcast, 
 
 - 🔗 Repo: [freeanimationpower/FREE-SCRIPT-POWER](https://github.com/freeanimationpower/FREE-SCRIPT-POWER)
 - 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/script/)
+
+### Free Type Foundry
+
+<p align="center"><a href="https://github.com/freeanimationpower/FREE-TYPE-FOUNDRY"><img src="docs/apps/font-foundry.png" alt="Free Type Foundry" width="720"></a></p>
+
+Editor de tipografías 100% en el navegador. Sube una fuente, edita cada letra en su propio recuadro y exporta tu propia fuente TTF instalable.
+
+- 🔗 Repo: [freeanimationpower/FREE-TYPE-FOUNDRY](https://github.com/freeanimationpower/FREE-TYPE-FOUNDRY)
+- 🌐 En vivo: [freeanimationpower.org](https://freeanimationpower.org/tools/foundry/)
 
 ---
 
